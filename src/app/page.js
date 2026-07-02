@@ -1,17 +1,17 @@
-import "./components/navbar/navbar.css";
-import "./components/hero/hero.css";
-import "./components/footer/footer.css";
-
-import Navbar from "./components/navbar/navbar";
 import Hero from "./components/hero/hero";
-import Footer from "./components/footer/footer";
+import Stats from "./components/stats/stats";
+import Categories from "./components/categories/categories";
+import PopularDestinations from "./components/popularDestinations/popularDestinations";
+import Feed from "./components/feed/feed";
 
 export default function Home() {
   return (
-    <>
-      <Navbar />
+    <main>
       <Hero />
-      <Footer />
-    </>
+      <Stats />
+      <Categories />
+      <PopularDestinations />
+      <Feed />
+    </main>
   );
 }

@@ -1,51 +1,84 @@
 "use client";
 
-import { useState } from "react";
-import { Menu, X } from "lucide-react";
+import "./navbar.css";
+import { useRouter } from "next/navigation";
 
 export default function Navbar() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const router = useRouter();
 
-  const closeMenu = () => setIsMenuOpen(false);
+  const scrollToSection = (id) => {
+    if (window.location.pathname !== "/") {
+      router.push("/");
+      return;
+    }
+
+    document.getElementById(id)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
 
   return (
     <header className="navbar">
-      <a href="/" className="navbar__logo" onClick={closeMenu}>
-        Comunitatea Călătorilor
-      </a>
+      <button className="nav-logo" onClick={() => router.push("/")}>
+        <div className="nav-logo-icon">
+          <svg
+            className="nav-globe"
+            viewBox="0 0 64 64"
+            aria-hidden="true"
+          >
+            <circle className="globe-main" cx="32" cy="32" r="23" />
+            <path
+              className="globe-line"
+              d="M9 32h46M32 9c7 7 10 15 10 23s-3 16-10 23M32 9c-7 7-10 15-10 23s3 16 10 23"
+            />
+            <path
+              className="globe-land"
+              d="M24 18c-4 1-8 4-9 8 3 1 6 0 8 2 2 2 0 5 3 7 2 1 5-1 6-4 1-4-3-5-2-8 1-3 5-2 6-5-3-2-8-2-12 0Z"
+            />
+            <path
+              className="globe-land"
+              d="M39 34c-4 1-8 4-8 8 0 4 4 7 8 8 5-3 9-8 10-14-3-2-6-3-10-2Z"
+            />
+          </svg>
+        </div>
 
-      <nav className="navbar__desktopLinks">
-        <a href="#explore">Explorează</a>
-        <a href="#destinatii">Destinații</a>
-        <a href="#recenzii">Recenzii</a>
-      </nav>
-
-      <div className="navbar__desktopActions">
-        <a href="#login">Autentificare</a>
-        <a href="#register" className="navbar__button">
-          Creează cont
-        </a>
-      </div>
-
-      <button
-        className="navbar__menuButton"
-        onClick={() => setIsMenuOpen(!isMenuOpen)}
-        aria-label="Meniu"
-      >
-        {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
+        <div className="nav-logo-text">
+          <strong>Comunitatea</strong>
+          <span>Călătorilor</span>
+        </div>
       </button>
 
-      {isMenuOpen && (
-        <nav className="navbar__mobileMenu">
-          <a href="#explore" onClick={closeMenu}>Explorează</a>
-          <a href="#destinatii" onClick={closeMenu}>Destinații</a>
-          <a href="#recenzii" onClick={closeMenu}>Recenzii</a>
-          <a href="#login" onClick={closeMenu}>Autentificare</a>
-          <a href="#register" className="navbar__mobileButton" onClick={closeMenu}>
-            Creează cont
-          </a>
-        </nav>
-      )}
+      <nav className="nav-menu">
+        <button onClick={() => scrollToSection("hero")}>Explorează</button>
+        <button onClick={() => scrollToSection("destinations")}>
+          Destinații
+        </button>
+        <button onClick={() => scrollToSection("reviews")}>Recenzii</button>
+        <button onClick={() => scrollToSection("blog")}>Blog</button>
+        <button onClick={() => scrollToSection("about")}>Despre noi</button>
+      </nav>
+
+      <div className="nav-actions">
+        <button
+          className="nav-search"
+          onClick={() => scrollToSection("destinations")}
+          aria-label="Caută"
+        >
+          🔍
+        </button>
+
+        <button className="nav-login" onClick={() => router.push("/login")}>
+          Autentificare
+        </button>
+
+        <button
+          className="nav-create"
+          onClick={() => router.push("/create-experience")}
+        >
+          Creează postare
+        </button>
+      </div>
     </header>
   );
 }
