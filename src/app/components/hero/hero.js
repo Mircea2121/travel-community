@@ -10,6 +10,29 @@ export default function Hero() {
     });
   };
 
+  const activeUsers = [
+    {
+      id: 1,
+      name: "Andreea",
+      avatar: "https://randomuser.me/api/portraits/women/44.jpg",
+    },
+    {
+      id: 2,
+      name: "Mihai",
+      avatar: "https://randomuser.me/api/portraits/men/32.jpg",
+    },
+    {
+      id: 3,
+      name: "Ioana",
+      avatar: "https://randomuser.me/api/portraits/women/68.jpg",
+    },
+    {
+      id: 4,
+      name: "Alex",
+      avatar: "https://randomuser.me/api/portraits/men/75.jpg",
+    },
+  ];
+
   return (
     <section className="hero" id="hero">
       <div className="hero-left">
@@ -18,8 +41,7 @@ export default function Hero() {
         </div>
 
         <h1>
-          Descoperă lumea prin{" "}
-          <span>experiențe reale</span>
+          Descoperă lumea prin <span>experiențe reale</span>
         </h1>
 
         <p>
@@ -45,16 +67,24 @@ export default function Hero() {
 
         <div className="hero-social">
           <div className="hero-avatars">
-            <span>👩</span>
-            <span>👨</span>
-            <span>🧑</span>
-            <span>👩‍🦱</span>
+            {activeUsers.map((user) => (
+              <img
+                key={user.id}
+                src={user.avatar}
+                alt={`Avatar ${user.name}`}
+                title={user.name}
+              />
+            ))}
+
             <strong>2.5K+</strong>
           </div>
 
           <div>
             <p>Călători activi în comunitate</p>
-            <div className="hero-rating">★★★★★ <b>4.8/5</b></div>
+
+            <div className="hero-rating">
+              ★★★★★ <b>4.8/5</b>
+            </div>
           </div>
         </div>
       </div>
@@ -67,8 +97,11 @@ export default function Hero() {
 
         <div className="hero-review-card">
           <div className="quote">“</div>
+
           <p>„Cea mai frumoasă experiență din viața mea!”</p>
+
           <span>— Andreea, Sardinia</span>
+
           <div className="review-dots">
             <b></b>
             <b></b>

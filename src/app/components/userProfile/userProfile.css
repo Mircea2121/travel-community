@@ -65,93 +65,228 @@ body {
 
 .travel-profile-cover-actions {
   position: absolute;
-  right: 36px;
-  bottom: 18px;
+  right: 34px;
+  bottom: 22px;
   z-index: 5;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .travel-profile-action-btn {
-  height: 40px;
-  padding: 0 18px;
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  border-radius: 999px;
+  min-width: 126px;
+  height: 44px;
+  padding: 0 20px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 14px;
   font-size: 14px;
   font-weight: 800;
   cursor: pointer;
+
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 9px;
+
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  transition: all 0.22s ease;
+
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease,
+    background 0.22s ease,
+    border-color 0.22s ease;
+
   letter-spacing: -0.01em;
 }
 
 .travel-profile-action-message {
-  background: rgba(255, 255, 255, 0.82);
-  color: #0f172a;
-  box-shadow: 0 14px 35px rgba(15, 23, 42, 0.14);
+  background: rgba(255, 255, 255, 0.92);
+  color: #152238;
+  border-color: rgba(255, 255, 255, 0.9);
+
+  box-shadow:
+    0 12px 28px rgba(15, 23, 42, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .travel-profile-action-primary {
-  background: linear-gradient(135deg, #0d8bff, #35b8ff);
+  background: linear-gradient(
+    135deg,
+    #087cf0 0%,
+    #13a8ef 100%
+  );
+
   color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.35);
-  box-shadow: 0 16px 35px rgba(13, 139, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.28);
+
+  box-shadow:
+    0 14px 30px rgba(8, 124, 240, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
 }
 
-.travel-profile-action-icon {
-  width: 22px;
-  height: 22px;
-  border-radius: 999px;
-  background: rgba(13, 139, 255, 0.1);
-  display: grid;
-  place-items: center;
-  font-size: 12px;
-  color: #0d8bff;
+.travel-profile-stat-icon {
+  width: 56px;
+  height: 56px;
+
+  margin: 0 auto 16px;
+
+  border-radius: 18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid rgba(255, 255, 255, 0.82);
+
+  box-shadow:
+    0 10px 24px rgba(15, 23, 42, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
 }
+
+.travel-profile-stat-card:hover
+.travel-profile-stat-icon {
+  transform: translateY(-2px) scale(1.04);
+
+  box-shadow:
+    0 14px 30px rgba(15, 23, 42, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.travel-profile-stat-icon svg {
+  width: 25px;
+  height: 25px;
+}
+
+/* POSTĂRI */
+
+.travel-profile-stat-icon-posts {
+  color: #1677ff;
+
+  background: linear-gradient(
+    145deg,
+    #f2f8ff,
+    #e4f1ff
+  );
+}
+
+/* DESTINAȚII */
+
+.travel-profile-stat-icon-destinations {
+  color: #0796b8;
+
+  background: linear-gradient(
+    145deg,
+    #effcff,
+    #dff7fb
+  );
+}
+
+/* APRECIERI */
+
+.travel-profile-stat-icon-likes {
+  color: #ef476f;
+
+  background: linear-gradient(
+    145deg,
+    #fff4f7,
+    #ffe7ed
+  );
+}
+
+/* URMĂRITORI */
+
+.travel-profile-stat-icon-followers {
+  color: #7657d9;
+
+  background: linear-gradient(
+    145deg,
+    #f6f3ff,
+    #eae4ff
+  );
+}
+
+/* URMĂREȘTE */
+
+.travel-profile-stat-icon-following {
+  color: #2f6bda;
+
+  background: linear-gradient(
+    145deg,
+    #f1f6ff,
+    #e1ebff
+  );
+}
+
+/* FOTOGRAFII */
+
+.travel-profile-stat-icon-photos {
+  color: #0ba58f;
+
+  background: linear-gradient(
+    145deg,
+    #effcf9,
+    #dcf7f1
+  );
+}
+
 
 .travel-profile-action-btn:hover {
   transform: translateY(-2px);
 }
 
+.travel-profile-action-btn:active {
+  transform: translateY(0);
+}
+
 .travel-profile-action-message:hover {
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+  background: #ffffff;
+  border-color: #ffffff;
+
+  box-shadow:
+    0 17px 34px rgba(15, 23, 42, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .travel-profile-action-primary:hover {
-  box-shadow: 0 20px 45px rgba(13, 139, 255, 0.36);
+  background: linear-gradient(
+    135deg,
+    #0875df 0%,
+    #0d9ee4 100%
+  );
+
+  box-shadow:
+    0 18px 38px rgba(8, 124, 240, 0.36),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
 }
 
 .travel-profile-info-card {
-  width: 58%;
-  min-width: 760px;
-  max-width: 900px;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
 
-  margin: -82px 0 0 42px;
+  margin: 24px 0 0;
 
   position: relative;
   z-index: 3;
 
   background: #ffffff;
+  border-radius: 28px;
 
-  border-radius: 32px;
-
-  padding: 34px 42px;
+  padding: 30px 38px;
 
   display: grid;
-  grid-template-columns: 170px 1fr;
-  gap: 34px;
+  grid-template-columns: 170px minmax(0, 1fr);
+  gap: 30px;
   align-items: center;
 
-  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.1);
+  border: 1px solid #eaf0f6;
 
-  border: 1px solid #eef2f7;
+  box-shadow: 0 16px 42px rgba(15, 23, 42, 0.08);
 }
 
 .travel-profile-avatar-wrap {
@@ -404,13 +539,16 @@ body {
     font-size: 13px;
   }
 
-  .travel-profile-info-card {
-  width: calc(100% - 24px);
-  min-width: unset;
-  max-width: unset;
-  margin-top: -58px;
+.travel-profile-info-card {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+
+  margin: 18px 0 0;
+
   padding: 24px 20px;
   border-radius: 24px;
+
   grid-template-columns: 1fr;
   gap: 16px;
 }
@@ -479,19 +617,6 @@ body {
   box-shadow: 0 22px 45px rgba(15, 23, 42, 0.08);
 }
 
-.travel-profile-stat-icon {
-  width: 54px;
-  height: 54px;
-  margin: auto;
-  margin-bottom: 14px;
-  border-radius: 18px;
-  background: #eef7ff;
-  color: #1485ff;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 24px;
-}
 
 .travel-profile-stat-card strong {
   display: block;
@@ -531,25 +656,31 @@ body {
   box-shadow: 0 15px 40px rgba(15,23,42,.05);
 }
 
-.travel-profile-level-icon{
+.travel-profile-level-icon {
+  width: 74px;
+  height: 74px;
 
-    width:74px;
+  border-radius: 22px;
 
-    height:74px;
+  background: linear-gradient(
+    145deg,
+    #ffe79b,
+    #f8bd32
+  );
 
-    border-radius:22px;
+  color: #b97700;
 
-    background:linear-gradient(180deg,#FFE18B,#F6B82E);
+  display: flex;
+  justify-content: center;
+  align-items: center;
 
-    display:flex;
+  box-shadow:
+    0 12px 25px rgba(246, 184, 46, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
 
-    justify-content:center;
-
-    align-items:center;
-
-    font-size:34px;
-
-    box-shadow:0 12px 25px rgba(246,184,46,.25);
+.travel-profile-level-icon svg {
+  fill: rgba(255, 255, 255, 0.28);
 }
 
 .travel-profile-level-info span{

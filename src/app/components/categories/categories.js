@@ -58,7 +58,7 @@ export default function Categories() {
             <p>{item.text}</p>
 
             <button onClick={() => alert(`Ai ales categoria: ${item.title}`)}>
-              Vezi recomandări →
+              Vezi recomandări 
             </button>
           </article>
         ))}

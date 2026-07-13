@@ -29,7 +29,7 @@ export default function LoginPage() {
     <main className="auth-page">
       <section className="auth-card">
         <div className="auth-header">
-          <span>🌍 Travel Community</span>
+          <span>🌍 Comunitatea Călătorilor</span>
 
           <h1>Autentificare</h1>
 

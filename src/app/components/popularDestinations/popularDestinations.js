@@ -60,7 +60,7 @@ export default function PopularDestinations() {
                   );
                 }}
               >
-                Vezi destinația →
+                Vezi destinația
               </button>
             </div>
           </article>
