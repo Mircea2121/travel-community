@@ -9,10 +9,42 @@ html {
 }
 
 body {
-  background: #020617;
-  color: #ffffff;
+  background: #f5f9ff;
+  color: #18253b;
 }
 
 a {
   cursor: pointer;
+}
+
+.home-page {
+  position: relative;
+  isolation: isolate;
+
+  min-height: 100vh;
+
+  overflow: hidden;
+
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(125, 211, 252, 0.42) 0%,
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at bottom right,
+      rgba(253, 230, 138, 0.3) 0%,
+      transparent 32%
+    ),
+    linear-gradient(
+      135deg,
+      #f5fbff,
+      #ffffff 52%,
+      #fffaf0
+    );
+}
+
+.home-page-content {
+  position: relative;
+  z-index: 1;
 }

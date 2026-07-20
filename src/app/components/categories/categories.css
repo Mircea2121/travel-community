@@ -1,6 +1,9 @@
-.categories-section{
-    padding:120px 6%;
-    background:#f8fbff;
+.categories-section {
+  position: relative;
+
+  padding: 120px 6%;
+
+  background: transparent;
 }
 
 .categories-header{

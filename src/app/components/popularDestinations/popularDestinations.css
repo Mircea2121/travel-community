@@ -1,6 +1,9 @@
 .popular-destinations {
+  position: relative;
+
   padding: 120px 6%;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+
+  background: transparent;
 }
 
 .section-header {

@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
+
 import "../auth/auth.css";
+import FlagBackground from "../components/flagBackground/flagBackground";
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -10,15 +12,17 @@ export default function LoginPage() {
     password: "",
   });
 
-  const handleChange = (e) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+
+    setFormData((previousData) => ({
+      ...previousData,
+      [name]: value,
     }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = (event) => {
+    event.preventDefault();
 
     console.log("Autentificare:", formData);
 
@@ -27,6 +31,8 @@ export default function LoginPage() {
 
   return (
     <main className="auth-page">
+      <FlagBackground />
+
       <section className="auth-card">
         <div className="auth-header">
           <span>🌍 Comunitatea Călătorilor</span>
@@ -45,6 +51,7 @@ export default function LoginPage() {
             placeholder="Email"
             value={formData.email}
             onChange={handleChange}
+            autoComplete="email"
             required
           />
 
@@ -54,19 +61,15 @@ export default function LoginPage() {
             placeholder="Parolă"
             value={formData.password}
             onChange={handleChange}
+            autoComplete="current-password"
             required
           />
 
-          <button type="submit">
-            Autentifică-te
-          </button>
+          <button type="submit">Autentifică-te</button>
         </form>
 
         <p className="auth-switch">
-          Nu ai cont?{" "}
-          <Link href="/register">
-            Creează unul
-          </Link>
+          Nu ai cont? <Link href="/register">Creează unul</Link>
         </p>
       </section>
     </main>

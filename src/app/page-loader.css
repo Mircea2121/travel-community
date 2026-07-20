@@ -1,0 +1,425 @@
+.page-loader {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    overflow: hidden;
+
+    background:
+        radial-gradient(
+            circle at 50% 42%,
+            rgba(14, 165, 233, 0.12),
+            transparent 28%
+        ),
+        linear-gradient(
+            135deg,
+            rgba(247, 250, 255, 0.98),
+            rgba(238, 247, 255, 0.98)
+        );
+
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+.page-loader::before,
+.page-loader::after {
+    content: "";
+
+    position: absolute;
+
+    border-radius: 50%;
+
+    filter: blur(10px);
+
+    pointer-events: none;
+}
+
+.page-loader::before {
+    top: -140px;
+    left: -100px;
+
+    width: 340px;
+    height: 340px;
+
+    background: rgba(14, 165, 233, 0.1);
+}
+
+.page-loader::after {
+    right: -120px;
+    bottom: -160px;
+
+    width: 400px;
+    height: 400px;
+
+    background: rgba(2, 132, 199, 0.08);
+}
+
+/* LOADER CONTENT */
+
+.page-loader-content {
+    position: relative;
+    z-index: 2;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+
+    animation: loader-content-in 0.35s ease both;
+}
+
+/* HOURGLASS CARD */
+
+.page-loader-icon {
+    position: relative;
+
+    width: 82px;
+    height: 82px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid rgba(14, 165, 233, 0.16);
+    border-radius: 26px;
+
+    background: rgba(255, 255, 255, 0.92);
+
+    box-shadow:
+        0 22px 60px rgba(14, 165, 233, 0.18),
+        0 8px 22px rgba(15, 23, 42, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.page-loader-icon::before {
+    content: "";
+
+    position: absolute;
+    inset: -8px;
+
+    border: 1px solid rgba(14, 165, 233, 0.1);
+    border-radius: 32px;
+
+    pointer-events: none;
+
+    animation: loader-pulse 1.2s ease-in-out infinite;
+}
+
+/* REALISTIC SVG HOURGLASS */
+
+.real-hourglass {
+    width: 48px;
+    height: 48px;
+
+    overflow: visible;
+
+    transform-origin: center;
+
+    animation: hourglass-flip 2s ease-in-out infinite;
+}
+
+.hourglass-frame {
+    fill: none;
+
+    stroke: #075985;
+    stroke-width: 4;
+    stroke-linecap: round;
+}
+
+.hourglass-glass {
+    fill: rgba(224, 242, 254, 0.32);
+
+    stroke: #38bdf8;
+    stroke-width: 2;
+    stroke-linejoin: round;
+}
+
+.hourglass-sand-top,
+.hourglass-sand-bottom {
+    fill: #f4b942;
+}
+
+.hourglass-sand-top {
+    transform-box: fill-box;
+    transform-origin: center bottom;
+
+    animation: sand-top-empty 2s ease-in-out infinite;
+}
+
+.hourglass-sand-bottom {
+    transform-box: fill-box;
+    transform-origin: center bottom;
+
+    animation: sand-bottom-fill 2s ease-in-out infinite;
+}
+
+.hourglass-sand-stream {
+    fill: none;
+
+    stroke: #f4b942;
+    stroke-width: 2;
+    stroke-linecap: round;
+
+    animation: sand-stream 2s ease-in-out infinite;
+}
+
+.hourglass-sand-drop {
+    fill: #f4b942;
+
+    animation: sand-drop 0.5s linear infinite;
+}
+
+/* LOADING TEXT */
+
+.page-loader-content span {
+    color: #18253b;
+
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+
+.page-loader-content span::after {
+    content: "";
+
+    display: inline-block;
+
+    width: 22px;
+
+    text-align: left;
+
+    animation: loader-dots 1s steps(4, end) infinite;
+}
+
+/* PAGE TRANSITION */
+
+.page-transition {
+    min-height: 100vh;
+
+    transition:
+        opacity 0.35s ease,
+        transform 0.35s ease,
+        filter 0.35s ease;
+}
+
+.page-transition-loading {
+    opacity: 0.18;
+
+    transform: scale(0.995);
+
+    filter: blur(3px);
+}
+
+.page-transition-visible {
+    opacity: 1;
+
+    transform: scale(1);
+
+    filter: blur(0);
+}
+
+/* ANIMATIONS */
+
+@keyframes loader-pulse {
+    0%,
+    100% {
+        opacity: 0.45;
+        transform: scale(0.96);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+}
+
+@keyframes loader-content-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.96);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes loader-dots {
+    0% {
+        content: "";
+    }
+
+    25% {
+        content: ".";
+    }
+
+    50% {
+        content: "..";
+    }
+
+    75%,
+    100% {
+        content: "...";
+    }
+}
+
+@keyframes hourglass-flip {
+    0%,
+    42% {
+        transform: rotate(0deg);
+    }
+
+    52%,
+    92% {
+        transform: rotate(180deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes sand-top-empty {
+    0% {
+        transform: scaleY(1);
+        opacity: 1;
+    }
+
+    42% {
+        transform: scaleY(0.2);
+        opacity: 0.6;
+    }
+
+    52% {
+        transform: scaleY(1);
+        opacity: 1;
+    }
+
+    92% {
+        transform: scaleY(0.2);
+        opacity: 0.6;
+    }
+
+    100% {
+        transform: scaleY(1);
+        opacity: 1;
+    }
+}
+
+@keyframes sand-bottom-fill {
+    0% {
+        transform: scaleY(0.2);
+        opacity: 0.6;
+    }
+
+    42% {
+        transform: scaleY(1);
+        opacity: 1;
+    }
+
+    52% {
+        transform: scaleY(0.2);
+        opacity: 0.6;
+    }
+
+    92% {
+        transform: scaleY(1);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scaleY(0.2);
+        opacity: 0.6;
+    }
+}
+
+@keyframes sand-stream {
+    0%,
+    42% {
+        opacity: 1;
+    }
+
+    46%,
+    52% {
+        opacity: 0;
+    }
+
+    56%,
+    92% {
+        opacity: 1;
+    }
+
+    96%,
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes sand-drop {
+    0% {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    20% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+}
+
+/* MOBILE */
+
+@media (max-width: 600px) {
+    .page-loader-content {
+        gap: 15px;
+    }
+
+    .page-loader-icon {
+        width: 72px;
+        height: 72px;
+
+        border-radius: 23px;
+    }
+
+    .page-loader-icon::before {
+        border-radius: 29px;
+    }
+
+    .real-hourglass {
+        width: 42px;
+        height: 42px;
+    }
+
+    .page-loader-content span {
+        font-size: 14px;
+    }
+}
+
+/* ACCESSIBILITY */
+
+@media (prefers-reduced-motion: reduce) {
+    .page-loader-content,
+    .page-loader-icon::before,
+    .real-hourglass,
+    .hourglass-sand-top,
+    .hourglass-sand-bottom,
+    .hourglass-sand-stream,
+    .hourglass-sand-drop,
+    .page-loader-content span::after {
+        animation-duration: 0.01ms;
+        animation-iteration-count: 1;
+    }
+
+    .page-transition {
+        transition: none;
+    }
+}

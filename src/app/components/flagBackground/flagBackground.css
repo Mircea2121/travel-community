@@ -1,0 +1,437 @@
+.flag-background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+
+  overflow: hidden;
+
+  pointer-events: none;
+}
+
+.flag-background-item {
+  position: absolute;
+
+  width: 56px;
+  height: 86px;
+
+  overflow: hidden;
+
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: 13px 13px 18px 18px;
+
+  background: rgba(255, 255, 255, 0.3);
+
+  opacity: 0.26;
+
+  filter:
+    saturate(1.12)
+    contrast(1.02);
+
+  box-shadow:
+    0 15px 34px rgba(15, 23, 42, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.flag-background-item::after {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.16),
+      transparent 44%,
+      rgba(15, 23, 42, 0.07)
+    );
+}
+
+.flag-background-item img {
+  width: 100%;
+  height: 100%;
+
+  display: block;
+
+  object-fit: cover;
+
+  filter: saturate(1.1);
+}
+
+/* RÂNDUL DE SUS */
+
+.flag-background-item-1 {
+  top: 3%;
+  left: 2%;
+}
+
+.flag-background-item-2 {
+  top: 7%;
+  left: 10%;
+}
+
+.flag-background-item-3 {
+  top: 2%;
+  left: 19%;
+}
+
+.flag-background-item-4 {
+  top: 10%;
+  left: 28%;
+}
+
+.flag-background-item-5 {
+  top: 4%;
+  left: 38%;
+}
+
+.flag-background-item-6 {
+  top: 8%;
+  left: 48%;
+}
+
+.flag-background-item-7 {
+  top: 3%;
+  right: 39%;
+}
+
+.flag-background-item-8 {
+  top: 11%;
+  right: 29%;
+}
+
+.flag-background-item-9 {
+  top: 4%;
+  right: 20%;
+}
+
+.flag-background-item-10 {
+  top: 9%;
+  right: 11%;
+}
+
+.flag-background-item-11 {
+  top: 3%;
+  right: 2%;
+}
+
+/* ZONA DE SUS-MIJLOC */
+
+.flag-background-item-12 {
+  top: 20%;
+  left: 5%;
+}
+
+.flag-background-item-13 {
+  top: 25%;
+  left: 15%;
+}
+
+.flag-background-item-14 {
+  top: 19%;
+  left: 25%;
+}
+
+.flag-background-item-15 {
+  top: 28%;
+  left: 35%;
+}
+
+.flag-background-item-16 {
+  top: 21%;
+  left: 45%;
+}
+
+.flag-background-item-17 {
+  top: 27%;
+  right: 43%;
+}
+
+.flag-background-item-18 {
+  top: 19%;
+  right: 33%;
+}
+
+.flag-background-item-19 {
+  top: 26%;
+  right: 23%;
+}
+
+.flag-background-item-20 {
+  top: 20%;
+  right: 13%;
+}
+
+.flag-background-item-21 {
+  top: 28%;
+  right: 4%;
+}
+
+/* ZONA CENTRALĂ */
+
+.flag-background-item-22 {
+  top: 39%;
+  left: 2%;
+}
+
+.flag-background-item-23 {
+  top: 46%;
+  left: 11%;
+}
+
+.flag-background-item-24 {
+  top: 38%;
+  left: 21%;
+}
+
+.flag-background-item-25 {
+  top: 48%;
+  left: 31%;
+}
+
+.flag-background-item-26 {
+  top: 40%;
+  left: 41%;
+}
+
+.flag-background-item-27 {
+  top: 47%;
+  left: 51%;
+}
+
+.flag-background-item-28 {
+  top: 38%;
+  right: 38%;
+}
+
+.flag-background-item-29 {
+  top: 48%;
+  right: 28%;
+}
+
+.flag-background-item-30 {
+  top: 39%;
+  right: 18%;
+}
+
+.flag-background-item-31 {
+  top: 47%;
+  right: 8%;
+}
+
+.flag-background-item-32 {
+  top: 38%;
+  right: 1%;
+}
+
+/* ZONA DINTRE DESTINAȚII ȘI RECOMANDĂRI */
+
+.flag-background-item-33 {
+  top: 52%;
+  left: 4%;
+}
+
+.flag-background-item-34 {
+  top: 58%;
+  left: 13%;
+}
+
+.flag-background-item-35 {
+  top: 53%;
+  left: 24%;
+}
+
+.flag-background-item-36 {
+  top: 59%;
+  left: 35%;
+}
+
+.flag-background-item-37 {
+  top: 52%;
+  left: 46%;
+}
+
+.flag-background-item-38 {
+  top: 59%;
+  right: 44%;
+}
+
+.flag-background-item-39 {
+  top: 53%;
+  right: 33%;
+}
+
+.flag-background-item-40 {
+  top: 59%;
+  right: 22%;
+}
+
+.flag-background-item-41 {
+  top: 52%;
+  right: 11%;
+}
+
+.flag-background-item-42 {
+  top: 58%;
+  right: 3%;
+}
+
+/* JOS */
+
+.flag-background-item-43 {
+  top: 66%;
+  left: 6%;
+}
+
+.flag-background-item-44 {
+  top: 73%;
+  left: 19%;
+}
+
+.flag-background-item-45 {
+  top: 67%;
+  left: 34%;
+}
+
+.flag-background-item-46 {
+  top: 74%;
+  left: 50%;
+}
+
+.flag-background-item-47 {
+  top: 68%;
+  right: 27%;
+}
+
+.flag-background-item-48 {
+  top: 74%;
+  right: 7%;
+}
+
+/* RÂNDUL DE JOS */
+
+.flag-background-item-43 {
+  top: 82%;
+  left: 3%;
+}
+
+.flag-background-item-44 {
+  top: 86%;
+  left: 18%;
+}
+
+.flag-background-item-45 {
+  top: 80%;
+  left: 34%;
+}
+
+.flag-background-item-46 {
+  top: 87%;
+  left: 50%;
+}
+
+.flag-background-item-47 {
+  top: 81%;
+  right: 28%;
+}
+
+.flag-background-item-48 {
+  top: 86%;
+  right: 8%;
+}
+
+/* ÎNCLINĂRI DISCRETE */
+
+.flag-background-item-1,
+.flag-background-item-6,
+.flag-background-item-10,
+.flag-background-item-15,
+.flag-background-item-20,
+.flag-background-item-25,
+.flag-background-item-30,
+.flag-background-item-35,
+.flag-background-item-40,
+.flag-background-item-45 {
+  transform: rotate(-2deg);
+}
+
+.flag-background-item-3,
+.flag-background-item-8,
+.flag-background-item-13,
+.flag-background-item-18,
+.flag-background-item-23,
+.flag-background-item-28,
+.flag-background-item-33,
+.flag-background-item-38,
+.flag-background-item-43,
+.flag-background-item-48 {
+  transform: rotate(2deg);
+}
+
+/* TABLETĂ */
+
+@media (max-width: 1100px) {
+  .flag-background-item {
+    width: 50px;
+    height: 76px;
+
+    opacity: 0.2;
+  }
+
+  .flag-background-item-4,
+  .flag-background-item-7,
+  .flag-background-item-11,
+  .flag-background-item-14,
+  .flag-background-item-17,
+  .flag-background-item-21,
+  .flag-background-item-24,
+  .flag-background-item-27,
+  .flag-background-item-32,
+  .flag-background-item-36,
+  .flag-background-item-39,
+  .flag-background-item-42,
+  .flag-background-item-45,
+  .flag-background-item-47 {
+    display: none;
+  }
+}
+
+/* TELEFON */
+
+@media (max-width: 768px) {
+  .flag-background-item {
+    width: 43px;
+    height: 66px;
+
+    border-radius: 11px 11px 15px 15px;
+
+    opacity: 0.15;
+  }
+
+  .flag-background-item-2,
+  .flag-background-item-4,
+  .flag-background-item-6,
+  .flag-background-item-8,
+  .flag-background-item-10,
+  .flag-background-item-12,
+  .flag-background-item-14,
+  .flag-background-item-16,
+  .flag-background-item-18,
+  .flag-background-item-20,
+  .flag-background-item-22,
+  .flag-background-item-24,
+  .flag-background-item-26,
+  .flag-background-item-28,
+  .flag-background-item-30,
+  .flag-background-item-32,
+  .flag-background-item-34,
+  .flag-background-item-36,
+  .flag-background-item-38,
+  .flag-background-item-40,
+  .flag-background-item-42,
+  .flag-background-item-44,
+  .flag-background-item-46,
+  .flag-background-item-48 {
+    display: none;
+  }
+}

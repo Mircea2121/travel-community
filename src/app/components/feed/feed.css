@@ -1,6 +1,9 @@
 .feed-section {
+  position: relative;
+
   padding: 120px 6%;
-  background: #f8fbff;
+
+  background: transparent;
 }
 
 .feed-header {

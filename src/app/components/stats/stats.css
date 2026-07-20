@@ -1,11 +1,13 @@
 .stats-section {
+  position: relative;
+
   padding: 40px 7% 80px;
 
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 25px;
 
-  background: #ffffff;
+  background: transparent;
 }
 
 .stat-card {

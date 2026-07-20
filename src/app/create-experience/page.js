@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+
 import "./createExperience.css";
+import FlagBackground from "../components/flagBackground/flagBackground";
 
 export default function CreateExperiencePage() {
   const [formData, setFormData] = useState({
@@ -36,6 +38,7 @@ export default function CreateExperiencePage() {
     }
 
     const previews = files.map((file) => URL.createObjectURL(file));
+
     setImagePreviews(previews);
   }
 
@@ -55,10 +58,16 @@ export default function CreateExperiencePage() {
 
   return (
     <section className="create-experience-page">
+      <FlagBackground />
+
       <div className="create-experience-container">
         <div className="create-experience-header">
-          <span className="create-experience-badge">Comunitatea călătorilor</span>
+          <span className="create-experience-badge">
+            Comunitatea călătorilor
+          </span>
+
           <h1>Adaugă o postare de călătorie</h1>
+
           <p>
             Spune unde ai fost, cât te-a costat, ce ponturi ai pentru alți
             călători și ce ar trebui să știe înainte să plece.
@@ -68,6 +77,7 @@ export default function CreateExperiencePage() {
         <form className="experience-form" onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Titlul postării</label>
+
             <input
               type="text"
               name="title"
@@ -81,6 +91,7 @@ export default function CreateExperiencePage() {
           <div className="form-row">
             <div className="form-group">
               <label>Destinație</label>
+
               <input
                 type="text"
                 name="destination"
@@ -93,6 +104,7 @@ export default function CreateExperiencePage() {
 
             <div className="form-group">
               <label>Țară</label>
+
               <input
                 type="text"
                 name="country"
@@ -107,6 +119,7 @@ export default function CreateExperiencePage() {
           <div className="form-row">
             <div className="form-group">
               <label>Oraș / Zonă</label>
+
               <input
                 type="text"
                 name="city"
@@ -118,6 +131,7 @@ export default function CreateExperiencePage() {
 
             <div className="form-group">
               <label>Categorie</label>
+
               <select
                 name="category"
                 value={formData.category}
@@ -140,6 +154,7 @@ export default function CreateExperiencePage() {
           <div className="form-row">
             <div className="form-group">
               <label>Perioada călătoriei</label>
+
               <input
                 type="text"
                 name="travelPeriod"
@@ -151,6 +166,7 @@ export default function CreateExperiencePage() {
 
             <div className="form-group">
               <label>Cost total aproximativ</label>
+
               <input
                 type="text"
                 name="totalCost"
@@ -163,6 +179,7 @@ export default function CreateExperiencePage() {
 
           <div className="form-group">
             <label>Ponturi utile</label>
+
             <textarea
               name="tips"
               placeholder="Exemplu: unde ai mâncat bine, ce merită vizitat, ce să eviți, parcări, transport, prețuri..."
@@ -174,6 +191,7 @@ export default function CreateExperiencePage() {
 
           <div className="form-group">
             <label>Povestea ta</label>
+
             <textarea
               name="description"
               placeholder="Scrie liber cum a fost experiența ta..."
@@ -193,6 +211,7 @@ export default function CreateExperiencePage() {
                 multiple
                 onChange={handleImageChange}
               />
+
               <span>Apasă pentru a adăuga poze</span>
               <small>Minimum 1 poză, maximum 10 poze</small>
             </label>
