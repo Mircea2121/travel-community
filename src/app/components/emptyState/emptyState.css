@@ -1,0 +1,149 @@
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 22px;
+
+  padding: 70px 40px;
+
+  text-align: center;
+
+  background: rgba(255, 255, 255, 0.92);
+
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 30px;
+
+  box-shadow:
+    0 18px 50px rgba(15, 23, 42, 0.06);
+
+  backdrop-filter: blur(18px);
+}
+
+.empty-state-icon {
+  width: 92px;
+  height: 92px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 28px;
+
+  color: #2563eb;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(59, 130, 246, 0.12),
+      rgba(14, 165, 233, 0.18)
+    );
+
+  box-shadow:
+    inset 0 0 0 1px rgba(59, 130, 246, 0.08),
+    0 12px 28px rgba(37, 99, 235, 0.12);
+}
+
+.empty-state-content {
+  max-width: 520px;
+}
+
+.empty-state-content h3 {
+  margin: 0;
+
+  font-size: 1.8rem;
+  font-weight: 800;
+
+  color: #0f172a;
+}
+
+.empty-state-content p {
+  margin-top: 14px;
+
+  line-height: 1.75;
+
+  font-size: 1rem;
+
+  color: #64748b;
+}
+
+.empty-state-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 220px;
+  height: 54px;
+
+  padding: 0 28px;
+
+  border: none;
+  border-radius: 18px;
+
+  cursor: pointer;
+
+  text-decoration: none;
+
+  font-size: 0.97rem;
+  font-weight: 700;
+
+  color: white;
+
+  background:
+    linear-gradient(
+      135deg,
+      #2563eb,
+      #0ea5e9
+    );
+
+  box-shadow:
+    0 14px 30px rgba(37, 99, 235, 0.28);
+
+  transition:
+    transform .25s ease,
+    box-shadow .25s ease,
+    filter .25s ease;
+}
+
+.empty-state-button:hover {
+  transform: translateY(-3px);
+
+  filter: brightness(1.04);
+
+  box-shadow:
+    0 20px 36px rgba(37, 99, 235, 0.34);
+}
+
+.empty-state-button:active {
+  transform: translateY(0);
+}
+
+.empty-state-button:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.25);
+  outline-offset: 4px;
+}
+
+@media (max-width: 768px) {
+  .empty-state {
+    padding: 55px 24px;
+
+    border-radius: 24px;
+  }
+
+  .empty-state-icon {
+    width: 78px;
+    height: 78px;
+
+    border-radius: 22px;
+  }
+
+  .empty-state-content h3 {
+    font-size: 1.45rem;
+  }
+
+  .empty-state-button {
+    width: 100%;
+    max-width: 320px;
+  }
+}

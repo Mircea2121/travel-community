@@ -11,17 +11,21 @@
 }
 
 .stat-card {
-  background: #f7fbff;
+    padding: 35px 20px;
 
-  border-radius: 24px;
+    text-align: center;
 
-  padding: 35px 20px;
+    border: 1px solid rgba(225,232,240,.9);
+    border-radius: 24px;
 
-  text-align: center;
+    background: #fcfdfd;
 
-  transition: .3s;
+    box-shadow:
+        0 12px 30px rgba(15,23,42,.06);
 
-  box-shadow: 0 12px 30px rgba(14, 165, 233, .08);
+    animation: none;
+    transition: none;
+    transform: none;
 }
 
 .stat-card:hover {
