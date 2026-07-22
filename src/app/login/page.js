@@ -21,10 +21,14 @@ export default function LoginPage() {
 
   const [showPassword, setShowPassword] = useState(false);
 
-  const isEmailValid = EMAIL_PATTERN.test(formData.email.trim());
+  const isEmailValid = EMAIL_PATTERN.test(
+    formData.email.trim()
+  );
+
   const isPasswordValid = formData.password.length > 0;
 
-  const isFormValid = isEmailValid && isPasswordValid;
+  const isFormValid =
+    isEmailValid && isPasswordValid;
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -35,7 +39,7 @@ export default function LoginPage() {
     }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (!isFormValid) {
@@ -47,15 +51,53 @@ export default function LoginPage() {
       return;
     }
 
-    console.log("Autentificare pregătită pentru backend:", {
-      email: formData.email.trim(),
-      password: formData.password,
-    });
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email.trim(),
+          password: formData.password,
+        }),
+      });
 
-    toast.info(
-      "Autentificarea este pregătită pentru conectarea la baza de date.",
-      "Funcționalitate în pregătire"
-    );
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast.error(
+          data.message || "Autentificarea a eșuat.",
+          "Eroare"
+        );
+
+        return;
+      }
+
+      toast.success(
+        "Te-ai autentificat cu succes!",
+        "Autentificare reușită"
+      );
+
+      setFormData({
+        email: "",
+        password: "",
+      });
+
+      window.setTimeout(() => {
+        window.location.href = "/profile";
+      }, 700);
+    } catch (error) {
+      console.error(
+        "Eroare la conectarea cu serverul:",
+        error
+      );
+
+      toast.error(
+        "Nu s-a putut realiza conexiunea cu serverul.",
+        "Eroare"
+      );
+    }
   };
 
   return (
@@ -71,7 +113,8 @@ export default function LoginPage() {
           <h1>Autentificare</h1>
 
           <p>
-            Conectează-te pentru a posta experiențe, fotografii și recenzii.
+            Conectează-te pentru a posta experiențe,
+            fotografii și recenzii.
           </p>
         </div>
 
@@ -102,11 +145,13 @@ export default function LoginPage() {
               }
             />
 
-            {formData.email.length > 0 && !isEmailValid && (
-              <p className="auth-validation-message error">
-                Introdu o adresă completă, de forma nume@email.ro.
-              </p>
-            )}
+            {formData.email.length > 0 &&
+              !isEmailValid && (
+                <p className="auth-validation-message error">
+                  Introdu o adresă completă, de forma
+                  nume@email.ro.
+                </p>
+              )}
           </div>
 
           <div className="auth-field-group">
@@ -117,7 +162,9 @@ export default function LoginPage() {
             <div className="auth-password-field">
               <input
                 id="login-password"
-                type={showPassword ? "text" : "password"}
+                type={
+                  showPassword ? "text" : "password"
+                }
                 name="password"
                 placeholder="Introdu parola"
                 value={formData.password}
@@ -131,7 +178,8 @@ export default function LoginPage() {
                   className="auth-password-toggle"
                   onClick={() =>
                     setShowPassword(
-                      (previousValue) => !previousValue
+                      (previousValue) =>
+                        !previousValue
                     )
                   }
                   aria-label={

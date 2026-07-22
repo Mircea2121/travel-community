@@ -86,8 +86,8 @@ export default function RegisterPage() {
     setSubmitted(false);
   };
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
+  const handleSubmit = async (event) => {
+  event.preventDefault();
 
     if (!isFormValid) {
       toast.warning(
@@ -98,18 +98,55 @@ export default function RegisterPage() {
       return;
     }
 
-    console.log("Utilizator pregătit pentru backend:", {
-      name: formData.name.trim(),
-      email: formData.email.trim(),
-      password: formData.password,
-    });
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          password: formData.password,
+        }),
+      });
 
-    setSubmitted(true);
+      const data = await response.json();
 
-    toast.info(
-      "Contul este pregătit pentru conectarea la baza de date.",
-      "Funcționalitate în pregătire"
-    );
+      if (!response.ok) {
+        toast.error(
+          data.message,
+          "Eroare"
+        );
+
+        return;
+      }
+
+      setSubmitted(true);
+
+      toast.success(
+        "Contul a fost creat cu succes!",
+        "Succes"
+      );
+
+      setFormData({
+        name: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+      });
+
+      setAcceptedTerms(false);
+      setSecurityChecked(false);
+
+    } catch (error) {
+      console.error(error);
+
+      toast.error(
+        "A apărut o eroare la conectarea cu serverul.",
+        "Eroare"
+      );
+    }
   };
 
   return (

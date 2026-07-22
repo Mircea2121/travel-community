@@ -1,48 +1,171 @@
 "use client";
 
 import "./navbar.css";
+
 import {
   Search,
   CircleUserRound,
   Menu,
   X,
+  UserRound,
+  Settings,
+  Bookmark,
+  FileText,
+  LogOut,
 } from "lucide-react";
-import { useRef, useState } from "react";
+
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
 import { useRouter } from "next/navigation";
 
 export default function Navbar() {
   const router = useRouter();
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isMobileSearchOpen, setIsMobileSearchOpen] =
-    useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] =
-    useState(false);
+  const [searchQuery, setSearchQuery] =
+    useState("");
+
+  const [
+    isMobileSearchOpen,
+    setIsMobileSearchOpen,
+  ] = useState(false);
+
+  const [
+    isMobileMenuOpen,
+    setIsMobileMenuOpen,
+  ] = useState(false);
+
+  const [
+    isProfileMenuOpen,
+    setIsProfileMenuOpen,
+  ] = useState(false);
+
+  const [user, setUser] = useState(null);
+
+  const [
+    isLoadingUser,
+    setIsLoadingUser,
+  ] = useState(true);
 
   const searchInputRef = useRef(null);
+  const profileMenuRef = useRef(null);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const response = await fetch(
+          "/api/auth/me"
+        );
+
+        if (!response.ok) {
+          setUser(null);
+          return;
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+          setUser(data.user);
+        } else {
+          setUser(null);
+        }
+      } catch {
+        setUser(null);
+      } finally {
+        setIsLoadingUser(false);
+      }
+    };
+
+    loadUser();
+  }, []);
+
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(
+          event.target
+        )
+      ) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setIsProfileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener(
+      "mousedown",
+      handleOutsideClick
+    );
+
+    document.addEventListener(
+      "keydown",
+      handleEscape
+    );
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleOutsideClick
+      );
+
+      document.removeEventListener(
+        "keydown",
+        handleEscape
+      );
+    };
+  }, []);
 
   const navigateTo = (path) => {
     setIsMobileMenuOpen(false);
     setIsMobileSearchOpen(false);
+    setIsProfileMenuOpen(false);
+
     router.push(path);
   };
+  const handleLogoClick = () => {
+  setIsMobileMenuOpen(false);
+  setIsMobileSearchOpen(false);
+  setIsProfileMenuOpen(false);
 
+  if (window.location.pathname === "/") {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+
+    return;
+  }
+
+  router.push("/");
+};
   const scrollToSection = (id) => {
     setIsMobileMenuOpen(false);
+    setIsProfileMenuOpen(false);
 
     if (window.location.pathname !== "/") {
       router.push(`/#${id}`);
       return;
     }
 
-    document.getElementById(id)?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
+    document
+      .getElementById(id)
+      ?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
   };
 
   const openMobileSearch = () => {
     setIsMobileMenuOpen(false);
+    setIsProfileMenuOpen(false);
     setIsMobileSearchOpen(true);
 
     window.setTimeout(() => {
@@ -58,7 +181,8 @@ export default function Navbar() {
   const handleSearch = (event) => {
     event.preventDefault();
 
-    const cleanQuery = searchQuery.trim();
+    const cleanQuery =
+      searchQuery.trim();
 
     if (!cleanQuery) {
       searchInputRef.current?.focus();
@@ -67,24 +191,87 @@ export default function Navbar() {
 
     setIsMobileSearchOpen(false);
     setIsMobileMenuOpen(false);
+    setIsProfileMenuOpen(false);
 
     router.push(
-      `/search?q=${encodeURIComponent(cleanQuery)}`
+      `/search?q=${encodeURIComponent(
+        cleanQuery
+      )}`
     );
   };
 
   const toggleMobileMenu = () => {
     setIsMobileSearchOpen(false);
-    setIsMobileMenuOpen((currentState) => !currentState);
+    setIsProfileMenuOpen(false);
+
+    setIsMobileMenuOpen(
+      (currentState) => !currentState
+    );
+  };
+
+  const handleProfileButton = () => {
+    if (!user) {
+      navigateTo("/login");
+      return;
+    }
+
+    setIsMobileMenuOpen(false);
+    setIsMobileSearchOpen(false);
+
+    setIsProfileMenuOpen(
+      (currentState) => !currentState
+    );
+  };
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch(
+        "/api/auth/logout",
+        {
+          method: "POST",
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error(data.message);
+        return;
+      }
+
+      setUser(null);
+      setIsMobileMenuOpen(false);
+      setIsProfileMenuOpen(false);
+
+      window.location.href = "/";
+    } catch (error) {
+      console.error(
+        "Eroare la delogare:",
+        error
+      );
+    }
+  };
+
+  const getUserInitial = () => {
+    const cleanName =
+      user?.name?.trim();
+
+    if (!cleanName) {
+      return "U";
+    }
+
+    return cleanName
+      .charAt(0)
+      .toUpperCase();
   };
 
   return (
     <>
       <header className="navbar">
-        <button
+       <button
           type="button"
           className="nav-logo"
-          onClick={() => navigateTo("/")}
+          onClick={handleLogoClick}
           aria-label="Mergi la pagina principală"
         >
           <div className="nav-logo-icon">
@@ -118,15 +305,22 @@ export default function Navbar() {
           </div>
 
           <div className="nav-logo-text">
-            <strong>Comunitatea</strong>
-            <span>Călătorilor</span>
+            <strong>
+              Comunitatea
+            </strong>
+
+            <span>
+              Călătorilor
+            </span>
           </div>
         </button>
 
         <nav className="nav-menu">
           <button
             type="button"
-            onClick={() => scrollToSection("hero")}
+            onClick={() =>
+              scrollToSection("hero")
+            }
           >
             Explorează
           </button>
@@ -134,7 +328,9 @@ export default function Navbar() {
           <button
             type="button"
             onClick={() =>
-              scrollToSection("destinations")
+              scrollToSection(
+                "destinations"
+              )
             }
           >
             Destinații
@@ -142,21 +338,27 @@ export default function Navbar() {
 
           <button
             type="button"
-            onClick={() => scrollToSection("reviews")}
+            onClick={() =>
+              scrollToSection("reviews")
+            }
           >
             Recenzii
           </button>
 
           <button
             type="button"
-            onClick={() => scrollToSection("blog")}
+            onClick={() =>
+              scrollToSection("blog")
+            }
           >
             Blog
           </button>
 
           <button
             type="button"
-            onClick={() => scrollToSection("about")}
+            onClick={() =>
+              scrollToSection("about")
+            }
           >
             Despre noi
           </button>
@@ -174,7 +376,9 @@ export default function Navbar() {
             <button
               type="button"
               className="nav-search-toggle"
-              onClick={openMobileSearch}
+              onClick={
+                openMobileSearch
+              }
               aria-label="Deschide căutarea"
             >
               <Search
@@ -188,7 +392,9 @@ export default function Navbar() {
               type="search"
               value={searchQuery}
               onChange={(event) =>
-                setSearchQuery(event.target.value)
+                setSearchQuery(
+                  event.target.value
+                )
               }
               placeholder="Caută destinații"
               aria-label="Caută destinații"
@@ -208,7 +414,9 @@ export default function Navbar() {
             <button
               type="button"
               className="nav-search-close"
-              onClick={closeMobileSearch}
+              onClick={
+                closeMobileSearch
+              }
               aria-label="Închide căutarea"
             >
               <X
@@ -218,24 +426,178 @@ export default function Navbar() {
             </button>
           </form>
 
-          <button
-            type="button"
-            className="nav-login"
-            onClick={() => navigateTo("/login")}
-            aria-label="Autentificare"
-            title="Autentificare"
-          >
-            <CircleUserRound
-              size={24}
-              strokeWidth={2}
-            />
-          </button>
+          {!isLoadingUser && (
+            <div
+              className="nav-profile-wrapper"
+              ref={profileMenuRef}
+            >
+              <button
+                type="button"
+                className={`nav-login ${
+                  isProfileMenuOpen
+                    ? "nav-login-active"
+                    : ""
+                }`}
+                onClick={
+                  handleProfileButton
+                }
+                aria-label={
+                  user
+                    ? "Deschide meniul contului"
+                    : "Autentificare"
+                }
+                aria-expanded={
+                  user
+                    ? isProfileMenuOpen
+                    : undefined
+                }
+                title={
+                  user
+                    ? user.name
+                    : "Autentificare"
+                }
+              >
+                <CircleUserRound
+                  size={24}
+                  strokeWidth={2}
+                />
+              </button>
+
+              {user &&
+                isProfileMenuOpen && (
+                  <div className="profile-dropdown">
+                    <div className="profile-dropdown-header">
+                      <div className="profile-dropdown-avatar">
+                        {getUserInitial()}
+                      </div>
+
+                      <div className="profile-dropdown-identity">
+                        <strong>
+                          {user.name}
+                        </strong>
+
+                        <span>
+                          {user.email}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="profile-dropdown-divider" />
+
+                    <div className="profile-dropdown-links">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          navigateTo(
+                            "/profile"
+                          )
+                        }
+                      >
+                        <span className="profile-dropdown-icon">
+                          <UserRound
+                            size={19}
+                            strokeWidth={2}
+                          />
+                        </span>
+
+                        <span>
+                          Profilul meu
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          navigateTo(
+                            "/my-posts"
+                          )
+                        }
+                      >
+                        <span className="profile-dropdown-icon">
+                          <FileText
+                            size={19}
+                            strokeWidth={2}
+                          />
+                        </span>
+
+                        <span>
+                          Postările mele
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          navigateTo(
+                            "/saved"
+                          )
+                        }
+                      >
+                        <span className="profile-dropdown-icon">
+                          <Bookmark
+                            size={19}
+                            strokeWidth={2}
+                          />
+                        </span>
+
+                        <span>
+                          Postări salvate
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          navigateTo(
+                            "/settings"
+                          )
+                        }
+                      >
+                        <span className="profile-dropdown-icon">
+                          <Settings
+                            size={19}
+                            strokeWidth={2}
+                          />
+                        </span>
+
+                        <span>
+                          Setări cont
+                        </span>
+                      </button>
+                    </div>
+
+                    <div className="profile-dropdown-divider" />
+
+                    <button
+                      type="button"
+                      className="profile-dropdown-logout"
+                      onClick={
+                        handleLogout
+                      }
+                    >
+                      <span className="profile-dropdown-icon">
+                        <LogOut
+                          size={19}
+                          strokeWidth={2}
+                        />
+                      </span>
+
+                      <span>
+                        Deconectare
+                      </span>
+                    </button>
+                  </div>
+                )}
+            </div>
+          )}
 
           <button
             type="button"
             className="nav-create"
             onClick={() =>
-              navigateTo("/create-experience")
+              navigateTo(
+                "/create-experience"
+              )
             }
           >
             Creează postare
@@ -244,13 +606,17 @@ export default function Navbar() {
           <button
             type="button"
             className="nav-burger"
-            onClick={toggleMobileMenu}
+            onClick={
+              toggleMobileMenu
+            }
             aria-label={
               isMobileMenuOpen
                 ? "Închide meniul"
                 : "Deschide meniul"
             }
-            aria-expanded={isMobileMenuOpen}
+            aria-expanded={
+              isMobileMenuOpen
+            }
           >
             {isMobileMenuOpen ? (
               <X
@@ -269,13 +635,17 @@ export default function Navbar() {
 
       <div
         className={`mobile-menu ${
-          isMobileMenuOpen ? "mobile-menu-open" : ""
+          isMobileMenuOpen
+            ? "mobile-menu-open"
+            : ""
         }`}
       >
         <nav className="mobile-menu-links">
           <button
             type="button"
-            onClick={() => scrollToSection("hero")}
+            onClick={() =>
+              scrollToSection("hero")
+            }
           >
             Explorează
           </button>
@@ -283,7 +653,9 @@ export default function Navbar() {
           <button
             type="button"
             onClick={() =>
-              scrollToSection("destinations")
+              scrollToSection(
+                "destinations"
+              )
             }
           >
             Destinații
@@ -291,45 +663,65 @@ export default function Navbar() {
 
           <button
             type="button"
-            onClick={() => scrollToSection("reviews")}
+            onClick={() =>
+              scrollToSection("reviews")
+            }
           >
             Recenzii
           </button>
 
           <button
             type="button"
-            onClick={() => scrollToSection("blog")}
+            onClick={() =>
+              scrollToSection("blog")
+            }
           >
             Blog
           </button>
 
           <button
             type="button"
-            onClick={() => scrollToSection("about")}
+            onClick={() =>
+              scrollToSection("about")
+            }
           >
             Despre noi
           </button>
         </nav>
 
         <div className="mobile-menu-actions">
-          <button
-            type="button"
-            className="mobile-login-button"
-            onClick={() => navigateTo("/login")}
-          >
-            <CircleUserRound
-              size={21}
-              strokeWidth={2}
-            />
+          {!isLoadingUser && (
+            <button
+              type="button"
+              className="mobile-login-button"
+              onClick={() =>
+                navigateTo(
+                  user
+                    ? "/profile"
+                    : "/login"
+                )
+              }
+            >
+              <CircleUserRound
+                size={21}
+                strokeWidth={2}
+              />
 
-            <span>Autentificare</span>
-          </button>
+              <span>
+                {user
+                  ? user.name
+                  : "Autentificare"}
+              </span>
+            </button>
+          )}
 
           <button
             type="button"
             className="mobile-create-button"
             onClick={() =>
-              navigateTo("/create-experience")
+              navigateTo(
+                "/create-experience"
+              )
             }
           >
             Creează postare
@@ -341,7 +733,11 @@ export default function Navbar() {
         <button
           type="button"
           className="mobile-menu-overlay"
-          onClick={() => setIsMobileMenuOpen(false)}
+          onClick={() =>
+            setIsMobileMenuOpen(
+              false
+            )
+          }
           aria-label="Închide meniul"
         />
       )}

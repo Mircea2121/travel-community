@@ -1,7 +1,9 @@
 .toast-container {
     position: fixed;
     top: 104px;
-    right: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+
     z-index: 2000;
 
     width: min(390px, calc(100vw - 32px));
@@ -202,13 +204,14 @@
 }
 
 @media (max-width: 600px) {
-    .toast-container {
-        top: 94px;
-        right: 16px;
-        left: 16px;
+   .toast-container {
+    top: 94px;
+    left: 50%;
+    transform: translateX(-50%);
 
-        width: auto;
-    }
+    width: calc(100vw - 32px);
+    max-width: 390px;
+}
 
     .toast {
         padding: 15px 14px 17px;
