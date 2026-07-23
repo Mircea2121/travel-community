@@ -18,7 +18,9 @@ export async function GET() {
     return Response.json(
       {
         success: false,
-        message: "Conexiunea cu MongoDB a eșuat.",
+        message: error.message,
+        name: error.name,
+        code: error.code ?? null,
       },
       {
         status: 500,

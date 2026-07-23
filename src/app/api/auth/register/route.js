@@ -1,17 +1,22 @@
 import bcrypt from "bcryptjs";
-import clientPromise from "../../../utils/mongodb";
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+import { getUsersCollection } from "../../../utils/database";
+import {
+  EMAIL_PATTERN,
+  USERNAME_PATTERN,
+  RESERVED_USERNAMES,
+} from "../../../utils/validation";
 
 export async function POST(request) {
   try {
     const body = await request.json();
 
     const name = body.name?.trim();
+    const username = body.username?.trim().toLowerCase();
     const email = body.email?.trim().toLowerCase();
     const password = body.password;
 
-    if (!name || !email || !password) {
+    if (!name || !username || !email || !password) {
       return Response.json(
         {
           success: false,
@@ -19,6 +24,31 @@ export async function POST(request) {
         },
         {
           status: 400,
+        }
+      );
+    }
+
+    if (!USERNAME_PATTERN.test(username)) {
+      return Response.json(
+        {
+          success: false,
+          message:
+            "Username-ul poate conține doar litere mici, cifre, punct și underscore și trebuie să aibă între 3 și 20 de caractere.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    if (RESERVED_USERNAMES.includes(username)) {
+      return Response.json(
+        {
+          success: false,
+          message: "Acest username este rezervat.",
+        },
+        {
+          status: 409,
         }
       );
     }
@@ -47,15 +77,13 @@ export async function POST(request) {
       );
     }
 
-    const client = await clientPromise;
-    const database = client.db("travel-community");
-    const usersCollection = database.collection("users");
+    const usersCollection = await getUsersCollection();
 
-    const existingUser = await usersCollection.findOne({
+    const existingEmail = await usersCollection.findOne({
       email,
     });
 
-    if (existingUser) {
+    if (existingEmail) {
       return Response.json(
         {
           success: false,
@@ -67,15 +95,68 @@ export async function POST(request) {
       );
     }
 
+    const existingUsername = await usersCollection.findOne({
+      username,
+    });
+
+    if (existingUsername) {
+      return Response.json(
+        {
+          success: false,
+          message: "Acest username este deja folosit.",
+        },
+        {
+          status: 409,
+        }
+      );
+    }
+
     const hashedPassword = await bcrypt.hash(password, 12);
+
+    const now = new Date();
 
     const newUser = {
       name,
+      username,
       email,
       password: hashedPassword,
+
       role: "user",
-      createdAt: new Date(),
-      updatedAt: new Date(),
+
+      bio: "",
+      location: "",
+
+      avatar: {
+        url: process.env.DEFAULT_AVATAR_URL,
+        publicId: null,
+      },
+
+      coverImage: {
+        url: process.env.DEFAULT_COVER_URL,
+        publicId: null,
+      },
+
+      followers: [],
+      following: [],
+
+      stats: {
+        postsCount: 0,
+        destinationsCount: 0,
+        likesReceived: 0,
+        followersCount: 0,
+        followingCount: 0,
+        photosUploaded: 0,
+      },
+
+      level: {
+        name: "Călător începător",
+        number: 1,
+        currentXp: 0,
+        nextLevelXp: 500,
+      },
+
+      createdAt: now,
+      updatedAt: now,
     };
 
     const result = await usersCollection.insertOne(newUser);
@@ -87,7 +168,9 @@ export async function POST(request) {
         user: {
           id: result.insertedId.toString(),
           name,
+          username,
           email,
+          role: newUser.role,
         },
       },
       {

@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { ObjectId } from "mongodb";
 
-import clientPromise from "../../../utils/mongodb";
+import { getUsersCollection } from "../../../utils/database";
 import { verifyToken } from "../../../utils/auth";
 
 export async function GET() {
@@ -23,9 +23,19 @@ export async function GET() {
 
     const payload = await verifyToken(token);
 
-    const client = await clientPromise;
-    const database = client.db("travel-community");
-    const usersCollection = database.collection("users");
+    if (!payload?.userId || !ObjectId.isValid(payload.userId)) {
+      return Response.json(
+        {
+          success: false,
+          message: "Sesiunea nu este validă.",
+        },
+        {
+          status: 401,
+        }
+      );
+    }
+
+    const usersCollection = await getUsersCollection();
 
     const user = await usersCollection.findOne(
       {
@@ -55,9 +65,23 @@ export async function GET() {
         success: true,
         user: {
           id: user._id.toString(),
+
           name: user.name,
+          username: user.username,
           email: user.email,
           role: user.role,
+
+          bio: user.bio,
+          location: user.location,
+
+          avatar: user.avatar,
+          coverImage: user.coverImage,
+
+          stats: user.stats,
+          level: user.level,
+
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
         },
       },
       {

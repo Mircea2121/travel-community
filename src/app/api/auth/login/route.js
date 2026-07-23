@@ -1,9 +1,9 @@
 import bcrypt from "bcryptjs";
-import clientPromise from "../../../utils/mongodb";
 import { cookies } from "next/headers";
-import { createToken } from "../../../utils/auth";
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+import { getUsersCollection } from "../../../utils/database";
+import { EMAIL_PATTERN } from "../../../utils/validation";
+import { createToken } from "../../../utils/auth";
 
 export async function POST(request) {
   try {
@@ -36,9 +36,7 @@ export async function POST(request) {
       );
     }
 
-    const client = await clientPromise;
-    const database = client.db("travel-community");
-    const usersCollection = database.collection("users");
+    const usersCollection = await getUsersCollection();
 
     const user = await usersCollection.findOne({
       email,
@@ -74,35 +72,36 @@ export async function POST(request) {
     }
 
     const token = await createToken({
-    userId: user._id.toString(),
-    email: user.email,
-    role: user.role,
+      userId: user._id.toString(),
+      email: user.email,
+      role: user.role,
     });
 
     const cookieStore = await cookies();
 
     cookieStore.set("token", token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 7,
-    path: "/",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7,
+      path: "/",
     });
 
     return Response.json(
-    {
+      {
         success: true,
         message: "Autentificarea a fost realizată cu succes.",
         user: {
-        id: user._id.toString(),
-        name: user.name,
-        email: user.email,
-        role: user.role,
+          id: user._id.toString(),
+          name: user.name,
+          username: user.username,
+          email: user.email,
+          role: user.role,
         },
-    },
-    {
+      },
+      {
         status: 200,
-    }
+      }
     );
   } catch (error) {
     console.error("Eroare la autentificare:", error);
