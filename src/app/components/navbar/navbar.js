@@ -57,7 +57,12 @@ export default function Navbar() {
     const loadUser = async () => {
       try {
         const response = await fetch(
-          "/api/auth/me"
+          "/api/auth/me",
+          {
+            method: "GET",
+            credentials: "include",
+            cache: "no-store",
+          }
         );
 
         if (!response.ok) {
@@ -123,44 +128,77 @@ export default function Navbar() {
     };
   }, []);
 
-  const navigateTo = (path) => {
+  function closeNavigationMenus() {
     setIsMobileMenuOpen(false);
     setIsMobileSearchOpen(false);
     setIsProfileMenuOpen(false);
+  }
+
+  function removeCurrentHash() {
+    if (
+      typeof window === "undefined" ||
+      !window.location.hash
+    ) {
+      return;
+    }
+
+    const cleanUrl =
+      window.location.pathname +
+      window.location.search;
+
+    window.history.replaceState(
+      window.history.state,
+      "",
+      cleanUrl
+    );
+  }
+
+  const navigateTo = (path) => {
+    closeNavigationMenus();
+    removeCurrentHash();
 
     router.push(path);
   };
+
   const handleLogoClick = () => {
-  setIsMobileMenuOpen(false);
-  setIsMobileSearchOpen(false);
-  setIsProfileMenuOpen(false);
+    closeNavigationMenus();
 
-  if (window.location.pathname === "/") {
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
+    if (window.location.pathname === "/") {
+      window.history.replaceState(
+        window.history.state,
+        "",
+        "/"
+      );
 
-    return;
-  }
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
 
-  router.push("/");
-};
+      return;
+    }
+
+    router.push("/");
+  };
+
   const scrollToSection = (id) => {
-    setIsMobileMenuOpen(false);
-    setIsProfileMenuOpen(false);
+    closeNavigationMenus();
 
     if (window.location.pathname !== "/") {
       router.push(`/#${id}`);
       return;
     }
 
-    document
-      .getElementById(id)
-      ?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
+    removeCurrentHash();
+
+    window.requestAnimationFrame(() => {
+      document
+        .getElementById(id)
+        ?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+    });
   };
 
   const openMobileSearch = () => {
@@ -189,9 +227,8 @@ export default function Navbar() {
       return;
     }
 
-    setIsMobileSearchOpen(false);
-    setIsMobileMenuOpen(false);
-    setIsProfileMenuOpen(false);
+    closeNavigationMenus();
+    removeCurrentHash();
 
     router.push(
       `/search?q=${encodeURIComponent(
@@ -229,6 +266,7 @@ export default function Navbar() {
         "/api/auth/logout",
         {
           method: "POST",
+          credentials: "include",
         }
       );
 
@@ -240,8 +278,7 @@ export default function Navbar() {
       }
 
       setUser(null);
-      setIsMobileMenuOpen(false);
-      setIsProfileMenuOpen(false);
+      closeNavigationMenus();
 
       window.location.href = "/";
     } catch (error) {
@@ -268,7 +305,7 @@ export default function Navbar() {
   return (
     <>
       <header className="navbar">
-       <button
+        <button
           type="button"
           className="nav-logo"
           onClick={handleLogoClick}

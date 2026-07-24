@@ -1,8 +1,7 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-
-import "./userProfile.css";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import ProfileHeader from "./profileHeader";
 import ProfileStats from "./profileStats";
@@ -10,99 +9,327 @@ import ProfileTabs from "./profileTabs";
 import UserPostsGrid from "./userPostsGrid";
 import SavedPostsGrid from "./savedPostsGrid";
 
+import "./userProfile.css";
+
 export default function UserProfile({
-  user,
-  userPosts = [],
-  savedPosts = [],
-  isOwnProfile = false,
-  isFollowing = false,
+  user: initialUser,
 }) {
-  const searchParams = useSearchParams();
+  const router = useRouter();
 
-  const requestedTab = searchParams.get("tab") || "posts";
+  const [user, setUser] = useState(
+    initialUser || null
+  );
 
-  const activeTab =
-    requestedTab === "saved" && !isOwnProfile
-      ? "posts"
-      : requestedTab;
+  const [currentUser, setCurrentUser] =
+    useState(null);
+
+  const [activeTab, setActiveTab] =
+    useState("posts");
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadProfileData() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const response = await fetch(
+          "/api/auth/me",
+          {
+            method: "GET",
+            credentials: "include",
+            cache: "no-store",
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data?.success) {
+          throw new Error(
+            data?.message ||
+              "Sesiunea utilizatorului nu a putut fi verificată."
+          );
+        }
+
+        const authenticatedUser =
+          data?.user ||
+          data?.data?.user ||
+          null;
+
+        if (!authenticatedUser) {
+          throw new Error(
+            "Datele utilizatorului autentificat lipsesc."
+          );
+        }
+
+        if (!isMounted) {
+          return;
+        }
+
+        setCurrentUser(authenticatedUser);
+
+        if (initialUser) {
+          setUser(initialUser);
+        } else {
+          setUser(authenticatedUser);
+        }
+      } catch (fetchError) {
+        console.error(
+          "Eroare la încărcarea profilului:",
+          fetchError
+        );
+
+        if (!isMounted) {
+          return;
+        }
+
+        setError(
+          fetchError?.message ||
+            "A apărut o eroare la încărcarea profilului."
+        );
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadProfileData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [initialUser]);
+
+  const displayedUserId = String(
+    user?.id || user?._id || ""
+  );
+
+  const currentUserId = String(
+    currentUser?.id ||
+      currentUser?._id ||
+      ""
+  );
+
+  const isOwnProfile =
+    Boolean(displayedUserId) &&
+    Boolean(currentUserId) &&
+    displayedUserId === currentUserId;
+
+  function handleEditProfile() {
+    if (!isOwnProfile) {
+      return;
+    }
+
+    router.push("/profile/edit");
+  }
+
+  function handleMessage() {
+    if (isOwnProfile) {
+      return;
+    }
+
+    if (!displayedUserId) {
+      return;
+    }
+
+    router.push(
+      `/messages?user=${displayedUserId}`
+    );
+  }
+
+  function handleFollow() {
+    if (isOwnProfile) {
+      return;
+    }
+
+    console.log(
+      "Funcția de urmărire va fi conectată la backend."
+    );
+  }
+
+  function handleTabChange(tabKey) {
+    setActiveTab(tabKey);
+  }
+
+  if (loading) {
+    return (
+      <main className="user-profile-page">
+        <div className="user-profile-loading">
+          <p>Se încarcă profilul...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="user-profile-page">
+        <div className="user-profile-error">
+          <h2>
+            Profilul nu a putut fi încărcat
+          </h2>
+
+          <p>{error}</p>
+        </div>
+      </main>
+    );
+  }
 
   if (!user) {
     return (
-      <main className="travel-profile-page">
-        <div className="profile-empty-state">
-          <div className="profile-empty-icon">👤</div>
-
-          <h3>Utilizator negăsit</h3>
+      <main className="user-profile-page">
+        <div className="user-profile-error">
+          <h2>Utilizator indisponibil</h2>
 
           <p>
-            Profilul pe care îl cauți nu există sau nu mai este disponibil.
+            Nu am găsit datele profilului.
           </p>
         </div>
       </main>
     );
   }
 
-  function handleFollow() {
-    console.log("Follow / unfollow user:", user.id);
-  }
+  const userId =
+    user.id || user._id || null;
 
-  function handleMessage() {
-    console.log("Open message with user:", user.id);
-  }
+  const userName =
+    user.name ||
+    user.fullName ||
+    user.username ||
+    "Utilizator";
 
-  function handleEditProfile() {
-    console.log("Open edit profile:", user.id);
-  }
+  const normalizedUser = {
+    ...user,
+
+    id: userId,
+    _id: userId,
+
+    name: userName,
+    fullName: userName,
+
+    username: user.username || "",
+
+    avatar:
+      user.avatar &&
+      typeof user.avatar === "object"
+        ? user.avatar
+        : {
+            url:
+              typeof user.avatar === "string"
+                ? user.avatar
+                : "",
+            publicId: "",
+          },
+
+    coverImage:
+      user.coverImage &&
+      typeof user.coverImage === "object"
+        ? user.coverImage
+        : {
+            url:
+              typeof user.coverImage === "string"
+                ? user.coverImage
+                : "",
+            publicId: "",
+          },
+
+    posts: Array.isArray(user.posts)
+      ? user.posts
+      : [],
+
+    savedPosts: Array.isArray(
+      user.savedPosts
+    )
+      ? user.savedPosts
+      : [],
+
+    destinations: Array.isArray(
+      user.destinations
+    )
+      ? user.destinations
+      : [],
+  };
 
   return (
-    <main className="travel-profile-page">
-      <ProfileHeader
-        user={user}
-        isOwnProfile={isOwnProfile}
-        isFollowing={isFollowing}
-        onFollow={handleFollow}
-        onMessage={handleMessage}
-        onEditProfile={handleEditProfile}
-      />
+    <main className="user-profile-page">
+      <div className="user-profile-container">
+        <ProfileHeader
+          user={normalizedUser}
+          isOwnProfile={isOwnProfile}
+          isFollowing={Boolean(
+            normalizedUser.isFollowing
+          )}
+          onFollow={handleFollow}
+          onMessage={handleMessage}
+          onEditProfile={handleEditProfile}
+        />
 
-      <ProfileStats user={user} />
+        <ProfileStats
+          user={normalizedUser}
+        />
 
-      <ProfileTabs isOwnProfile={isOwnProfile} />
+        <ProfileTabs
+          isOwnProfile={isOwnProfile}
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+        />
 
-      <section className="travel-profile-content">
-        {activeTab === "posts" && (
-          <UserPostsGrid posts={userPosts} />
-        )}
+        <div className="user-profile-tab-content">
+          {activeTab === "posts" && (
+            <UserPostsGrid
+              posts={normalizedUser.posts}
+            />
+          )}
 
-        {activeTab === "saved" && isOwnProfile && (
-          <SavedPostsGrid posts={savedPosts} />
-        )}
+          {activeTab === "saved" &&
+            isOwnProfile && (
+              <SavedPostsGrid
+                posts={
+                  normalizedUser.savedPosts
+                }
+              />
+            )}
 
-        {activeTab === "destinations" && (
-          <div className="profile-empty-state">
-            <div className="profile-empty-icon">🌍</div>
+          {activeTab === "destinations" && (
+            <div className="profile-empty-state">
+              <div className="profile-empty-icon">
+                🌍
+              </div>
 
-            <h3>Destinații</h3>
+              <h3>
+                Nu există încă destinații
+              </h3>
 
-            <p>
-              Aici vor apărea destinațiile vizitate de acest utilizator.
-            </p>
-          </div>
-        )}
+              <p>
+                Destinațiile vizitate de
+                utilizator vor apărea aici.
+              </p>
+            </div>
+          )}
 
-        {activeTab === "about" && (
-          <div className="profile-empty-state">
-            <div className="profile-empty-icon">ⓘ</div>
+          {activeTab === "about" && (
+            <section className="profile-empty-state">
+              <div className="profile-empty-icon">
+                👤
+              </div>
 
-            <h3>Despre {user.fullName}</h3>
+              <h3>Despre utilizator</h3>
 
-            <p>
-              {user.bio ||
-                "Acest utilizator nu a adăugat încă o descriere."}
-            </p>
-          </div>
-        )}
-      </section>
+              <p>
+                {normalizedUser.bio ||
+                  "Utilizatorul nu a adăugat încă informații suplimentare despre el."}
+              </p>
+            </section>
+          )}
+        </div>
+      </div>
     </main>
   );
 }

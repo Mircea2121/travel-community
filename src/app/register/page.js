@@ -4,29 +4,41 @@ import "../auth/auth.css";
 
 import { useState } from "react";
 import Link from "next/link";
-import { Check, Eye, EyeOff, ShieldCheck, X, } from "lucide-react";
+import {
+  Check,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  X,
+} from "lucide-react";
 
 import FlagBackground from "../components/flagBackground/flagBackground";
 import { useToast } from "../components/toast/toastProvider";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
+const USERNAME_PATTERN = /^[a-z0-9._]{3,20}$/;
+
 export default function RegisterPage() {
   const toast = useToast();
+
   const [formData, setFormData] = useState({
     name: "",
+    username: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
 
   const [showPassword, setShowPassword] = useState(false);
+
   const [showConfirmPassword, setShowConfirmPassword] =
     useState(false);
 
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [securityChecked, setSecurityChecked] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const passwordRules = {
     minimumLength: formData.password.length >= 8,
@@ -40,6 +52,13 @@ export default function RegisterPage() {
     Object.values(passwordRules).filter(Boolean).length;
 
   const isNameValid = formData.name.trim().length >= 2;
+
+  const normalizedUsername = formData.username
+    .trim()
+    .toLowerCase();
+
+  const isUsernameValid =
+    USERNAME_PATTERN.test(normalizedUsername);
 
   const isEmailValid = EMAIL_PATTERN.test(
     formData.email.trim()
@@ -58,6 +77,7 @@ export default function RegisterPage() {
 
   const isFormValid =
     isNameValid &&
+    isUsernameValid &&
     isEmailValid &&
     isPasswordValid &&
     passwordsMatch &&
@@ -78,20 +98,25 @@ export default function RegisterPage() {
   const handleChange = (event) => {
     const { name, value } = event.target;
 
+    const nextValue =
+      name === "username"
+        ? value.toLowerCase().replace(/\s/g, "")
+        : value;
+
     setFormData((previousData) => ({
       ...previousData,
-      [name]: value,
+      [name]: nextValue,
     }));
 
     setSubmitted(false);
   };
 
   const handleSubmit = async (event) => {
-  event.preventDefault();
+    event.preventDefault();
 
-    if (!isFormValid) {
+    if (!isFormValid || isLoading) {
       toast.warning(
-        "Completează toate câmpurile și acceptă termenii și condițiile.",
+        "Completează corect toate câmpurile și acceptă termenii.",
         "Formular incomplet"
       );
 
@@ -99,6 +124,8 @@ export default function RegisterPage() {
     }
 
     try {
+      setIsLoading(true);
+
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: {
@@ -106,7 +133,8 @@ export default function RegisterPage() {
         },
         body: JSON.stringify({
           name: formData.name.trim(),
-          email: formData.email.trim(),
+          username: normalizedUsername,
+          email: formData.email.trim().toLowerCase(),
           password: formData.password,
         }),
       });
@@ -115,7 +143,7 @@ export default function RegisterPage() {
 
       if (!response.ok) {
         toast.error(
-          data.message,
+          data.message || "Contul nu a putut fi creat.",
           "Eroare"
         );
 
@@ -131,6 +159,7 @@ export default function RegisterPage() {
 
       setFormData({
         name: "",
+        username: "",
         email: "",
         password: "",
         confirmPassword: "",
@@ -138,14 +167,17 @@ export default function RegisterPage() {
 
       setAcceptedTerms(false);
       setSecurityChecked(false);
-
+      setShowPassword(false);
+      setShowConfirmPassword(false);
     } catch (error) {
-      console.error(error);
+      console.error("Eroare register:", error);
 
       toast.error(
         "A apărut o eroare la conectarea cu serverul.",
         "Eroare"
       );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -198,6 +230,48 @@ export default function RegisterPage() {
               <p className="auth-validation-message error">
                 <X size={15} />
                 Introdu minimum două caractere.
+              </p>
+            )}
+          </div>
+
+          <div className="auth-field-group">
+            <label htmlFor="register-username">
+              Nume de utilizator
+            </label>
+
+            <input
+              id="register-username"
+              type="text"
+              name="username"
+              placeholder="Exemplu: mircea27"
+              value={formData.username}
+              onChange={handleChange}
+              autoComplete="username"
+              maxLength={20}
+              className={
+                formData.username.length > 0
+                  ? isUsernameValid
+                    ? "auth-input-valid"
+                    : "auth-input-invalid"
+                  : ""
+              }
+            />
+
+            {formData.username.length > 0 && (
+              <p
+                className={`auth-validation-message ${
+                  isUsernameValid ? "success" : "error"
+                }`}
+              >
+                {isUsernameValid ? (
+                  <Check size={15} />
+                ) : (
+                  <X size={15} />
+                )}
+
+                {isUsernameValid
+                  ? "Numele de utilizator este valid."
+                  : "Folosește 3–20 caractere: litere mici, cifre, punct sau underscore."}
               </p>
             )}
           </div>
@@ -450,12 +524,18 @@ export default function RegisterPage() {
           <button
             type="submit"
             className="auth-submit-button"
-            disabled={!isFormValid}
+            disabled={!isFormValid || isLoading}
           >
-            Creează cont
+            {isLoading ? "Se creează contul..." : "Creează cont"}
           </button>
-
         </form>
+
+        {submitted && (
+          <p className="auth-validation-message success">
+            <Check size={15} />
+            Contul a fost creat.
+          </p>
+        )}
 
         <p className="auth-switch">
           Ai deja cont?{" "}

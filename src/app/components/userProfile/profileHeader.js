@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Mail } from "lucide-react";
+
 import "./userProfile.css";
 
 export default function ProfileHeader({
@@ -11,36 +13,172 @@ export default function ProfileHeader({
   onMessage,
   onEditProfile,
 }) {
-  const [avatarPreview, setAvatarPreview] = useState(user?.avatar || "");
-  const [coverPreview, setCoverPreview] = useState(user?.coverImage || "");
+  const effectiveIsOwnProfile =
+    isOwnProfile === true || user?.isOwnProfile === true;
 
-  if (!user) return null;
+  const getValidImageUrl = (image) => {
+    if (!image) {
+      return null;
+    }
+
+    const imageUrl =
+      typeof image === "string"
+        ? image
+        : image?.url;
+
+    if (
+      typeof imageUrl !== "string" ||
+      imageUrl.trim() === ""
+    ) {
+      return null;
+    }
+
+    return imageUrl.trim();
+  };
+
+  const [avatarPreview, setAvatarPreview] = useState(
+    getValidImageUrl(user?.avatar)
+  );
+
+  const [coverPreview, setCoverPreview] = useState(
+    getValidImageUrl(user?.coverImage)
+  );
+
+  const [avatarLoadFailed, setAvatarLoadFailed] =
+    useState(false);
+
+  useEffect(() => {
+    setAvatarPreview(getValidImageUrl(user?.avatar));
+    setCoverPreview(getValidImageUrl(user?.coverImage));
+    setAvatarLoadFailed(false);
+  }, [user]);
+
+  useEffect(() => {
+    return () => {
+      if (avatarPreview?.startsWith("blob:")) {
+        URL.revokeObjectURL(avatarPreview);
+      }
+
+      if (coverPreview?.startsWith("blob:")) {
+        URL.revokeObjectURL(coverPreview);
+      }
+    };
+  }, [avatarPreview, coverPreview]);
+
+  if (!user) {
+    return null;
+  }
+
+  const fullName =
+    user.fullName ||
+    user.name ||
+    user.username ||
+    "Utilizator";
+
+  const levelName =
+    typeof user.level === "object"
+      ? user.level?.name
+      : user.level;
+
+  const locationText = [user.city, user.country]
+    .filter(Boolean)
+    .join(", ");
+
+  const fallbackInitial =
+    fullName.trim().charAt(0).toUpperCase() || "?";
 
   function handleAvatarChange(event) {
     const file = event.target.files?.[0];
-    if (!file) return;
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      event.target.value = "";
+      return;
+    }
+
+    if (avatarPreview?.startsWith("blob:")) {
+      URL.revokeObjectURL(avatarPreview);
+    }
 
     const previewUrl = URL.createObjectURL(file);
+
+    setAvatarLoadFailed(false);
     setAvatarPreview(previewUrl);
+
+    event.target.value = "";
   }
 
   function handleCoverChange(event) {
     const file = event.target.files?.[0];
-    if (!file) return;
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      event.target.value = "";
+      return;
+    }
+
+    if (coverPreview?.startsWith("blob:")) {
+      URL.revokeObjectURL(coverPreview);
+    }
 
     const previewUrl = URL.createObjectURL(file);
+
     setCoverPreview(previewUrl);
+
+    event.target.value = "";
   }
+
+  function handleAvatarError() {
+    setAvatarLoadFailed(true);
+  }
+
+  function handleMessageClick() {
+    if (typeof onMessage === "function") {
+      onMessage(user);
+    }
+  }
+
+  function handleFollowClick() {
+    if (typeof onFollow === "function") {
+      onFollow(user);
+    }
+  }
+
+  function handleEditProfileClick() {
+    if (typeof onEditProfile === "function") {
+      onEditProfile(user);
+    }
+  }
+
+  const shouldShowAvatarImage =
+    Boolean(avatarPreview) && !avatarLoadFailed;
 
   return (
     <section className="travel-profile-hero">
       <div
-        className="travel-profile-cover"
-        style={{ backgroundImage: `url(${coverPreview})` }}
+        className={`travel-profile-cover ${
+          coverPreview
+            ? ""
+            : "travel-profile-cover-empty"
+        }`}
+        style={
+          coverPreview
+            ? {
+                backgroundImage: `url("${coverPreview}")`,
+              }
+            : undefined
+        }
       >
-        {isOwnProfile && (
+        {effectiveIsOwnProfile && (
           <label className="travel-profile-cover-upload">
             Schimbă coperta
+
             <input
               type="file"
               accept="image/*"
@@ -50,69 +188,124 @@ export default function ProfileHeader({
           </label>
         )}
 
-       <div className="travel-profile-cover-actions">
-          <button
-            type="button"
-            className="travel-profile-action-btn travel-profile-action-message"
-            onClick={onMessage}
-          >
-            <span className="travel-profile-action-icon">✉</span>
-            <span>Mesaj</span>
-          </button>
+        <div className="travel-profile-cover-actions">
+          {!effectiveIsOwnProfile && (
+            <button
+              type="button"
+              className="travel-profile-action-btn travel-profile-action-message"
+              onClick={handleMessageClick}
+            >
+              <Mail
+                size={17}
+                strokeWidth={2.2}
+                aria-hidden="true"
+              />
+
+              <span>Mesaj</span>
+            </button>
+          )}
 
           <button
             type="button"
             className="travel-profile-action-btn travel-profile-action-primary"
-            onClick={isOwnProfile ? onEditProfile : onFollow}
+            onClick={
+              effectiveIsOwnProfile
+                ? handleEditProfileClick
+                : handleFollowClick
+            }
           >
-            <span>{isOwnProfile ? "Editează profilul" : isFollowing ? "Urmărești" : "Urmărește"}</span>
+            {effectiveIsOwnProfile
+              ? "Editează profilul"
+              : isFollowing
+                ? "Urmărești"
+                : "Urmărește"}
           </button>
         </div>
       </div>
 
       <div className="travel-profile-info-card">
         <div className="travel-profile-avatar-wrap">
-          <img
-            src={avatarPreview}
-            alt={user.fullName}
-            className="travel-profile-avatar"
-          />
-
-          {isOwnProfile && (
-          <label className="travel-profile-avatar-upload">
-            <span>+</span>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleAvatarChange}
-              hidden
+          {shouldShowAvatarImage ? (
+            <img
+              src={avatarPreview}
+              alt={`Avatar ${fullName}`}
+              className="travel-profile-avatar"
+              onError={handleAvatarError}
             />
-          </label>
+          ) : (
+            <div
+              className="travel-profile-avatar travel-profile-avatar-fallback"
+              aria-label={`Avatar ${fullName}`}
+            >
+              {fallbackInitial}
+            </div>
           )}
 
-          <span className="travel-profile-online" />
+          {effectiveIsOwnProfile ? (
+            <label
+              className="travel-profile-avatar-upload"
+              aria-label="Schimbă fotografia de profil"
+            >
+              <span aria-hidden="true">+</span>
+
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarChange}
+                hidden
+              />
+            </label>
+          ) : (
+            <span
+              className="travel-profile-online"
+              aria-label="Utilizator online"
+            />
+          )}
         </div>
 
         <div className="travel-profile-details">
           <div className="travel-profile-details-top">
             <div>
               <div className="travel-profile-name-row">
-                <h1>{user.fullName}</h1>
-                <span className="travel-profile-verified">✓</span>
+                <h1>{fullName}</h1>
+
+                {user.isVerified === true && (
+                  <span
+                    className="travel-profile-verified"
+                    aria-label="Profil verificat"
+                  >
+                    ✓
+                  </span>
+                )}
               </div>
 
-              <p className="travel-profile-username">@{user.username}</p>
+              {user.username && (
+                <p className="travel-profile-username">
+                  @{user.username}
+                </p>
+              )}
             </div>
 
-            <span className="travel-profile-level">{user.level}</span>
+            {levelName && (
+              <span className="travel-profile-level">
+                {levelName}
+              </span>
+            )}
           </div>
 
-          <p className="travel-profile-location">
-            <span>📍</span>
-            {user.city}, {user.country}
-          </p>
+          {locationText && (
+            <p className="travel-profile-location">
+              <span aria-hidden="true">📍</span>
 
-          <p className="travel-profile-bio">{user.bio}</p>
+              {locationText}
+            </p>
+          )}
+
+          {user.bio && (
+            <p className="travel-profile-bio">
+              {user.bio}
+            </p>
+          )}
         </div>
       </div>
     </section>

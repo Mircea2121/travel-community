@@ -28,6 +28,19 @@ export async function POST(request) {
       );
     }
 
+    if (name.length < 2) {
+      return Response.json(
+        {
+          success: false,
+          message:
+            "Numele trebuie să conțină minimum două caractere.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
     if (!USERNAME_PATTERN.test(username)) {
       return Response.json(
         {
@@ -65,11 +78,19 @@ export async function POST(request) {
       );
     }
 
-    if (password.length < 8) {
+    const passwordIsValid =
+      password.length >= 8 &&
+      /[a-z]/.test(password) &&
+      /[A-Z]/.test(password) &&
+      /\d/.test(password) &&
+      password.includes("@");
+
+    if (!passwordIsValid) {
       return Response.json(
         {
           success: false,
-          message: "Parola trebuie să aibă cel puțin 8 caractere.",
+          message:
+            "Parola trebuie să aibă minimum 8 caractere, o literă mare, o literă mică, o cifră și caracterul @.",
         },
         {
           status: 400,
@@ -79,15 +100,23 @@ export async function POST(request) {
 
     const usersCollection = await getUsersCollection();
 
-    const existingEmail = await usersCollection.findOne({
-      email,
+    const existingUser = await usersCollection.findOne({
+      $or: [
+        {
+          email,
+        },
+        {
+          username,
+        },
+      ],
     });
 
-    if (existingEmail) {
+    if (existingUser?.email === email) {
       return Response.json(
         {
           success: false,
-          message: "Există deja un cont cu această adresă de email.",
+          message:
+            "Există deja un cont cu această adresă de email.",
         },
         {
           status: 409,
@@ -95,15 +124,11 @@ export async function POST(request) {
       );
     }
 
-    const existingUsername = await usersCollection.findOne({
-      username,
-    });
-
-    if (existingUsername) {
+    if (existingUser?.username === username) {
       return Response.json(
         {
           success: false,
-          message: "Acest username este deja folosit.",
+          message: "Acest nume de utilizator este deja folosit.",
         },
         {
           status: 409,
@@ -127,12 +152,12 @@ export async function POST(request) {
       location: "",
 
       avatar: {
-        url: process.env.DEFAULT_AVATAR_URL,
+        url: process.env.DEFAULT_AVATAR_URL || "",
         publicId: null,
       },
 
       coverImage: {
-        url: process.env.DEFAULT_COVER_URL,
+        url: process.env.DEFAULT_COVER_URL || "",
         publicId: null,
       },
 

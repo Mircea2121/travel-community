@@ -1,45 +1,100 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import {
+  Bookmark,
+  CircleUserRound,
+  MapPinned,
+  PenLine,
+} from "lucide-react";
+
 import "./userProfile.css";
 
 const PUBLIC_TABS = [
-  { key: "posts", label: "Postări", icon: "✍️" },
-  { key: "destinations", label: "Destinații", icon: "🌍" },
-  { key: "about", label: "Despre", icon: "👤" },
+  {
+    key: "posts",
+    label: "Postări",
+    icon: PenLine,
+  },
+  {
+    key: "destinations",
+    label: "Destinații",
+    icon: MapPinned,
+  },
+  {
+    key: "about",
+    label: "Despre",
+    icon: CircleUserRound,
+  },
 ];
 
-const PRIVATE_TABS = [{ key: "saved", label: "Salvate", icon: "❤️" }];
+const PRIVATE_TABS = [
+  {
+    key: "saved",
+    label: "Salvate",
+    icon: Bookmark,
+  },
+];
 
-export default function ProfileTabs({ isOwnProfile = false }) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+export default function ProfileTabs({
+  isOwnProfile = false,
+  activeTab = "posts",
+  onTabChange,
+}) {
+  const [selectedTab, setSelectedTab] =
+    useState(activeTab);
 
-  const activeTab = searchParams.get("tab") || "posts";
-  const tabs = isOwnProfile ? [...PUBLIC_TABS, ...PRIVATE_TABS] : PUBLIC_TABS;
+  useEffect(() => {
+    setSelectedTab(activeTab);
+  }, [activeTab]);
+
+  const tabs = isOwnProfile
+    ? [...PUBLIC_TABS, ...PRIVATE_TABS]
+    : PUBLIC_TABS;
 
   function handleTabChange(tabKey) {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("tab", tabKey);
+    setSelectedTab(tabKey);
 
-    router.push(`?${params.toString()}`, {
-      scroll: false,
-    });
+    if (typeof onTabChange === "function") {
+      onTabChange(tabKey);
+    }
   }
 
   return (
-    <nav className="profile-tabs" aria-label="Navigare profil">
-      {tabs.map((tab) => (
-        <button
-          key={tab.key}
-          type="button"
-          className={`profile-tab ${activeTab === tab.key ? "active" : ""}`}
-          onClick={() => handleTabChange(tab.key)}
-        >
-          <span className="profile-tab-icon">{tab.icon}</span>
-          <span>{tab.label}</span>
-        </button>
-      ))}
+    <nav
+      className="profile-tabs"
+      aria-label="Navigare profil"
+    >
+      {tabs.map((tab) => {
+        const Icon = tab.icon;
+        const isActive =
+          selectedTab === tab.key;
+
+        return (
+          <button
+            key={tab.key}
+            type="button"
+            className={`profile-tab ${
+              isActive ? "active" : ""
+            }`}
+            onClick={() =>
+              handleTabChange(tab.key)
+            }
+            aria-current={
+              isActive ? "page" : undefined
+            }
+          >
+            <Icon
+              className="profile-tab-icon"
+              size={18}
+              strokeWidth={2}
+              aria-hidden="true"
+            />
+
+            <span>{tab.label}</span>
+          </button>
+        );
+      })}
     </nav>
   );
 }
