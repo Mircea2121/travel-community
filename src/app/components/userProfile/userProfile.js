@@ -23,13 +23,20 @@ export default function UserProfile({
   const [currentUser, setCurrentUser] =
     useState(null);
 
+  const [posts, setPosts] = useState([]);
+
   const [activeTab, setActiveTab] =
     useState("posts");
 
   const [loading, setLoading] =
     useState(true);
 
+  const [postsLoading, setPostsLoading] =
+    useState(false);
+
   const [error, setError] = useState("");
+  const [postsError, setPostsError] =
+    useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -38,8 +45,9 @@ export default function UserProfile({
       try {
         setLoading(true);
         setError("");
+        setPostsError("");
 
-        const response = await fetch(
+        const authResponse = await fetch(
           "/api/auth/me",
           {
             method: "GET",
@@ -48,18 +56,22 @@ export default function UserProfile({
           }
         );
 
-        const data = await response.json();
+        const authData =
+          await authResponse.json();
 
-        if (!response.ok || !data?.success) {
+        if (
+          !authResponse.ok ||
+          !authData?.success
+        ) {
           throw new Error(
-            data?.message ||
+            authData?.message ||
               "Sesiunea utilizatorului nu a putut fi verificată."
           );
         }
 
         const authenticatedUser =
-          data?.user ||
-          data?.data?.user ||
+          authData?.user ||
+          authData?.data?.user ||
           null;
 
         if (!authenticatedUser) {
@@ -68,17 +80,60 @@ export default function UserProfile({
           );
         }
 
+        const displayedUser =
+          initialUser || authenticatedUser;
+
         if (!isMounted) {
           return;
         }
 
         setCurrentUser(authenticatedUser);
+        setUser(displayedUser);
 
-        if (initialUser) {
-          setUser(initialUser);
-        } else {
-          setUser(authenticatedUser);
+        const profileUsername =
+          displayedUser?.username
+            ?.trim()
+            .toLowerCase();
+
+        if (!profileUsername) {
+          setPosts([]);
+          return;
         }
+
+        setPostsLoading(true);
+
+        const postsResponse = await fetch(
+          `/api/posts?username=${encodeURIComponent(
+            profileUsername
+          )}`,
+          {
+            method: "GET",
+            cache: "no-store",
+          }
+        );
+
+        const postsData =
+          await postsResponse.json();
+
+        if (
+          !postsResponse.ok ||
+          !postsData?.success
+        ) {
+          throw new Error(
+            postsData?.message ||
+              "Postările nu au putut fi încărcate."
+          );
+        }
+
+        if (!isMounted) {
+          return;
+        }
+
+        setPosts(
+          Array.isArray(postsData.posts)
+            ? postsData.posts
+            : []
+        );
       } catch (fetchError) {
         console.error(
           "Eroare la încărcarea profilului:",
@@ -96,6 +151,7 @@ export default function UserProfile({
       } finally {
         if (isMounted) {
           setLoading(false);
+          setPostsLoading(false);
         }
       }
     }
@@ -240,9 +296,7 @@ export default function UserProfile({
             publicId: "",
           },
 
-    posts: Array.isArray(user.posts)
-      ? user.posts
-      : [],
+    posts,
 
     savedPosts: Array.isArray(
       user.savedPosts
@@ -283,9 +337,39 @@ export default function UserProfile({
 
         <div className="user-profile-tab-content">
           {activeTab === "posts" && (
-            <UserPostsGrid
-              posts={normalizedUser.posts}
-            />
+            <>
+              {postsLoading ? (
+                <div className="profile-empty-state">
+                  <div className="profile-empty-icon">
+                    ⏳
+                  </div>
+
+                  <h3>
+                    Se încarcă postările
+                  </h3>
+
+                  <p>
+                    Pregătim experiențele publicate.
+                  </p>
+                </div>
+              ) : postsError ? (
+                <div className="profile-empty-state">
+                  <div className="profile-empty-icon">
+                    ⚠️
+                  </div>
+
+                  <h3>
+                    Postările nu au putut fi încărcate
+                  </h3>
+
+                  <p>{postsError}</p>
+                </div>
+              ) : (
+                <UserPostsGrid
+                  posts={normalizedUser.posts}
+                />
+              )}
+            </>
           )}
 
           {activeTab === "saved" &&
@@ -308,8 +392,8 @@ export default function UserProfile({
               </h3>
 
               <p>
-                Destinațiile vizitate de
-                utilizator vor apărea aici.
+                Destinațiile vizitate de utilizator
+                vor apărea aici.
               </p>
             </div>
           )}

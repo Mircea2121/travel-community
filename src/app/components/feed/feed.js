@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
@@ -13,191 +13,264 @@ import {
 
 import "./feed.css";
 
-const initialPosts = [
-  {
-    id: "thailanda-prima-data",
-    author: {
-      name: "Raluca",
-      level: "Veteran călător",
-      avatar: "",
-    },
-    location: "Thailanda",
-    title: "Thailanda pentru prima dată: ce aș fi vrut să știu",
-    description:
-      "Transport, zone turistice, excursii și greșelile pe care le poți evita la prima călătorie în Thailanda.",
-    cost: "1.150€",
-    image:
-      "https://images.unsplash.com/photo-1528181304800-259b08848526?auto=format&fit=crop&w=1200&q=82",
-    likes: 214,
-    commentsCount: 57,
-    saves: 96,
-    category: "Aventură",
-    isLiked: false,
-    isSaved: false,
-  },
-  {
-    id: "sardinia-italia-780",
-    author: {
-      name: "Andreea",
-      level: "Explorator",
-      avatar: "",
-    },
-    location: "Sardinia, Italia",
-    title: "5 zile în Sardinia cu 780€",
-    description:
-      "Plaje spectaculoase, mai puțină aglomerație și un buget complet pentru o vacanță la final de septembrie.",
-    cost: "780€",
-    image:
-      "https://images.unsplash.com/photo-1533104816931-20fa691ff6ca?auto=format&fit=crop&w=1200&q=82",
-    likes: 126,
-    commentsCount: 34,
-    saves: 71,
-    category: "Plajă",
-    isLiked: false,
-    isSaved: false,
-  },
-  {
-    id: "barcelona-spania-city-break",
-    author: {
-      name: "Mihai",
-      level: "Călător activ",
-      avatar: "",
-    },
-    location: "Barcelona, Spania",
-    title: "City break în Barcelona fără să cheltui mult",
-    description:
-      "Cum alegi cazarea, unde mănâncă localnicii și ce bilete merită cumpărate în avans.",
-    cost: "430€",
-    image:
-      "https://images.unsplash.com/photo-1583422409516-2895a77efded?auto=format&fit=crop&w=1200&q=82",
-    likes: 89,
-    commentsCount: 21,
-    saves: 54,
-    category: "City break",
-    isLiked: false,
-    isSaved: false,
-  },
-  {
-    id: "islanda-road-trip",
-    author: {
-      name: "Vlad",
-      level: "Explorator avansat",
-      avatar: "",
-    },
-    location: "Islanda",
-    title: "Road trip de 7 zile prin Islanda",
-    description:
-      "Traseul complet, costurile pentru mașină și cazare, plus locurile care merită cu adevărat oprirea.",
-    cost: "1.480€",
-    image:
-      "https://images.unsplash.com/photo-1504829857797-ddff29c27927?auto=format&fit=crop&w=1200&q=82",
-    likes: 178,
-    commentsCount: 46,
-    saves: 88,
-    category: "Road trip",
-    isLiked: false,
-    isSaved: false,
-  },
-  {
-    id: "maldive-buget-realist",
-    author: {
-      name: "Ioana",
-      level: "Călător activ",
-      avatar: "",
-    },
-    location: "Maldive",
-    title: "Maldive cu un buget realist, fără resort de lux",
-    description:
-      "Insule locale, transport între atoluri și costurile reale pentru o vacanță tropicală bine organizată.",
-    cost: "1.320€",
-    image:
-      "https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=1200&q=82",
-    likes: 157,
-    commentsCount: 39,
-    saves: 83,
-    category: "Exotic",
-    isLiked: false,
-    isSaved: false,
-  },
-  {
-    id: "lisabona-weekend",
-    author: {
-      name: "Cristina",
-      level: "Explorator",
-      avatar: "",
-    },
-    location: "Lisabona, Portugalia",
-    title: "Un weekend complet în Lisabona",
-    description:
-      "Cartiere, puncte panoramice, transport și restaurante bune pentru un city break scurt și relaxat.",
-    cost: "390€",
-    image:
-      "https://images.unsplash.com/photo-1555881400-74d7acaacd8b?auto=format&fit=crop&w=900&q=76",
-    likes: 103,
-    commentsCount: 27,
-    saves: 49,
-    category: "City break",
-    isLiked: false,
-    isSaved: false,
-  },
-];
+const CATEGORY_LABELS = {
+  plaja: "Plajă",
+  "city-break": "City break",
+  munte: "Munte",
+  mancare: "Mâncare",
+  aventura: "Aventură",
+  cultura: "Cultură",
+  familie: "Familie",
+  "buget-redus": "Buget redus",
+};
+
+function getPostId(post) {
+  return post?._id || post?.id || "";
+}
+
+function getPostImage(post) {
+  if (!Array.isArray(post?.images) || post.images.length === 0) {
+    return "";
+  }
+
+  const firstImage = post.images[0];
+
+  if (typeof firstImage === "string") {
+    return firstImage;
+  }
+
+  return firstImage?.url || "";
+}
+
+function getAvatarUrl(avatar) {
+  if (typeof avatar === "string") {
+    return avatar;
+  }
+
+  if (
+    avatar &&
+    typeof avatar === "object" &&
+    typeof avatar.url === "string"
+  ) {
+    return avatar.url;
+  }
+
+  return "";
+}
+
+function getLocation(post) {
+  const locationParts = [];
+
+  if (post?.destination) {
+    locationParts.push(post.destination);
+  }
+
+  if (
+    post?.city &&
+    post.city.toLowerCase() !== post.destination?.toLowerCase()
+  ) {
+    locationParts.push(post.city);
+  }
+
+  if (
+    post?.country &&
+    post.country.toLowerCase() !== post.destination?.toLowerCase()
+  ) {
+    locationParts.push(post.country);
+  }
+
+  return locationParts.join(", ");
+}
+
+function getCategoryLabel(category) {
+  return CATEGORY_LABELS[category] || category || "Călătorie";
+}
+
+function getLikesCount(post) {
+  return typeof post?.likesCount === "number"
+    ? post.likesCount
+    : 0;
+}
+
+function getCommentsCount(post) {
+  return typeof post?.commentsCount === "number"
+    ? post.commentsCount
+    : 0;
+}
+
+function getSavesCount(post) {
+  return typeof post?.savesCount === "number"
+    ? post.savesCount
+    : 0;
+}
 
 function getRecommendationScore(post) {
-  return post.likes * 1 + post.commentsCount * 2 + post.saves * 1.5;
+  const likesCount = getLikesCount(post);
+  const commentsCount = getCommentsCount(post);
+  const savesCount = getSavesCount(post);
+
+  return (
+    likesCount +
+    commentsCount * 2 +
+    savesCount * 1.5
+  );
+}
+
+function normalizePost(post) {
+  return {
+    ...post,
+
+    id: getPostId(post),
+    image: getPostImage(post),
+
+    author: {
+      name:
+        post?.name ||
+        post?.username ||
+        "Utilizator",
+
+      username: post?.username || "",
+
+      avatar: getAvatarUrl(post?.avatar),
+    },
+
+    location:
+      getLocation(post) ||
+      "Destinație nespecificată",
+
+    category: getCategoryLabel(post?.category),
+
+    cost:
+      post?.totalCost ||
+      "Cost nespecificat",
+
+    likesCount: getLikesCount(post),
+    commentsCount: getCommentsCount(post),
+    savesCount: getSavesCount(post),
+
+    isLiked: Boolean(post?.isLiked),
+    isSaved: Boolean(post?.isSaved),
+  };
 }
 
 export default function Feed() {
   const router = useRouter();
-  const [posts, setPosts] = useState(initialPosts);
+
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadPosts() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const response = await fetch(
+          "/api/posts?limit=20",
+          {
+            method: "GET",
+            cache: "no-store",
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data?.success) {
+          throw new Error(
+            data?.message ||
+              "Postările nu au putut fi încărcate."
+          );
+        }
+
+        if (!isMounted) {
+          return;
+        }
+
+        const normalizedPosts = Array.isArray(data.posts)
+          ? data.posts.map(normalizePost)
+          : [];
+
+        setPosts(normalizedPosts);
+      } catch (fetchError) {
+        console.error(
+          "Eroare la încărcarea feed-ului:",
+          fetchError
+        );
+
+        if (!isMounted) {
+          return;
+        }
+
+        setError(
+          fetchError?.message ||
+            "A apărut o eroare la încărcarea postărilor."
+        );
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadPosts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const recommendedPosts = useMemo(() => {
     return [...posts]
-      .sort(
-        (firstPost, secondPost) =>
+      .sort((firstPost, secondPost) => {
+        const scoreDifference =
           getRecommendationScore(secondPost) -
-          getRecommendationScore(firstPost)
-      )
+          getRecommendationScore(firstPost);
+
+        if (scoreDifference !== 0) {
+          return scoreDifference;
+        }
+
+        return (
+          new Date(secondPost.createdAt).getTime() -
+          new Date(firstPost.createdAt).getTime()
+        );
+      })
       .slice(0, 6);
   }, [posts]);
 
-  function handleLike(postId) {
-    setPosts((currentPosts) =>
-      currentPosts.map((post) => {
-        if (post.id !== postId) {
-          return post;
-        }
-
-        return {
-          ...post,
-          isLiked: !post.isLiked,
-          likes: post.isLiked ? post.likes - 1 : post.likes + 1,
-        };
-      })
-    );
-  }
-
-  function handleSave(postId) {
-    setPosts((currentPosts) =>
-      currentPosts.map((post) => {
-        if (post.id !== postId) {
-          return post;
-        }
-
-        return {
-          ...post,
-          isSaved: !post.isSaved,
-          saves: post.isSaved ? post.saves - 1 : post.saves + 1,
-        };
-      })
-    );
-  }
-
   function goToPost(postId) {
+    if (!postId) {
+      return;
+    }
+
     router.push(`/posts/${postId}`);
+  }
+
+  function goToProfile(username) {
+    if (!username) {
+      return;
+    }
+
+    router.push(`/users/${username}`);
   }
 
   function goToBlog() {
     router.push("/blog");
+  }
+
+  function handlePendingLike() {
+    console.log(
+      "Like-urile vor fi conectate la backend în următorul pas."
+    );
+  }
+
+  function handlePendingSave() {
+    console.log(
+      "Postările salvate vor fi conectate la backend ulterior."
+    );
   }
 
   return (
@@ -211,166 +284,267 @@ export default function Feed() {
         <h2>Cele mai apreciate experiențe</h2>
 
         <p>
-          Descoperă postările care au primit cele mai multe aprecieri,
-          comentarii și salvări din partea călătorilor.
+          Descoperă cele mai noi experiențe publicate de
+          călători, iar pe măsură ce apar aprecieri și
+          comentarii, cele mai populare vor urca în feed.
         </p>
       </div>
 
-      <div className="feed-list">
-        {recommendedPosts.map((post) => (
-          <article className="post-card" key={post.id}>
-            <button
-              type="button"
-              className="post-image-button"
-              onClick={() => goToPost(post.id)}
-              aria-label={`Vezi experiența: ${post.title}`}
-            >
-              <img
-                className="post-image"
-                src={post.image}
-                alt={post.location}
-                loading="lazy"
-              />
+      {loading && (
+        <div className="feed-status">
+          <div className="feed-status-icon">⏳</div>
 
-              <span className="post-image-overlay" />
+          <h3>Se încarcă experiențele</h3>
 
-              <span className="post-category">
-                {post.category}
-              </span>
+          <p>
+            Pregătim cele mai noi postări ale comunității.
+          </p>
+        </div>
+      )}
 
-              <span className="post-cost">
-                de la <strong>{post.cost}</strong>
-              </span>
-            </button>
+      {!loading && error && (
+        <div className="feed-status feed-status-error">
+          <div className="feed-status-icon">⚠️</div>
 
-            <div className="post-card-content">
-              <div className="post-author-row">
-                <div className="post-author">
-                  <div className="post-avatar">
-                    {post.author.avatar ? (
-                      <img
-                        src={post.author.avatar}
-                        alt={post.author.name}
-                      />
-                    ) : (
-                      post.author.name.charAt(0)
-                    )}
-                  </div>
+          <h3>Feed-ul nu a putut fi încărcat</h3>
 
-                  <div>
-                    <h3>{post.author.name}</h3>
-                    <p>{post.author.level}</p>
-                  </div>
-                </div>
+          <p>{error}</p>
+        </div>
+      )}
 
+      {!loading &&
+        !error &&
+        recommendedPosts.length === 0 && (
+          <div className="feed-status">
+            <div className="feed-status-icon">🌍</div>
+
+            <h3>Nu există încă experiențe</h3>
+
+            <p>
+              Prima experiență publicată va apărea automat
+              aici.
+            </p>
+          </div>
+        )}
+
+      {!loading &&
+        !error &&
+        recommendedPosts.length > 0 && (
+          <div className="feed-list">
+            {recommendedPosts.map((post) => (
+              <article
+                className="post-card"
+                key={post.id}
+              >
                 <button
                   type="button"
-                  className={`post-save-button ${
-                    post.isSaved ? "active" : ""
-                  }`}
-                  onClick={() => handleSave(post.id)}
-                  aria-label={
-                    post.isSaved
-                      ? "Elimină postarea din salvate"
-                      : "Salvează postarea"
-                  }
+                  className="post-image-button"
+                  onClick={() => goToPost(post.id)}
+                  aria-label={`Vezi experiența: ${post.title}`}
                 >
-                  <Bookmark
-                    size={19}
-                    strokeWidth={2.1}
-                    fill={post.isSaved ? "currentColor" : "none"}
-                  />
+                  {post.image ? (
+                    <img
+                      className="post-image"
+                      src={post.image}
+                      alt={post.location}
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="post-image-fallback">
+                      <span>Fără imagine</span>
+                    </div>
+                  )}
+
+                  <span className="post-image-overlay" />
+
+                  <span className="post-category">
+                    {post.category}
+                  </span>
+
+                  <span className="post-cost">
+                    cost{" "}
+                    <strong>{post.cost}</strong>
+                  </span>
                 </button>
-              </div>
 
-              <div className="post-location">
-                <MapPin size={15} strokeWidth={2.3} />
-                {post.location}
-              </div>
+                <div className="post-card-content">
+                  <div className="post-author-row">
+                    <button
+                      type="button"
+                      className="post-author post-author-button"
+                      onClick={() =>
+                        goToProfile(post.author.username)
+                      }
+                      aria-label={`Vezi profilul lui ${post.author.name}`}
+                    >
+                      <div className="post-avatar">
+                        {post.author.avatar ? (
+                          <img
+                            src={post.author.avatar}
+                            alt={post.author.name}
+                          />
+                        ) : (
+                          post.author.name
+                            .charAt(0)
+                            .toUpperCase()
+                        )}
+                      </div>
 
-              <button
-                type="button"
-                className="post-title-button"
-                onClick={() => goToPost(post.id)}
-              >
-                {post.title}
-              </button>
+                      <div>
+                        <h3>{post.author.name}</h3>
 
-              <p className="post-description">
-                {post.description}
-              </p>
+                        <p>
+                          {post.author.username
+                            ? `@${post.author.username}`
+                            : "Călător"}
+                        </p>
+                      </div>
+                    </button>
 
-              <div className="post-card-footer">
-                <div className="post-engagement">
-                  <button
-                    type="button"
-                    className={`post-engagement-button ${
-                      post.isLiked ? "active" : ""
-                    }`}
-                    onClick={() => handleLike(post.id)}
-                    aria-label={
-                      post.isLiked
-                        ? "Retrage aprecierea"
-                        : "Apreciază postarea"
-                    }
-                  >
-                    <Heart
-                      size={18}
-                      strokeWidth={2.1}
-                      fill={post.isLiked ? "currentColor" : "none"}
+                    <button
+                      type="button"
+                      className={`post-save-button ${
+                        post.isSaved ? "active" : ""
+                      }`}
+                      onClick={handlePendingSave}
+                      aria-label="Salvează postarea"
+                      title="Salvările vor fi conectate în curând"
+                    >
+                      <Bookmark
+                        size={19}
+                        strokeWidth={2.1}
+                        fill={
+                          post.isSaved
+                            ? "currentColor"
+                            : "none"
+                        }
+                      />
+                    </button>
+                  </div>
+
+                  <div className="post-location">
+                    <MapPin
+                      size={15}
+                      strokeWidth={2.3}
                     />
 
-                    <span>{post.likes}</span>
-                  </button>
+                    {post.location}
+                  </div>
 
                   <button
                     type="button"
-                    className="post-engagement-button"
+                    className="post-title-button"
                     onClick={() => goToPost(post.id)}
-                    aria-label="Vezi comentariile"
                   >
-                    <MessageCircle size={18} strokeWidth={2.1} />
-                    <span>{post.commentsCount}</span>
+                    {post.title}
                   </button>
 
-                  <div
-                    className="post-saves-count"
-                    title={`${post.saves} salvări`}
-                  >
-                    <Bookmark size={17} strokeWidth={2.1} />
-                    <span>{post.saves}</span>
+                  <p className="post-description">
+                    {post.description}
+                  </p>
+
+                  <div className="post-card-footer">
+                    <div className="post-engagement">
+                      <button
+                        type="button"
+                        className={`post-engagement-button ${
+                          post.isLiked ? "active" : ""
+                        }`}
+                        onClick={handlePendingLike}
+                        aria-label="Apreciază postarea"
+                        title="Like-urile vor fi conectate în următorul pas"
+                      >
+                        <Heart
+                          size={18}
+                          strokeWidth={2.1}
+                          fill={
+                            post.isLiked
+                              ? "currentColor"
+                              : "none"
+                          }
+                        />
+
+                        <span>
+                          {post.likesCount}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="post-engagement-button"
+                        onClick={() =>
+                          goToPost(post.id)
+                        }
+                        aria-label="Vezi comentariile"
+                      >
+                        <MessageCircle
+                          size={18}
+                          strokeWidth={2.1}
+                        />
+
+                        <span>
+                          {post.commentsCount}
+                        </span>
+                      </button>
+
+                      <div
+                        className="post-saves-count"
+                        title={`${post.savesCount} salvări`}
+                      >
+                        <Bookmark
+                          size={17}
+                          strokeWidth={2.1}
+                        />
+
+                        <span>
+                          {post.savesCount}
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="post-view-button"
+                      onClick={() =>
+                        goToPost(post.id)
+                      }
+                    >
+                      Vezi experiența
+
+                      <ArrowRight
+                        size={17}
+                        strokeWidth={2.2}
+                      />
+                    </button>
                   </div>
                 </div>
-
-                <button
-                  type="button"
-                  className="post-view-button"
-                  onClick={() => goToPost(post.id)}
-                >
-                  Vezi experiența
-                  <ArrowRight size={17} strokeWidth={2.2} />
-                </button>
-              </div>
-            </div>
-          </article>
-        ))}
-      </div>
+              </article>
+            ))}
+          </div>
+        )}
 
       <div className="feed-blog-cta">
         <div>
           <span>Mai sunt multe de descoperit</span>
 
-          <h3>Explorează toate experiențele comunității</h3>
+          <h3>
+            Explorează toate experiențele comunității
+          </h3>
 
           <p>
-            Intră în Blog pentru a vedea toate postările, destinațiile și
-            recomandările publicate de călători.
+            Intră în Blog pentru a vedea toate postările,
+            destinațiile și recomandările publicate de
+            călători.
           </p>
         </div>
 
         <button type="button" onClick={goToBlog}>
           Vezi toate postările
-          <ArrowRight size={19} strokeWidth={2.3} />
+
+          <ArrowRight
+            size={19}
+            strokeWidth={2.3}
+          />
         </button>
       </div>
     </section>

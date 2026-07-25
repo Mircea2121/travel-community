@@ -13,3 +13,9 @@ export async function getUsersCollection() {
 
   return database.collection("users");
 }
+
+export async function getPostsCollection() {
+  const database = await getDatabase();
+
+  return database.collection("posts");
+}
