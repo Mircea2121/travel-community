@@ -1,6 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
+
 import { useParams } from "next/navigation";
 
 import UserProfile from "../../components/userProfile/userProfile";
@@ -10,12 +14,27 @@ export default function UserPage() {
 
   const username =
     typeof params?.username === "string"
-      ? params.username.trim().toLowerCase()
+      ? decodeURIComponent(
+          params.username
+        )
+          .trim()
+          .toLowerCase()
       : "";
 
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [user, setUser] =
+    useState(null);
+
+  const [isOwnProfile, setIsOwnProfile] =
+    useState(false);
+
+  const [isFollowing, setIsFollowing] =
+    useState(false);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -32,7 +51,9 @@ export default function UserPage() {
         }
 
         const response = await fetch(
-          `/api/users/${encodeURIComponent(username)}`,
+          `/api/users/${encodeURIComponent(
+            username
+          )}`,
           {
             method: "GET",
             credentials: "include",
@@ -40,9 +61,13 @@ export default function UserPage() {
           }
         );
 
-        const data = await response.json();
+        const data =
+          await response.json();
 
-        if (!response.ok || !data?.success) {
+        if (
+          !response.ok ||
+          !data?.success
+        ) {
           throw new Error(
             data?.message ||
               "Profilul utilizatorului nu a putut fi încărcat."
@@ -59,13 +84,15 @@ export default function UserPage() {
           return;
         }
 
-        setUser({
-          ...data.user,
-          isOwnProfile:
-            data.isOwnProfile === true,
-          isFollowing:
-            data.isFollowing === true,
-        });
+        setUser(data.user);
+
+        setIsOwnProfile(
+          data?.isOwnProfile === true
+        );
+
+        setIsFollowing(
+          data?.isFollowing === true
+        );
       } catch (fetchError) {
         console.error(
           "Eroare la încărcarea profilului public:",
@@ -77,6 +104,9 @@ export default function UserPage() {
         }
 
         setUser(null);
+        setIsOwnProfile(false);
+        setIsFollowing(false);
+
         setError(
           fetchError?.message ||
             "A apărut o eroare la încărcarea profilului."
@@ -99,7 +129,9 @@ export default function UserPage() {
     return (
       <main className="user-profile-page">
         <div className="user-profile-loading">
-          <p>Se încarcă profilul...</p>
+          <p>
+            Se încarcă profilul...
+          </p>
         </div>
       </main>
     );
@@ -110,7 +142,8 @@ export default function UserPage() {
       <main className="user-profile-page">
         <div className="user-profile-error">
           <h2>
-            Profilul nu a putut fi încărcat
+            Profilul nu a putut fi
+            încărcat
           </h2>
 
           <p>{error}</p>
@@ -123,15 +156,26 @@ export default function UserPage() {
     return (
       <main className="user-profile-page">
         <div className="user-profile-error">
-          <h2>Utilizator indisponibil</h2>
+          <h2>
+            Utilizator indisponibil
+          </h2>
 
           <p>
-            Nu am găsit profilul solicitat.
+            Nu am găsit profilul
+            solicitat.
           </p>
         </div>
       </main>
     );
   }
 
-  return <UserProfile user={user} />;
+  return (
+    <UserProfile
+      user={user}
+      userPosts={[]}
+      savedPosts={[]}
+      isOwnProfile={isOwnProfile}
+      isFollowing={isFollowing}
+    />
+  );
 }

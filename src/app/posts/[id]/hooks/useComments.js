@@ -56,6 +56,11 @@ export default function useComments({
   ] = useState("");
 
   const [
+    replyToUser,
+    setReplyToUser,
+  ] = useState(null);
+
+  const [
     replyContent,
     setReplyContent,
   ] = useState("");
@@ -99,6 +104,28 @@ export default function useComments({
       ),
     []
   );
+
+  const getReplyAuthorName =
+    useCallback((reply) => {
+      const possibleNames = [
+        reply?.name,
+        reply?.authorName,
+        reply?.author?.name,
+        reply?.user?.name,
+        reply?.username,
+      ];
+
+      const validName =
+        possibleNames.find(
+          (value) =>
+            typeof value === "string" &&
+            value.trim()
+        );
+
+      return validName
+        ? validName.trim()
+        : "utilizator";
+    }, []);
 
   const loadComments =
     useCallback(async () => {
@@ -475,15 +502,74 @@ export default function useComments({
           commentId
         );
 
+        setReplyToUser(null);
         setReplyContent("");
         setReplyError("");
       },
       [getCommentId]
     );
 
+  const openReplyToReplyForm =
+    useCallback(
+      (comment, reply) => {
+        const commentId =
+          getCommentId(comment);
+
+        if (!commentId || !reply) {
+          return;
+        }
+
+        const replyAuthorId = String(
+          reply?.authorId ||
+            reply?.userId ||
+            reply?.author?._id ||
+            reply?.user?._id ||
+            ""
+        );
+
+        const replyUsername =
+          typeof reply?.username ===
+          "string"
+            ? reply.username.trim()
+            : typeof reply?.author
+                  ?.username === "string"
+              ? reply.author.username.trim()
+              : typeof reply?.user
+                    ?.username === "string"
+                ? reply.user.username.trim()
+                : "";
+
+        setActiveReplyCommentId(
+          commentId
+        );
+
+        setReplyToUser({
+          userId: replyAuthorId,
+          username: replyUsername,
+          name:
+            getReplyAuthorName(reply),
+        });
+
+        setReplyContent("");
+        setReplyError("");
+
+        setExpandedRepliesByComment(
+          (currentState) => ({
+            ...currentState,
+            [commentId]: true,
+          })
+        );
+      },
+      [
+        getCommentId,
+        getReplyAuthorName,
+      ]
+    );
+
   const closeReplyForm =
     useCallback(() => {
       setActiveReplyCommentId("");
+      setReplyToUser(null);
       setReplyContent("");
       setReplyError("");
     }, []);
@@ -546,6 +632,18 @@ export default function useComments({
               body: JSON.stringify({
                 content:
                   trimmedContent,
+
+                replyToUserId:
+                  replyToUser?.userId ||
+                  null,
+
+                replyToUsername:
+                  replyToUser?.username ||
+                  null,
+
+                replyToName:
+                  replyToUser?.name ||
+                  null,
               }),
             }
           );
@@ -607,6 +705,7 @@ export default function useComments({
           }
 
           setReplyContent("");
+          setReplyToUser(null);
           setActiveReplyCommentId("");
         } catch (submitError) {
           console.error(
@@ -628,6 +727,7 @@ export default function useComments({
         isReplySubmitting,
         postId,
         replyContent,
+        replyToUser,
       ]
     );
 
@@ -751,6 +851,7 @@ export default function useComments({
     isCommentSubmitting,
 
     activeReplyCommentId,
+    replyToUser,
     replyContent,
     replyError,
     isReplySubmitting,
@@ -768,6 +869,7 @@ export default function useComments({
     submitComment,
 
     openReplyForm,
+    openReplyToReplyForm,
     closeReplyForm,
     submitReply,
 

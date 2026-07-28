@@ -14,6 +14,7 @@ export default function CommentsSection({
   isCommentSubmitting = false,
 
   activeReplyCommentId = "",
+  replyToUser = null,
   replyContent = "",
   replyError = "",
   isReplySubmitting = false,
@@ -27,15 +28,15 @@ export default function CommentsSection({
   onCommentSubmit,
 
   onOpenReplyForm,
+  onReplyToReply,
   onCloseReplyForm,
   onReplyContentChange,
   onReplySubmit,
   onToggleReplies,
   onOpenCommentMenu,
 }) {
-  const isAuthenticated = Boolean(
-    currentUser
-  );
+  const isAuthenticated =
+    Boolean(currentUser);
 
   return (
     <div className="comments-box">
@@ -93,12 +94,11 @@ export default function CommentsSection({
       ) : (
         <div className="comments-list">
           {comments.map((comment) => {
-            const commentId =
-              String(
-                comment?._id ||
-                  comment?.id ||
-                  ""
-              );
+            const commentId = String(
+              comment?._id ||
+                comment?.id ||
+                ""
+            );
 
             const replies =
               repliesByComment[
@@ -154,6 +154,9 @@ export default function CommentsSection({
                 isReplyFormOpen={
                   isReplyFormOpen
                 }
+                replyToUser={
+                  replyToUser
+                }
                 replyValue={
                   replyContent
                 }
@@ -168,6 +171,9 @@ export default function CommentsSection({
                 }
                 onOpenReplyForm={
                   onOpenReplyForm
+                }
+                onReplyToReply={
+                  onReplyToReply
                 }
                 onCloseReplyForm={
                   onCloseReplyForm

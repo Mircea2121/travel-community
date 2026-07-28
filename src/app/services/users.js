@@ -2,30 +2,50 @@ import { cookies, headers } from "next/headers";
 
 import { demoUsers } from "../data/demoUsers";
 
+async function getApplicationUrl() {
+  const headersStore = await headers();
+
+  const host =
+    headersStore.get("x-forwarded-host") ||
+    headersStore.get("host");
+
+  const protocol =
+    headersStore.get("x-forwarded-proto") ||
+    (host?.includes("localhost")
+      ? "http"
+      : "https");
+
+  if (!host) {
+    return null;
+  }
+
+  return `${protocol}://${host}`;
+}
+
 export async function getUserById(id) {
-  return demoUsers.find((user) => user.id === id) || null;
+  return (
+    demoUsers.find(
+      (user) =>
+        String(user.id) === String(id)
+    ) || null
+  );
 }
 
 export async function getCurrentUser() {
   try {
     const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
+
+    const token =
+      cookieStore.get("token")?.value;
 
     if (!token) {
       return null;
     }
 
-    const headersStore = await headers();
+    const applicationUrl =
+      await getApplicationUrl();
 
-    const host =
-      headersStore.get("x-forwarded-host") ||
-      headersStore.get("host");
-
-    const protocol =
-      headersStore.get("x-forwarded-proto") ||
-      (host?.includes("localhost") ? "http" : "https");
-
-    if (!host) {
+    if (!applicationUrl) {
       console.error(
         "Nu s-a putut determina adresa aplicației."
       );
@@ -34,12 +54,14 @@ export async function getCurrentUser() {
     }
 
     const response = await fetch(
-      `${protocol}://${host}/api/auth/me`,
+      `${applicationUrl}/api/auth/me`,
       {
         method: "GET",
 
         headers: {
-          Cookie: `token=${encodeURIComponent(token)}`,
+          Cookie: `token=${encodeURIComponent(
+            token
+          )}`,
         },
 
         cache: "no-store",
@@ -52,7 +74,7 @@ export async function getCurrentUser() {
 
     const data = await response.json();
 
-    if (!data.success || !data.user) {
+    if (!data?.success || !data?.user) {
       return null;
     }
 
@@ -89,11 +111,16 @@ export async function unfollowUser(userId) {
   };
 }
 
-export async function updateProfile(profileData) {
+export async function updateProfile(
+  profileData
+) {
   // Temporar, până construim:
   // PUT /api/users/me
 
-  console.log("Update profile:", profileData);
+  console.log(
+    "Update profile:",
+    profileData
+  );
 
   return {
     success: true,

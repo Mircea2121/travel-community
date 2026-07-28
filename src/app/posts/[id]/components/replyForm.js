@@ -1,23 +1,43 @@
 import { Send, X } from "lucide-react";
 
+
 export default function ReplyForm({
   value = "",
   error = "",
   isSubmitting = false,
+
   replyingToName = "",
+  replyToUser = null,
+
   onChange,
   onSubmit,
   onCancel,
 }) {
+  const isReplyToReply =
+    Boolean(replyToUser);
+
+  const targetName =
+    isReplyToReply
+      ? replyToUser?.name ||
+        replyToUser?.username ||
+        "utilizator"
+      : replyingToName ||
+        "utilizator";
+
   return (
     <div className="reply-form-wrapper">
       <div className="reply-form-header">
         <span>
           Răspunzi lui{" "}
-          <strong>
-            {replyingToName || "utilizator"}
-          </strong>
+          <strong>{targetName}</strong>
         </span>
+
+        {isReplyToReply &&
+          replyToUser?.username && (
+            <small className="reply-target-username">
+              @{replyToUser.username}
+            </small>
+          )}
 
         <button
           type="button"
@@ -48,7 +68,9 @@ export default function ReplyForm({
         />
 
         <div className="reply-form-footer">
-          <span>{value.length}/1500</span>
+          <span>
+            {value.length}/1500
+          </span>
 
           <button
             type="submit"

@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import {
   ChevronDown,
   ChevronUp,
@@ -24,6 +26,7 @@ export default function CommentItem({
   isRepliesExpanded = false,
 
   isReplyFormOpen = false,
+  replyToUser = null,
   replyValue = "",
   replyError = "",
   isReplySubmitting = false,
@@ -31,6 +34,7 @@ export default function CommentItem({
   isAuthenticated = false,
 
   onOpenReplyForm,
+  onReplyToReply,
   onCloseReplyForm,
   onReplyChange,
   onReplySubmit,
@@ -48,6 +52,16 @@ export default function CommentItem({
 
   const avatarUrl =
     getAvatarUrl(comment?.avatar);
+
+  const username =
+    typeof comment?.username === "string"
+      ? comment.username.trim()
+      : "";
+
+  const profileHref =
+    username
+      ? `/users/${username}`
+      : "";
 
   const normalizedRepliesCount =
     Number.isFinite(
@@ -73,6 +87,18 @@ export default function CommentItem({
     }
   }
 
+  function handleReplyToReply(reply) {
+    if (
+      typeof onReplyToReply ===
+      "function"
+    ) {
+      onReplyToReply(
+        comment,
+        reply
+      );
+    }
+  }
+
   function handleToggleReplies() {
     if (
       typeof onToggleReplies ===
@@ -93,57 +119,95 @@ export default function CommentItem({
     }
   }
 
+  function handleReplySubmit(event) {
+    if (
+      typeof onReplySubmit ===
+      "function"
+    ) {
+      onReplySubmit(
+        event,
+        comment
+      );
+    }
+  }
+
+  const avatarContent = (
+    <div className="comment-avatar">
+      {avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt={authorName}
+          onError={(event) => {
+            event.currentTarget.style.display =
+              "none";
+
+            const fallback =
+              event.currentTarget
+                .nextElementSibling;
+
+            if (fallback) {
+              fallback.style.display =
+                "flex";
+            }
+          }}
+        />
+      ) : null}
+
+      <span
+        className="comment-avatar-fallback"
+        style={{
+          display: avatarUrl
+            ? "none"
+            : "flex",
+        }}
+      >
+        {getUserInitial(comment)}
+      </span>
+    </div>
+  );
+
+  const authorContent = (
+    <div className="comment-author">
+      <strong>
+        {authorName}
+      </strong>
+
+      {username && (
+        <span>
+          @{username}
+        </span>
+      )}
+    </div>
+  );
+
   return (
     <article
       className="comment-card"
       data-comment-id={commentId}
     >
-      <div className="comment-avatar">
-        {avatarUrl ? (
-          <img
-            src={avatarUrl}
-            alt={authorName}
-            onError={(event) => {
-              event.currentTarget.style.display =
-                "none";
-
-              const fallback =
-                event.currentTarget
-                  .nextElementSibling;
-
-              if (fallback) {
-                fallback.style.display =
-                  "flex";
-              }
-            }}
-          />
-        ) : null}
-
-        <span
-          className="comment-avatar-fallback"
-          style={{
-            display: avatarUrl
-              ? "none"
-              : "flex",
-          }}
+      {profileHref ? (
+        <Link
+          href={profileHref}
+          aria-label={`Vezi profilul lui ${authorName}`}
         >
-          {getUserInitial(comment)}
-        </span>
-      </div>
+          {avatarContent}
+        </Link>
+      ) : (
+        avatarContent
+      )}
 
       <div className="comment-content">
         <div className="comment-header">
-          <div className="comment-author">
-            <strong>
-              {authorName}
-            </strong>
-
-            {comment?.username && (
-              <span>
-                @{comment.username}
-              </span>
-            )}
-          </div>
+          {profileHref ? (
+            <Link
+              href={profileHref}
+              className="comment-author-link"
+            >
+              {authorContent}
+            </Link>
+          ) : (
+            authorContent
+          )}
 
           <div className="comment-header-actions">
             <time>
@@ -200,12 +264,14 @@ export default function CommentItem({
             replyingToName={
               authorName
             }
-            onChange={onReplyChange}
-            onSubmit={(event) =>
-              onReplySubmit(
-                event,
-                comment
-              )
+            replyToUser={
+              replyToUser
+            }
+            onChange={
+              onReplyChange
+            }
+            onSubmit={
+              handleReplySubmit
             }
             onCancel={
               onCloseReplyForm
@@ -251,6 +317,12 @@ export default function CommentItem({
             replies={replies}
             isLoading={
               isRepliesLoading
+            }
+            isAuthenticated={
+              isAuthenticated
+            }
+            onReplyToReply={
+              handleReplyToReply
             }
           />
         )}

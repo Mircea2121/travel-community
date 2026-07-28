@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import {
   Edit3,
   Trash2,
@@ -25,6 +27,42 @@ export default function PostHeader({
 
   const avatarUrl =
     getAvatarUrl(post?.avatar);
+
+  const username =
+    typeof post?.username === "string"
+      ? post.username.trim()
+      : "";
+
+  const profileHref =
+    username
+      ? `/users/${username}`
+      : "";
+
+  const avatarContent = (
+    <div className="post-details-avatar">
+      {avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt={authorName}
+        />
+      ) : (
+        getUserInitial({
+          name: post?.name,
+          username: post?.username,
+        })
+      )}
+    </div>
+  );
+
+  const authorContent = (
+    <div>
+      <h3>{authorName}</h3>
+
+      <p>
+        @{username || "utilizator"}
+      </p>
+    </div>
+  );
 
   return (
     <>
@@ -73,27 +111,27 @@ export default function PostHeader({
       </div>
 
       <div className="post-details-author">
-        <div className="post-details-avatar">
-          {avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt={authorName}
-            />
-          ) : (
-            getUserInitial({
-              name: post?.name,
-              username: post?.username,
-            })
-          )}
-        </div>
+        {profileHref ? (
+          <Link
+            href={profileHref}
+            aria-label={`Vezi profilul lui ${authorName}`}
+          >
+            {avatarContent}
+          </Link>
+        ) : (
+          avatarContent
+        )}
 
-        <div>
-          <h3>{authorName}</h3>
-
-          <p>
-            @{post?.username || "utilizator"}
-          </p>
-        </div>
+        {profileHref ? (
+          <Link
+            href={profileHref}
+            className="post-details-author-link"
+          >
+            {authorContent}
+          </Link>
+        ) : (
+          authorContent
+        )}
       </div>
     </>
   );

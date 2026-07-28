@@ -1,5 +1,165 @@
 import UserProfile from "../components/userProfile/userProfile";
+
 import { getCurrentUser } from "../services/users";
+
+function getUsername(user) {
+  if (
+    typeof user?.username === "string" &&
+    user.username.trim()
+  ) {
+    return user.username
+      .trim()
+      .toLowerCase();
+  }
+
+  if (
+    typeof user?.email === "string" &&
+    user.email.includes("@")
+  ) {
+    return user.email
+      .split("@")[0]
+      .trim()
+      .toLowerCase();
+  }
+
+  if (
+    typeof user?.name === "string" &&
+    user.name.trim()
+  ) {
+    return user.name
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, ".");
+  }
+
+  return "utilizator";
+}
+
+function getLocation(user) {
+  if (
+    typeof user?.location !== "string"
+  ) {
+    return {
+      city: user?.city || "",
+      country: user?.country || "",
+    };
+  }
+
+  const locationParts = user.location
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  return {
+    city:
+      user?.city ||
+      locationParts[0] ||
+      "",
+
+    country:
+      user?.country ||
+      locationParts[1] ||
+      "",
+  };
+}
+
+function createProfileUser(user) {
+  const { city, country } =
+    getLocation(user);
+
+  return {
+    id:
+      user?.id ||
+      user?._id ||
+      "",
+
+    fullName:
+      user?.fullName ||
+      user?.name ||
+      "Utilizator",
+
+    username: getUsername(user),
+
+    email: user?.email || "",
+    role: user?.role || "user",
+
+    bio:
+      user?.bio ||
+      "Pasionat de călătorii, experiențe noi și locuri care merită descoperite.",
+
+    city,
+    country,
+
+    avatar: user?.avatar || "",
+
+    coverImage:
+      user?.coverImage ||
+      user?.cover ||
+      "",
+
+    level:
+      user?.level ||
+      "Călător începător",
+
+    photosUploaded:
+      Number(user?.photosUploaded) || 0,
+
+    stats: {
+      postsCount:
+        Number(
+          user?.stats?.postsCount ??
+            user?.postsCount
+        ) || 0,
+
+      destinationsCount:
+        Number(
+          user?.stats
+            ?.destinationsCount ??
+            user?.destinationsCount
+        ) || 0,
+
+      likesReceived:
+        Number(
+          user?.stats?.likesReceived ??
+            user?.likesReceived
+        ) || 0,
+
+      followers:
+        Number(
+          user?.stats?.followers ??
+            user?.followersCount
+        ) || 0,
+
+      following:
+        Number(
+          user?.stats?.following ??
+            user?.followingCount
+        ) || 0,
+    },
+
+    nextLevel: {
+      currentScore:
+        Number(
+          user?.nextLevel?.currentScore
+        ) || 0,
+
+      pointsNeeded:
+        Number(
+          user?.nextLevel?.pointsNeeded
+        ) || 500,
+
+      nextLevel:
+        user?.nextLevel?.nextLevel ||
+        "Călător explorator",
+    },
+
+    createdAt:
+      user?.createdAt || null,
+
+    updatedAt:
+      user?.updatedAt || null,
+  };
+}
 
 export default async function ProfilePage() {
   const user = await getCurrentUser();
@@ -16,59 +176,8 @@ export default async function ProfilePage() {
     );
   }
 
-  const username =
-    user.email?.split("@")[0] ||
-    user.name?.toLowerCase().replace(/\s+/g, ".") ||
-    "utilizator";
-
-  const locationParts = user.location
-    ?.split(",")
-    .map((part) => part.trim())
-    .filter(Boolean);
-
-  const city = locationParts?.[0] || "";
-  const country = locationParts?.[1] || "";
-
-  const profileUser = {
-    id: user.id,
-
-    fullName: user.name || "Utilizator",
-    username,
-
-    email: user.email || "",
-    role: user.role || "user",
-
-    bio:
-      user.bio ||
-      "Pasionat de călătorii, experiențe noi și locuri care merită descoperite.",
-
-    city,
-    country,
-
-    avatar: user.avatar || "",
-    coverImage: user.coverImage || "",
-
-    level: "Călător începător",
-
-    photosUploaded: 0,
-
-    stats: {
-      postsCount: user.postsCount || 0,
-      destinationsCount: 0,
-      likesReceived: 0,
-      followers: user.followersCount || 0,
-      following: user.followingCount || 0,
-    },
-
-    nextLevel: {
-      currentScore: 0,
-      pointsNeeded: 500,
-      nextLevel: "Călător explorator",
-    },
-
-    createdAt: user.createdAt || null,
-    updatedAt: user.updatedAt || null,
-  };
+  const profileUser =
+    createProfileUser(user);
 
   return (
     <UserProfile

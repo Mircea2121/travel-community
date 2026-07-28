@@ -8,11 +8,14 @@ import {
 } from "../../../../../../utils/database";
 
 const MAX_REPLY_LENGTH = 1500;
+const MAX_USERNAME_LENGTH = 20;
+const MAX_NAME_LENGTH = 100;
 
 let commentsIndexesPromise = null;
 
 async function getCommentsCollection() {
   const database = await getDatabase();
+
   const commentsCollection =
     database.collection("comments");
 
@@ -47,7 +50,10 @@ async function getCommentsCollection() {
 }
 
 function getObjectId(value) {
-  if (!value || !ObjectId.isValid(value)) {
+  if (
+    !value ||
+    !ObjectId.isValid(value)
+  ) {
     return null;
   }
 
@@ -62,16 +68,46 @@ function getUserObjectId(currentUser) {
   return getObjectId(userId);
 }
 
+function getCleanString(
+  value,
+  maxLength
+) {
+  if (
+    typeof value !== "string"
+  ) {
+    return "";
+  }
+
+  return value
+    .trim()
+    .slice(0, maxLength);
+}
+
 function serializeReply(reply) {
-  return {
+  const serializedReply = {
     ...reply,
+
     _id: String(reply._id),
-    postId: String(reply.postId),
-    userId: String(reply.userId),
+
+    postId: String(
+      reply.postId
+    ),
+
+    userId: String(
+      reply.userId
+    ),
+
     parentCommentId: String(
       reply.parentCommentId
     ),
   };
+
+  if (reply.replyToUserId) {
+    serializedReply.replyToUserId =
+      String(reply.replyToUserId);
+  }
+
+  return serializedReply;
 }
 
 export async function GET(
@@ -181,9 +217,14 @@ export async function GET(
 
     return Response.json({
       success: true,
+
       replies:
-        replies.map(serializeReply),
-      repliesCount: replies.length,
+        replies.map(
+          serializeReply
+        ),
+
+      repliesCount:
+        replies.length,
     });
   } catch (error) {
     console.error(
@@ -295,10 +336,10 @@ export async function POST(
     }
 
     const content =
-      typeof requestBody?.content ===
-      "string"
-        ? requestBody.content.trim()
-        : "";
+      getCleanString(
+        requestBody?.content,
+        MAX_REPLY_LENGTH + 1
+      );
 
     if (!content) {
       return Response.json(
@@ -328,6 +369,38 @@ export async function POST(
         }
       );
     }
+
+    const rawReplyToUserId =
+      getCleanString(
+        requestBody?.replyToUserId,
+        100
+      );
+
+    const replyToUserObjectId =
+      rawReplyToUserId
+        ? getObjectId(
+            rawReplyToUserId
+          )
+        : null;
+
+    const replyToUsername =
+      getCleanString(
+        requestBody?.replyToUsername,
+        MAX_USERNAME_LENGTH
+      ).toLowerCase();
+
+    const replyToName =
+      getCleanString(
+        requestBody?.replyToName,
+        MAX_NAME_LENGTH
+      );
+
+    const isReplyToReply =
+      Boolean(
+        replyToUserObjectId ||
+          replyToUsername ||
+          replyToName
+      );
 
     const postsCollection =
       await getPostsCollection();
@@ -386,13 +459,16 @@ export async function POST(
 
     const newReply = {
       postId: postObjectId,
+
       userId: userObjectId,
+
       parentCommentId:
         commentObjectId,
 
       username:
         currentUser.username
-          ?.toLowerCase() || "",
+          ?.toLowerCase()
+          .trim() || "",
 
       name:
         currentUser.name ||
@@ -400,13 +476,27 @@ export async function POST(
         "Utilizator",
 
       avatar:
-        currentUser.avatar || null,
+        currentUser.avatar ||
+        null,
 
       content,
 
       createdAt: now,
       updatedAt: now,
     };
+
+    if (isReplyToReply) {
+      newReply.replyToUserId =
+        replyToUserObjectId;
+
+      newReply.replyToUsername =
+        replyToUsername;
+
+      newReply.replyToName =
+        replyToName ||
+        replyToUsername ||
+        "Utilizator";
+    }
 
     const insertResult =
       await commentsCollection.insertOne(
@@ -425,6 +515,7 @@ export async function POST(
         },
         {
           returnDocument: "after",
+
           projection: {
             commentsCount: 1,
           },
@@ -448,9 +539,19 @@ export async function POST(
       );
     }
 
+    const repliesCount =
+      await commentsCollection.countDocuments(
+        {
+          postId: postObjectId,
+          parentCommentId:
+            commentObjectId,
+        }
+      );
+
     return Response.json(
       {
         success: true,
+
         message:
           "Răspunsul a fost publicat.",
 
@@ -458,6 +559,8 @@ export async function POST(
           ...newReply,
           _id: insertResult.insertedId,
         }),
+
+        repliesCount,
 
         commentsCount:
           typeof updatedPost.commentsCount ===

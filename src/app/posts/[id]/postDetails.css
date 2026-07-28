@@ -3264,3 +3264,69 @@
     line-height: 1.55;
   }
 }
+
+/* BUTON RĂSPUNDE LA UN RĂSPUNS */
+
+.reply-actions {
+  margin-top: 7px;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.reply-to-reply-button {
+  min-height: 32px;
+  padding: 0 10px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  border: none;
+  border-radius: 999px;
+
+  background: transparent;
+  color: #475569;
+
+  cursor: pointer;
+
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+
+  box-shadow: none;
+  appearance: none;
+
+  transition:
+    background 0.18s ease,
+    color 0.18s ease;
+}
+
+.reply-to-reply-button:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.reply-to-reply-button:focus-visible {
+  outline: 3px solid rgba(14, 165, 233, 0.2);
+  outline-offset: 2px;
+}
+
+.reply-to-reply-button svg {
+  flex-shrink: 0;
+}
+
+.reply-mention {
+  color: #0ea5e9;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.reply-mention:hover {
+  color: #0284c7;
+  text-decoration: underline;
+}

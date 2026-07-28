@@ -64,6 +64,7 @@ export default function PostDetailsPage() {
     isCommentSubmitting,
 
     activeReplyCommentId,
+    replyToUser,
     replyContent,
     replyError,
     isReplySubmitting,
@@ -78,6 +79,7 @@ export default function PostDetailsPage() {
 
     submitComment,
     openReplyForm,
+    openReplyToReplyForm,
     closeReplyForm,
     submitReply,
 
@@ -257,6 +259,9 @@ export default function PostDetailsPage() {
             activeReplyCommentId={
               activeReplyCommentId
             }
+            replyToUser={
+              replyToUser
+            }
             replyContent={
               replyContent
             }
@@ -286,6 +291,9 @@ export default function PostDetailsPage() {
             }
             onOpenReplyForm={
               openReplyForm
+            }
+            onReplyToReply={
+              openReplyToReplyForm
             }
             onCloseReplyForm={
               closeReplyForm
