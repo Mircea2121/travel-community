@@ -3330,3 +3330,195 @@
   color: #0284c7;
   text-decoration: underline;
 }
+
+/* =====================================================
+   CORECȚII LINKURI PROFIL, AVATARE ȘI USERNAME
+===================================================== */
+
+.post-details-author a,
+.comment-avatar-link,
+.comment-author-link,
+.reply-avatar-link,
+.reply-author-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.post-details-author a:hover,
+.comment-avatar-link:hover,
+.comment-author-link:hover,
+.reply-avatar-link:hover,
+.reply-author-link:hover {
+  text-decoration: none;
+}
+
+.post-details-author p,
+.post-details-author p a {
+  color: #0284c7;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.comment-avatar-fallback,
+.reply-avatar-fallback {
+  text-decoration: none;
+}
+
+.comment-author-link strong,
+.reply-author-link strong {
+  text-decoration: none;
+}
+
+/* =====================================================
+   MENIU TREI PUNCTE — COMENTARII
+===================================================== */
+
+.comment-menu-wrapper,
+.reply-menu-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.comment-menu,
+.reply-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 50;
+
+  min-width: 205px;
+  padding: 7px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 13px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 18px 45px rgba(15, 23, 42, 0.14),
+    0 4px 12px rgba(15, 23, 42, 0.06);
+}
+
+.comment-menu-option,
+.reply-menu-option {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 11px;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 9px;
+
+  border: none;
+  border-radius: 9px;
+
+  background: transparent;
+  color: #334155;
+
+  cursor: pointer;
+
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 750;
+  text-align: left;
+
+  transition:
+    background 0.18s ease,
+    color 0.18s ease;
+}
+
+.comment-menu-option:hover,
+.reply-menu-option:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.comment-menu-option-danger,
+.reply-menu-option-danger {
+  color: #dc2626;
+}
+
+.comment-menu-option-danger:hover,
+.reply-menu-option-danger:hover {
+  background: #fff1f2;
+  color: #b91c1c;
+}
+
+.comment-menu-option:disabled,
+.reply-menu-option:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* =====================================================
+   MENIU TREI PUNCTE — REPLY
+===================================================== */
+
+.reply-header-actions {
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.reply-menu-button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  flex-shrink: 0;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border: none;
+  border-radius: 50%;
+
+  background: transparent;
+  color: #64748b;
+
+  cursor: pointer;
+
+  transition:
+    background 0.18s ease,
+    color 0.18s ease;
+}
+
+.reply-menu-button:hover {
+  background: #e2e8f0;
+  color: #18253b;
+}
+
+.reply-menu-button:focus-visible {
+  outline: 3px solid rgba(14, 165, 233, 0.2);
+  outline-offset: 2px;
+}
+
+/* =====================================================
+   MENȚIUNE USERNAME DIN REPLY
+===================================================== */
+
+.reply-mention {
+  color: #0284c7;
+  text-decoration: none;
+  font-weight: 800;
+}
+
+.reply-mention:hover {
+  color: #0369a1;
+  text-decoration: underline;
+}
+
+@media (max-width: 600px) {
+  .comment-menu,
+  .reply-menu {
+    min-width: 185px;
+  }
+}

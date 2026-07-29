@@ -60,6 +60,57 @@ function getCommentsCount(post) {
   return 0;
 }
 
+function getPostCost(post) {
+  const rawCost =
+    post?.totalCost ??
+    post?.cost ??
+    post?.budget ??
+    null;
+
+  if (
+    rawCost === null ||
+    rawCost === undefined ||
+    rawCost === ""
+  ) {
+    return "Buget: n/a";
+  }
+
+  if (
+    typeof rawCost === "number" &&
+    Number.isFinite(rawCost)
+  ) {
+    return `Buget: ${rawCost.toLocaleString("ro-RO")} €`;
+  }
+
+  if (typeof rawCost === "string") {
+    const trimmedCost = rawCost.trim();
+
+    if (!trimmedCost) {
+      return "Buget: n/a";
+    }
+
+    if (/^\d+$/.test(trimmedCost)) {
+      const numericCost = Number(trimmedCost);
+
+      return `Buget: ${numericCost.toLocaleString("ro-RO")} €`;
+    }
+
+    const firstNumber = trimmedCost.match(/\d[\d\s.,]*/)?.[0];
+
+    if (firstNumber) {
+      const numericCost = Number(
+        firstNumber.replace(/[^\d]/g, "")
+      );
+
+      if (Number.isFinite(numericCost)) {
+        return `Buget: ${numericCost.toLocaleString("ro-RO")} €`;
+      }
+    }
+  }
+
+  return "Buget: n/a";
+}
+
 export default function UserPostsGrid({ posts = [] }) {
   if (!Array.isArray(posts) || posts.length === 0) {
     return (
@@ -82,6 +133,7 @@ export default function UserPostsGrid({ posts = [] }) {
         const imageUrl = getPostImage(post);
         const likesCount = getLikesCount(post);
         const commentsCount = getCommentsCount(post);
+        const postCost = getPostCost(post);
 
         const postTitle =
           post?.title ||
@@ -94,11 +146,6 @@ export default function UserPostsGrid({ posts = [] }) {
           post?.content ||
           post?.text ||
           "Nu există încă o descriere pentru această experiență.";
-
-        const postCost =
-          post?.cost ||
-          post?.budget ||
-          "Buget n/a";
 
         const cardContent = (
           <>

@@ -2,7 +2,6 @@ import "./userProfile.css";
 
 import {
   SquarePen,
-  Globe2,
   Heart,
   Users,
   UserPlus,
@@ -41,12 +40,6 @@ export default function ProfileStats({ user }) {
       value: Number(stats.postsCount) || 0,
       label: "Postări",
       type: "posts",
-    },
-    {
-      icon: Globe2,
-      value: Number(stats.destinationsCount) || 0,
-      label: "Destinații",
-      type: "destinations",
     },
     {
       icon: Heart,

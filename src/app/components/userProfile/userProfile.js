@@ -381,23 +381,6 @@ export default function UserProfile({
               />
             )}
 
-          {activeTab === "destinations" && (
-            <div className="profile-empty-state">
-              <div className="profile-empty-icon">
-                🌍
-              </div>
-
-              <h3>
-                Nu există încă destinații
-              </h3>
-
-              <p>
-                Destinațiile vizitate de utilizator
-                vor apărea aici.
-              </p>
-            </div>
-          )}
-
           {activeTab === "about" && (
             <section className="profile-empty-state">
               <div className="profile-empty-icon">

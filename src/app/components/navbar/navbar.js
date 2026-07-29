@@ -160,6 +160,17 @@ export default function Navbar() {
     router.push(path);
   };
 
+  const handleCreatePost = () => {
+    closeNavigationMenus();
+    removeCurrentHash();
+
+    router.push(
+      user
+        ? "/create-experience"
+        : "/login"
+    );
+  };
+
   const handleLogoClick = () => {
     closeNavigationMenus();
 
@@ -631,11 +642,7 @@ export default function Navbar() {
           <button
             type="button"
             className="nav-create"
-            onClick={() =>
-              navigateTo(
-                "/create-experience"
-              )
-            }
+            onClick={handleCreatePost}
           >
             Creează postare
           </button>
@@ -755,11 +762,7 @@ export default function Navbar() {
           <button
             type="button"
             className="mobile-create-button"
-            onClick={() =>
-              navigateTo(
-                "/create-experience"
-              )
-            }
+            onClick={handleCreatePost}
           >
             Creează postare
           </button>

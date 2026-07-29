@@ -1,10 +1,20 @@
 "use client";
 
 import "./hero.css";
-import { MapPinned,Star,Users, ArrowRight, } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 
+import {
+  MapPinned,
+  Star,
+  Users,
+  ArrowRight,
+} from "lucide-react";
+
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import { useRouter } from "next/navigation";
 
 const fallbackFeaturedPosts = [
   {
@@ -91,12 +101,16 @@ const activeUsers = [
 export default function Hero() {
   const router = useRouter();
 
-  const [featuredPosts, setFeaturedPosts] = useState(
-    fallbackFeaturedPosts
-  );
+  const [featuredPosts, setFeaturedPosts] =
+    useState(fallbackFeaturedPosts);
 
   const [activePostIndex, setActivePostIndex] =
     useState(0);
+
+  const [user, setUser] = useState(null);
+
+  const [isLoadingUser, setIsLoadingUser] =
+    useState(true);
 
   const scrollToSection = (id) => {
     document.getElementById(id)?.scrollIntoView({
@@ -106,6 +120,57 @@ export default function Hero() {
   };
 
   useEffect(() => {
+    let isMounted = true;
+
+    async function loadUser() {
+      try {
+        const response = await fetch(
+          "/api/auth/me",
+          {
+            method: "GET",
+            credentials: "include",
+            cache: "no-store",
+          }
+        );
+
+        if (!response.ok) {
+          if (isMounted) {
+            setUser(null);
+          }
+
+          return;
+        }
+
+        const data = await response.json();
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (data?.success && data?.user) {
+          setUser(data.user);
+        } else {
+          setUser(null);
+        }
+      } catch {
+        if (isMounted) {
+          setUser(null);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingUser(false);
+        }
+      }
+    }
+
+    loadUser();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
     const apiUrl =
       process.env.NEXT_PUBLIC_API_URL;
 
@@ -113,7 +178,8 @@ export default function Hero() {
       return;
     }
 
-    const controller = new AbortController();
+    const controller =
+      new AbortController();
 
     const loadFeaturedPosts = async () => {
       try {
@@ -134,9 +200,10 @@ export default function Hero() {
 
         const data = await response.json();
 
-        const receivedPosts = Array.isArray(data)
-          ? data
-          : data.posts;
+        const receivedPosts =
+          Array.isArray(data)
+            ? data
+            : data.posts;
 
         if (
           Array.isArray(receivedPosts) &&
@@ -166,14 +233,17 @@ export default function Hero() {
       return;
     }
 
-    const sliderInterval = window.setInterval(() => {
-      setActivePostIndex((currentIndex) => {
-        return (
-          (currentIndex + 1) %
-          featuredPosts.length
+    const sliderInterval =
+      window.setInterval(() => {
+        setActivePostIndex(
+          (currentIndex) => {
+            return (
+              (currentIndex + 1) %
+              featuredPosts.length
+            );
+          }
         );
-      });
-    }, 5000);
+      }, 5000);
 
     return () => {
       window.clearInterval(sliderInterval);
@@ -181,7 +251,8 @@ export default function Hero() {
   }, [featuredPosts.length]);
 
   const openPost = (post) => {
-    const postId = post.id ?? post._id;
+    const postId =
+      post.id ?? post._id;
 
     if (!postId) {
       return;
@@ -190,8 +261,21 @@ export default function Hero() {
     router.push(`/posts/${postId}`);
   };
 
+  function handleCommunityClick() {
+    if (isLoadingUser) {
+      return;
+    }
+
+    router.push(
+      user ? "/profile" : "/register"
+    );
+  }
+
   return (
-    <section className="hero" id="hero">
+    <section
+      className="hero"
+      id="hero"
+    >
       <div className="hero-overlay" />
 
       <div className="hero-container">
@@ -203,7 +287,8 @@ export default function Hero() {
             />
 
             <span>
-              Comunitate pentru românii care călătoresc
+              Comunitate pentru românii care
+              călătoresc
             </span>
           </div>
 
@@ -213,8 +298,9 @@ export default function Hero() {
           </h1>
 
           <p className="hero-description">
-            Postează fotografii, lasă recenzii, cere păreri
-            și ajută alți români să aleagă următoarea
+            Postează fotografii, lasă
+            recenzii, cere păreri și ajută
+            alți români să aleagă următoarea
             destinație.
           </p>
 
@@ -222,16 +308,23 @@ export default function Hero() {
             <button
               type="button"
               className="hero-primary"
-              onClick={() => router.push("/login")}
+              onClick={
+                handleCommunityClick
+              }
+              disabled={isLoadingUser}
             >
-              <span>Intră în comunitate</span>
+              <span>
+                Intră în comunitate
+              </span>
             </button>
 
             <button
               type="button"
               className="hero-secondary"
               onClick={() =>
-                scrollToSection("destinations")
+                scrollToSection(
+                  "destinations"
+                )
               }
             >
               <MapPinned
@@ -239,34 +332,59 @@ export default function Hero() {
                 strokeWidth={2.2}
               />
 
-              <span>Explorează destinații</span>
+              <span>
+                Explorează destinații
+              </span>
             </button>
           </div>
 
           <div className="hero-social">
             <div className="hero-avatars">
-              {activeUsers.map((user) => (
-                <img
-                  key={user.id}
-                  src={user.avatar}
-                  alt={`Avatar ${user.name}`}
-                  title={user.name}
-                />
-              ))}
+              {activeUsers.map(
+                (activeUser) => (
+                  <img
+                    key={activeUser.id}
+                    src={activeUser.avatar}
+                    alt={`Avatar ${activeUser.name}`}
+                    title={activeUser.name}
+                  />
+                )
+              )}
 
               <strong>2.5K+</strong>
             </div>
 
             <div className="hero-social-info">
-              <p>Călători activi în comunitate</p>
+              <p>
+                Călători activi în comunitate
+              </p>
 
               <div className="hero-rating">
                 <div className="hero-stars">
-                  <Star size={15} fill="currentColor" />
-                  <Star size={15} fill="currentColor" />
-                  <Star size={15} fill="currentColor" />
-                  <Star size={15} fill="currentColor" />
-                  <Star size={15} fill="currentColor" />
+                  <Star
+                    size={15}
+                    fill="currentColor"
+                  />
+
+                  <Star
+                    size={15}
+                    fill="currentColor"
+                  />
+
+                  <Star
+                    size={15}
+                    fill="currentColor"
+                  />
+
+                  <Star
+                    size={15}
+                    fill="currentColor"
+                  />
+
+                  <Star
+                    size={15}
+                    fill="currentColor"
+                  />
                 </div>
 
                 <strong>4.8/5</strong>
@@ -279,123 +397,147 @@ export default function Hero() {
           <div
             className="hero-review-track"
             style={{
-              transform: `translateX(-${activePostIndex * 100}%)`,
+              transform: `translateX(-${
+                activePostIndex * 100
+              }%)`,
             }}
           >
-            {featuredPosts.map((post, index) => {
-              const postText =
-                post.text ??
-                post.description ??
-                post.content ??
-                "Descoperă o nouă experiență de călătorie.";
+            {featuredPosts.map(
+              (post, index) => {
+                const postText =
+                  post.text ??
+                  post.description ??
+                  post.content ??
+                  "Descoperă o nouă experiență de călătorie.";
 
-              const postDestination =
-                post.destination?.name ??
-                post.destination ??
-                post.location ??
-                "Destinație";
+                const postDestination =
+                  post.destination?.name ??
+                  post.destination ??
+                  post.location ??
+                  "Destinație";
 
-              const postUser =
-                post.user ??
-                post.author ?? {
-                  name: "Călător",
-                  avatar: "",
-                };
+                const postUser =
+                  post.user ??
+                  post.author ?? {
+                    name: "Călător",
+                    avatar: "",
+                  };
 
-              const userName =
-                postUser.name ??
-                postUser.username ??
-                "Călător";
+                const userName =
+                  postUser.name ??
+                  postUser.username ??
+                  "Călător";
 
-              const userAvatar =
-                postUser.avatar ??
-                postUser.profileImage ??
-                "https://randomuser.me/api/portraits/lego/1.jpg";
+                const userAvatar =
+                  postUser.avatar ??
+                  postUser.profileImage ??
+                  "https://randomuser.me/api/portraits/lego/1.jpg";
 
-              return (
-                <article
-                  key={
-                    post.id ??
-                    post._id ??
-                    `featured-post-${index}`
-                  }
-                  className="hero-review-card"
-                  onClick={() => openPost(post)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(event) => {
-                    if (
-                      event.key === "Enter" ||
-                      event.key === " "
-                    ) {
-                      openPost(post);
+                return (
+                  <article
+                    key={
+                      post.id ??
+                      post._id ??
+                      `featured-post-${index}`
                     }
-                  }}
-                >
-                  <div className="hero-review-mark">
-                    “
-                  </div>
+                    className="hero-review-card"
+                    onClick={() =>
+                      openPost(post)
+                    }
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(event) => {
+                      if (
+                        event.key ===
+                          "Enter" ||
+                        event.key === " "
+                      ) {
+                        openPost(post);
+                      }
+                    }}
+                  >
+                    <div className="hero-review-mark">
+                      “
+                    </div>
 
-                  <p>{postText}</p>
+                    <p>{postText}</p>
 
-                 <div className="hero-review-user">
-                  <img
-                    src={userAvatar}
-                    alt={`Avatar ${userName}`}
-                  />
+                    <div className="hero-review-user">
+                      <img
+                        src={userAvatar}
+                        alt={`Avatar ${userName}`}
+                      />
 
-                  <div>
-                    <strong>{userName}</strong>
-                    <span>{postDestination}</span>
-                  </div>
-                </div>
+                      <div>
+                        <strong>
+                          {userName}
+                        </strong>
 
-                <button
-                  type="button"
-                  className="hero-review-button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    openPost(post);
-                  }}
-                >
-                  <span>Vezi postarea</span>
+                        <span>
+                          {postDestination}
+                        </span>
+                      </div>
+                    </div>
 
-                  <ArrowRight
-                    size={16}
-                    strokeWidth={2.3}
-                  />
-                </button>
-                </article>
-              );
-            })}
+                    <button
+                      type="button"
+                      className="hero-review-button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        openPost(post);
+                      }}
+                    >
+                      <span>
+                        Vezi postarea
+                      </span>
+
+                      <ArrowRight
+                        size={16}
+                        strokeWidth={2.3}
+                      />
+                    </button>
+                  </article>
+                );
+              }
+            )}
           </div>
 
           <div className="review-dots">
-            {featuredPosts.map((post, index) => (
-              <button
-                key={
-                  post.id ??
-                  post._id ??
-                  `featured-dot-${index}`
-                }
-                type="button"
-                className={
-                  index === activePostIndex
-                    ? "review-dot review-dot-active"
-                    : "review-dot"
-                }
-                onClick={() =>
-                  setActivePostIndex(index)
-                }
-                aria-label={`Afișează postarea ${index + 1}`}
-              />
-            ))}
+            {featuredPosts.map(
+              (post, index) => (
+                <button
+                  key={
+                    post.id ??
+                    post._id ??
+                    `featured-dot-${index}`
+                  }
+                  type="button"
+                  className={
+                    index ===
+                    activePostIndex
+                      ? "review-dot review-dot-active"
+                      : "review-dot"
+                  }
+                  onClick={() =>
+                    setActivePostIndex(
+                      index
+                    )
+                  }
+                  aria-label={`Afișează postarea ${
+                    index + 1
+                  }`}
+                />
+              )
+            )}
           </div>
         </div>
       </div>
 
       <div className="hero-scroll-indicator">
-        <span>Descoperă mai mult</span>
+        <span>
+          Descoperă mai mult
+        </span>
+
         <div />
       </div>
     </section>

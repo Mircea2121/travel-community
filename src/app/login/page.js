@@ -85,6 +85,10 @@ export default function LoginPage() {
       });
 
       window.setTimeout(() => {
+        sessionStorage.removeItem(
+          "travel-community-loader-shown"
+        );
+
         window.location.href = "/profile";
       }, 700);
     } catch (error) {

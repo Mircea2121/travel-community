@@ -1,10 +1,20 @@
+"use client";
+
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
 import Link from "next/link";
 
 import {
   ChevronDown,
   ChevronUp,
+  Flag,
   MessageCircleReply,
   MoreVertical,
+  Trash2,
 } from "lucide-react";
 
 import RepliesList from "./repliesList";
@@ -16,6 +26,18 @@ import {
   getUserDisplayName,
   getUserInitial,
 } from "../utils/postDetailsHelpers";
+
+function getEntityId(entity) {
+  return String(
+    entity?._id ||
+      entity?.id ||
+      entity?.userId ||
+      entity?.authorId ||
+      entity?.author?._id ||
+      entity?.user?._id ||
+      ""
+  );
+}
 
 export default function CommentItem({
   comment,
@@ -32,6 +54,11 @@ export default function CommentItem({
   isReplySubmitting = false,
 
   isAuthenticated = false,
+  currentUser = null,
+  postAuthorId = "",
+
+  isCommentDeleting = false,
+  deletingReplyId = "",
 
   onOpenReplyForm,
   onReplyToReply,
@@ -39,8 +66,17 @@ export default function CommentItem({
   onReplyChange,
   onReplySubmit,
   onToggleReplies,
-  onOpenMenu,
+
+  onDeleteComment,
+  onDeleteReply,
+  onReportComment,
+  onReportReply,
 }) {
+  const [isMenuOpen, setIsMenuOpen] =
+    useState(false);
+
+  const menuWrapperRef = useRef(null);
+
   const commentId = String(
     comment?._id ||
       comment?.id ||
@@ -54,14 +90,55 @@ export default function CommentItem({
     getAvatarUrl(comment?.avatar);
 
   const username =
-    typeof comment?.username === "string"
+    typeof comment?.username ===
+    "string"
       ? comment.username.trim()
-      : "";
+      : typeof comment?.author
+            ?.username === "string"
+        ? comment.author.username.trim()
+        : typeof comment?.user
+              ?.username === "string"
+          ? comment.user.username.trim()
+          : "";
 
-  const profileHref =
-    username
-      ? `/users/${username}`
-      : "";
+  const profileHref = username
+    ? `/users/${username}`
+    : "";
+
+  const currentUserId =
+    getEntityId(currentUser);
+
+  const commentAuthorId = String(
+    comment?.authorId ||
+      comment?.userId ||
+      comment?.author?._id ||
+      comment?.user?._id ||
+      ""
+  );
+
+  const normalizedPostAuthorId =
+    String(postAuthorId || "");
+
+  const isCommentAuthor =
+    Boolean(currentUserId) &&
+    currentUserId ===
+      commentAuthorId;
+
+  const isPostAuthor =
+    Boolean(currentUserId) &&
+    currentUserId ===
+      normalizedPostAuthorId;
+
+  const isAdmin =
+    currentUser?.role === "admin";
+
+  const canDeleteComment =
+    isCommentAuthor ||
+    isPostAuthor ||
+    isAdmin;
+
+  const canReportComment =
+    !isCommentAuthor;
 
   const normalizedRepliesCount =
     Number.isFinite(
@@ -77,6 +154,47 @@ export default function CommentItem({
     normalizedRepliesCount === 1
       ? "1 răspuns"
       : `${normalizedRepliesCount} răspunsuri`;
+
+  useEffect(() => {
+    function handleOutsideClick(event) {
+      if (
+        menuWrapperRef.current &&
+        !menuWrapperRef.current.contains(
+          event.target
+        )
+      ) {
+        setIsMenuOpen(false);
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        setIsMenuOpen(false);
+      }
+    }
+
+    document.addEventListener(
+      "mousedown",
+      handleOutsideClick
+    );
+
+    document.addEventListener(
+      "keydown",
+      handleEscape
+    );
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleOutsideClick
+      );
+
+      document.removeEventListener(
+        "keydown",
+        handleEscape
+      );
+    };
+  }, []);
 
   function handleOpenReplyForm() {
     if (
@@ -108,14 +226,34 @@ export default function CommentItem({
     }
   }
 
-  function handleOpenMenu(event) {
+  function handleToggleMenu(event) {
     event.stopPropagation();
 
+    setIsMenuOpen(
+      (currentState) =>
+        !currentState
+    );
+  }
+
+  function handleDeleteComment() {
+    setIsMenuOpen(false);
+
     if (
-      typeof onOpenMenu ===
+      typeof onDeleteComment ===
       "function"
     ) {
-      onOpenMenu(comment, event);
+      onDeleteComment(comment);
+    }
+  }
+
+  function handleReportComment() {
+    setIsMenuOpen(false);
+
+    if (
+      typeof onReportComment ===
+      "function"
+    ) {
+      onReportComment(comment);
     }
   }
 
@@ -168,15 +306,7 @@ export default function CommentItem({
 
   const authorContent = (
     <div className="comment-author">
-      <strong>
-        {authorName}
-      </strong>
-
-      {username && (
-        <span>
-          @{username}
-        </span>
-      )}
+      <strong>{authorName}</strong>
     </div>
   );
 
@@ -188,6 +318,7 @@ export default function CommentItem({
       {profileHref ? (
         <Link
           href={profileHref}
+          className="comment-avatar-link"
           aria-label={`Vezi profilul lui ${authorName}`}
         >
           {avatarContent}
@@ -216,18 +347,80 @@ export default function CommentItem({
               )}
             </time>
 
-            <button
-              type="button"
-              className="comment-menu-button"
-              aria-label="Deschide meniul comentariului"
-              aria-haspopup="menu"
-              onClick={handleOpenMenu}
+            <div
+              className="comment-menu-wrapper"
+              ref={menuWrapperRef}
             >
-              <MoreVertical
-                size={19}
-                strokeWidth={2.2}
-              />
-            </button>
+              <button
+                type="button"
+                className="comment-menu-button"
+                aria-label="Deschide meniul comentariului"
+                aria-haspopup="menu"
+                aria-expanded={
+                  isMenuOpen
+                }
+                onClick={
+                  handleToggleMenu
+                }
+              >
+                <MoreVertical
+                  size={19}
+                  strokeWidth={2.2}
+                />
+              </button>
+
+              {isMenuOpen && (
+                <div
+                  className="comment-menu"
+                  role="menu"
+                >
+                  {canDeleteComment && (
+                    <button
+                      type="button"
+                      className="comment-menu-option comment-menu-option-danger"
+                      role="menuitem"
+                      disabled={
+                        isCommentDeleting
+                      }
+                      onClick={
+                        handleDeleteComment
+                      }
+                    >
+                      <Trash2
+                        size={17}
+                        strokeWidth={2.1}
+                      />
+
+                      <span>
+                        {isCommentDeleting
+                          ? "Se șterge..."
+                          : "Șterge comentariul"}
+                      </span>
+                    </button>
+                  )}
+
+                  {canReportComment && (
+                    <button
+                      type="button"
+                      className="comment-menu-option"
+                      role="menuitem"
+                      onClick={
+                        handleReportComment
+                      }
+                    >
+                      <Flag
+                        size={17}
+                        strokeWidth={2.1}
+                      />
+
+                      <span>
+                        Raportează
+                      </span>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -321,9 +514,44 @@ export default function CommentItem({
             isAuthenticated={
               isAuthenticated
             }
+            currentUser={
+              currentUser
+            }
+            postAuthorId={
+              postAuthorId
+            }
+            deletingReplyId={
+              deletingReplyId
+            }
             onReplyToReply={
               handleReplyToReply
             }
+            onDeleteReply={(
+              reply
+            ) => {
+              if (
+                typeof onDeleteReply ===
+                "function"
+              ) {
+                onDeleteReply(
+                  comment,
+                  reply
+                );
+              }
+            }}
+            onReportReply={(
+              reply
+            ) => {
+              if (
+                typeof onReportReply ===
+                "function"
+              ) {
+                onReportReply(
+                  comment,
+                  reply
+                );
+              }
+            }}
           />
         )}
       </div>

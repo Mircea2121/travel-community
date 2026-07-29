@@ -386,6 +386,178 @@ body {
   overflow-wrap: anywhere;
 }
 
+.travel-profile-bio-section {
+  margin-top: 16px;
+}
+
+.travel-profile-bio-display {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.travel-profile-bio-display .travel-profile-bio {
+  flex: 1;
+  margin: 0;
+}
+
+.travel-profile-bio-edit {
+  width: 36px;
+  height: 36px;
+
+  flex-shrink: 0;
+
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+
+  background: white;
+
+  color: #0ea5e9;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+
+  transition:
+    background .2s,
+    border-color .2s,
+    transform .2s;
+}
+
+.travel-profile-bio-edit:hover {
+  background: #eff8ff;
+  border-color: #0ea5e9;
+  transform: translateY(-1px);
+}
+
+.travel-profile-bio-editor {
+  width: 100%;
+}
+
+.travel-profile-bio-editor textarea {
+  width: 100%;
+  min-height: 90px;
+
+  padding: 14px 16px;
+
+  border: 1px solid #dbeafe;
+  border-radius: 16px;
+
+  outline: none;
+
+  resize: vertical;
+
+  font: inherit;
+  line-height: 1.6;
+
+  background: #f8fcff;
+}
+
+.travel-profile-bio-editor textarea:focus {
+  border-color: #0ea5e9;
+
+  background: white;
+
+  box-shadow:
+    0 0 0 4px rgba(14,165,233,.12);
+}
+
+.travel-profile-bio-editor-footer {
+  margin-top: 12px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.travel-profile-bio-counter {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.travel-profile-bio-editor-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.travel-profile-bio-save,
+.travel-profile-bio-cancel {
+  height: 40px;
+
+  padding: 0 16px;
+
+  border-radius: 12px;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  cursor: pointer;
+
+  font-weight: 700;
+}
+
+.travel-profile-bio-save {
+  border: none;
+
+  background: #0ea5e9;
+  color: white;
+}
+
+.travel-profile-bio-save:hover {
+  background: #0284c7;
+}
+
+.travel-profile-bio-cancel {
+  border: 1px solid #dbeafe;
+
+  background: white;
+  color: #334155;
+}
+
+.travel-profile-bio-cancel:hover {
+  background: #f8fafc;
+}
+
+.travel-profile-bio-error {
+  margin-top: 10px;
+
+  color: #dc2626;
+
+  font-size: 14px;
+  font-weight: 600;
+}
+
+@media (max-width: 700px) {
+  .travel-profile-bio-display {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .travel-profile-bio-edit {
+    align-self: flex-start;
+  }
+
+  .travel-profile-bio-editor-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .travel-profile-bio-editor-actions {
+    width: 100%;
+  }
+
+  .travel-profile-bio-save,
+  .travel-profile-bio-cancel {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
 /* =========================
    STATISTICI
 ========================= */
@@ -397,7 +569,7 @@ body {
 
 .travel-profile-stats-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 18px;
   margin-bottom: 22px;
 }

@@ -154,6 +154,30 @@
   resize: vertical;
 }
 
+.cost-input-wrapper {
+  position: relative;
+}
+
+.cost-input-wrapper input {
+  padding-right: 52px;
+}
+
+.cost-currency {
+  position: absolute;
+  top: 50%;
+  right: 18px;
+
+  transform: translateY(-50%);
+
+  color: #0284c7;
+
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+
+  pointer-events: none;
+}
+
 .image-upload-box {
   min-height: 170px;
   padding: 28px;

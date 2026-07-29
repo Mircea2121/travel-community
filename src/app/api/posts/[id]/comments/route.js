@@ -11,8 +11,8 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const MAX_COMMENT_LENGTH = 1500;
-const DEFAULT_LIMIT = 50;
-const MAX_LIMIT = 100;
+const DEFAULT_LIMIT = 15;
+const MAX_LIMIT = 50;
 
 const NO_CACHE_HEADERS = {
   "Cache-Control":
@@ -161,6 +161,39 @@ function getLimit(request) {
   );
 }
 
+function getSkip(request) {
+  const { searchParams } =
+    new URL(request.url);
+
+  const rawSkip =
+    searchParams.get("skip");
+
+  if (
+    rawSkip === null ||
+    rawSkip.trim() === ""
+  ) {
+    return 0;
+  }
+
+  const requestedSkip =
+    Number(rawSkip);
+
+  if (
+    !Number.isFinite(
+      requestedSkip
+    )
+  ) {
+    return 0;
+  }
+
+  return Math.max(
+    0,
+    Math.floor(
+      requestedSkip
+    )
+  );
+}
+
 function isMainComment(comment) {
   return (
     comment?.parentCommentId ===
@@ -245,58 +278,106 @@ export async function GET(
     const limit =
       getLimit(request);
 
-    const allPostComments =
-      await commentsCollection
-        .find({
-          postId:
-            postObjectId,
-        })
-        .sort({
-          createdAt: 1,
-        })
-        .toArray();
+    const skip =
+      getSkip(request);
+
+    const mainCommentsFilter = {
+      postId:
+        postObjectId,
+
+      $or: [
+        {
+          parentCommentId: {
+            $exists: false,
+          },
+        },
+        {
+          parentCommentId:
+            null,
+        },
+      ],
+    };
+
+    const totalMainComments =
+      await commentsCollection.countDocuments(
+        mainCommentsFilter
+      );
 
     const mainComments =
-      allPostComments
-        .filter(
-          isMainComment
+      await commentsCollection
+        .find(
+          mainCommentsFilter
         )
-        .slice(
-          0,
-          limit
-        );
+        .sort({
+          createdAt: -1,
+          _id: -1,
+        })
+        .skip(skip)
+        .limit(limit)
+        .toArray();
 
-    const replies =
-      allPostComments.filter(
-        isReply
+    const mainCommentIds =
+      mainComments.map(
+        (comment) =>
+          comment._id
       );
+
+    const repliesCountResults =
+      mainCommentIds.length > 0
+        ? await commentsCollection
+            .aggregate([
+              {
+                $match: {
+                  postId:
+                    postObjectId,
+
+                  parentCommentId: {
+                    $in:
+                      mainCommentIds,
+                  },
+                },
+              },
+              {
+                $group: {
+                  _id:
+                    "$parentCommentId",
+
+                  count: {
+                    $sum: 1,
+                  },
+                },
+              },
+            ])
+            .toArray()
+        : [];
 
     const repliesCountMap = {};
 
-    replies.forEach(
-      (reply) => {
-        const parentCommentId =
-          String(
-            reply.parentCommentId ||
-              ""
-          );
+      repliesCountResults.forEach(
+        (result) => {
+          const parentCommentId =
+            String(
+              result?._id || ""
+            );
 
-        if (
-          !parentCommentId
-        ) {
-          return;
+          if (!parentCommentId) {
+            return;
+          }
+
+          repliesCountMap[
+            parentCommentId
+          ] =
+            Number.isFinite(
+              Number(
+                result?.count
+              )
+            )
+              ? Number(
+                  result.count
+                )
+              : 0;
         }
-
-        repliesCountMap[
-          parentCommentId
-        ] =
-          Number(
-            repliesCountMap[
-              parentCommentId
-            ] || 0
-          ) + 1;
-      }
-    );
+      );
 
     const serializedComments =
       mainComments.map(
@@ -315,14 +396,19 @@ export async function GET(
         }
       );
 
-    const calculatedCommentsCount =
-      allPostComments.length;
+    const hasMore =
+      skip +
+        mainComments.length <
+      totalMainComments;
 
     return jsonResponse({
       success: true,
 
-      comments:
+     comments:
         serializedComments,
+
+      mainCommentsCount:
+        totalMainComments,
 
       commentsCount:
         Number.isFinite(
@@ -333,7 +419,13 @@ export async function GET(
           ? Number(
               post.commentsCount
             )
-          : calculatedCommentsCount,
+          : totalMainComments,
+
+      hasMore,
+
+      nextSkip:
+        skip +
+        mainComments.length,
     });
   } catch (error) {
     console.error(

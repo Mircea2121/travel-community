@@ -6,6 +6,8 @@ import {
   useState,
 } from "react";
 
+const COMMENTS_PAGE_SIZE = 15;
+
 export default function useComments({
   postId,
   currentUser,
@@ -29,6 +31,21 @@ export default function useComments({
     commentsLoading,
     setCommentsLoading,
   ] = useState(true);
+  
+  const [
+    isLoadingMoreComments,
+    setIsLoadingMoreComments,
+  ] = useState(false);
+
+  const [
+    hasMoreComments,
+    setHasMoreComments,
+  ] = useState(false);
+
+  const [
+    nextCommentsSkip,
+    setNextCommentsSkip,
+  ] = useState(0);
 
   const [
     commentsError,
@@ -95,11 +112,36 @@ export default function useComments({
     setRepliesCountByComment,
   ] = useState({});
 
+  const [
+    deletingCommentId,
+    setDeletingCommentId,
+  ] = useState("");
+
+  const [
+    deletingReplyId,
+    setDeletingReplyId,
+  ] = useState("");
+
+  const [
+    deleteCommentError,
+    setDeleteCommentError,
+  ] = useState("");
+
   const getCommentId = useCallback(
     (comment) =>
       String(
         comment?._id ||
           comment?.id ||
+          ""
+      ),
+    []
+  );
+
+  const getReplyId = useCallback(
+    (reply) =>
+      String(
+        reply?._id ||
+          reply?.id ||
           ""
       ),
     []
@@ -127,18 +169,25 @@ export default function useComments({
         : "utilizator";
     }, []);
 
-  const loadComments =
+    const loadComments =
     useCallback(async () => {
       if (!postId) {
+        setComments([]);
+        setHasMoreComments(false);
+        setNextCommentsSkip(0);
+        setCommentsLoading(false);
+
         return;
       }
 
       try {
         setCommentsLoading(true);
         setCommentsError("");
+        setHasMoreComments(false);
+        setNextCommentsSkip(0);
 
         const response = await fetch(
-          `/api/posts/${postId}/comments`,
+          `/api/posts/${postId}/comments?skip=0&limit=${COMMENTS_PAGE_SIZE}`,
           {
             method: "GET",
             credentials: "include",
@@ -190,7 +239,9 @@ export default function useComments({
           }
         );
 
-        setComments(receivedComments);
+        setComments(
+          receivedComments
+        );
 
         setRepliesCountByComment(
           initialRepliesCounts
@@ -200,7 +251,21 @@ export default function useComments({
           Number.isFinite(
             Number(data?.commentsCount)
           )
-            ? Number(data.commentsCount)
+            ? Number(
+                data.commentsCount
+              )
+            : receivedComments.length
+        );
+
+        setHasMoreComments(
+          Boolean(data?.hasMore)
+        );
+
+        setNextCommentsSkip(
+          Number.isFinite(
+            Number(data?.nextSkip)
+          )
+            ? Number(data.nextSkip)
             : receivedComments.length
         );
       } catch (loadError) {
@@ -210,6 +275,9 @@ export default function useComments({
         );
 
         setComments([]);
+        setRepliesCountByComment({});
+        setHasMoreComments(false);
+        setNextCommentsSkip(0);
 
         setCommentsError(
           loadError?.message ||
@@ -219,6 +287,159 @@ export default function useComments({
         setCommentsLoading(false);
       }
     }, [getCommentId, postId]);
+  
+  const loadMoreComments =
+  useCallback(async () => {
+    if (
+      !postId ||
+      !hasMoreComments ||
+      isLoadingMoreComments
+    ) {
+      return;
+    }
+
+    try {
+      setIsLoadingMoreComments(true);
+      setCommentsError("");
+
+      const response = await fetch(
+        `/api/posts/${postId}/comments?skip=${nextCommentsSkip}&limit=${COMMENTS_PAGE_SIZE}`,
+        {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+        }
+      );
+
+      const data =
+        await response.json();
+
+      if (
+        !response.ok ||
+        !data?.success
+      ) {
+        throw new Error(
+          data?.message ||
+            "Următoarele comentarii nu au putut fi încărcate."
+        );
+      }
+
+      const receivedComments =
+        Array.isArray(data?.comments)
+          ? data.comments
+          : [];
+
+      setComments(
+        (currentComments) => {
+          const existingCommentIds =
+            new Set(
+              currentComments
+                .map(getCommentId)
+                .filter(Boolean)
+            );
+
+          const newComments =
+            receivedComments.filter(
+              (comment) => {
+                const commentId =
+                  getCommentId(
+                    comment
+                  );
+
+                return (
+                  commentId &&
+                  !existingCommentIds.has(
+                    commentId
+                  )
+                );
+              }
+            );
+
+          return [
+            ...currentComments,
+            ...newComments,
+          ];
+        }
+      );
+
+      setRepliesCountByComment(
+        (currentState) => {
+          const nextState = {
+            ...currentState,
+          };
+
+          receivedComments.forEach(
+            (comment) => {
+              const commentId =
+                getCommentId(
+                  comment
+                );
+
+              if (!commentId) {
+                return;
+              }
+
+              const repliesCount =
+                Number(
+                  comment?.repliesCount
+                );
+
+              nextState[commentId] =
+                Number.isFinite(
+                  repliesCount
+                )
+                  ? repliesCount
+                  : 0;
+            }
+          );
+
+          return nextState;
+        }
+      );
+
+      setCommentsCount(
+        Number.isFinite(
+          Number(data?.commentsCount)
+        )
+          ? Number(
+              data.commentsCount
+            )
+          : (currentCount) =>
+              currentCount
+      );
+
+      setHasMoreComments(
+        Boolean(data?.hasMore)
+      );
+
+      setNextCommentsSkip(
+        Number.isFinite(
+          Number(data?.nextSkip)
+        )
+          ? Number(data.nextSkip)
+          : nextCommentsSkip +
+              receivedComments.length
+      );
+    } catch (loadError) {
+      console.error(
+        "Eroare la încărcarea următoarelor comentarii:",
+        loadError
+      );
+
+      setCommentsError(
+        loadError?.message ||
+          "Următoarele comentarii nu au putut fi încărcate."
+      );
+    } finally {
+      setIsLoadingMoreComments(false);
+    }
+  }, [
+    getCommentId,
+    hasMoreComments,
+    isLoadingMoreComments,
+    nextCommentsSkip,
+    postId,
+  ]);
 
   const submitComment =
     useCallback(
@@ -285,26 +506,7 @@ export default function useComments({
           }
 
           if (data?.comment) {
-            const newCommentId =
-              getCommentId(
-                data.comment
-              );
-
-            setComments(
-              (currentComments) => [
-                ...currentComments,
-                data.comment,
-              ]
-            );
-
-            if (newCommentId) {
-              setRepliesCountByComment(
-                (currentState) => ({
-                  ...currentState,
-                  [newCommentId]: 0,
-                })
-              );
-            }
+            await loadComments();
           }
 
           setCommentsCount(
@@ -319,6 +521,7 @@ export default function useComments({
           );
 
           setCommentContent("");
+
         } catch (submitError) {
           console.error(
             "Eroare la publicarea comentariului:",
@@ -336,8 +539,8 @@ export default function useComments({
       [
         commentContent,
         currentUser,
-        getCommentId,
         isCommentSubmitting,
+        loadComments,
         postId,
       ]
     );
@@ -826,6 +1029,287 @@ export default function useComments({
       ]
     );
 
+  const removeReplyFromState =
+    useCallback(
+      ({
+        commentId,
+        replyId,
+        repliesCount:
+          nextRepliesCount,
+        commentsCount:
+          nextCommentsCount,
+      }) => {
+        const normalizedCommentId =
+          String(commentId || "");
+
+        const normalizedReplyId =
+          String(replyId || "");
+
+        if (
+          !normalizedCommentId ||
+          !normalizedReplyId
+        ) {
+          return;
+        }
+
+        setRepliesByComment(
+          (currentState) => ({
+            ...currentState,
+            [normalizedCommentId]: (
+              currentState[
+                normalizedCommentId
+              ] || []
+            ).filter(
+              (reply) =>
+                getReplyId(reply) !==
+                normalizedReplyId
+            ),
+          })
+        );
+
+        setRepliesCountByComment(
+          (currentState) => ({
+            ...currentState,
+            [normalizedCommentId]:
+              Number.isFinite(
+                Number(
+                  nextRepliesCount
+                )
+              )
+                ? Number(
+                    nextRepliesCount
+                  )
+                : Math.max(
+                    0,
+                    Number(
+                      currentState[
+                        normalizedCommentId
+                      ] || 0
+                    ) - 1
+                  ),
+          })
+        );
+
+        setCommentsCount(
+          Number.isFinite(
+            Number(nextCommentsCount)
+          )
+            ? Number(
+                nextCommentsCount
+              )
+            : (currentCount) =>
+                Math.max(
+                  0,
+                  currentCount - 1
+                )
+        );
+      },
+      [getReplyId]
+    );
+
+  const deleteComment =
+    useCallback(
+      async (comment) => {
+        const commentId =
+          getCommentId(comment);
+
+        if (
+          !postId ||
+          !commentId ||
+          deletingCommentId
+        ) {
+          return {
+            success: false,
+          };
+        }
+
+        if (!currentUser) {
+          setDeleteCommentError(
+            "Trebuie să fii autentificat pentru a șterge un comentariu."
+          );
+
+          return {
+            success: false,
+          };
+        }
+
+        try {
+          setDeletingCommentId(
+            commentId
+          );
+
+          setDeleteCommentError("");
+
+          const response = await fetch(
+            `/api/posts/${postId}/comments/${commentId}`,
+            {
+              method: "DELETE",
+              credentials: "include",
+            }
+          );
+
+          const data =
+            await response.json();
+
+          if (
+            !response.ok ||
+            !data?.success
+          ) {
+            throw new Error(
+              data?.message ||
+                "Comentariul nu a putut fi șters."
+            );
+          }
+
+          removeCommentFromState({
+            commentId:
+              data?.deletedCommentId ||
+              commentId,
+
+            commentsCount:
+              data?.commentsCount,
+          });
+
+          return {
+            success: true,
+            data,
+          };
+        } catch (deleteError) {
+          console.error(
+            "Eroare la ștergerea comentariului:",
+            deleteError
+          );
+
+          setDeleteCommentError(
+            deleteError?.message ||
+              "Comentariul nu a putut fi șters."
+          );
+
+          return {
+            success: false,
+            error:
+              deleteError?.message ||
+              "Comentariul nu a putut fi șters.",
+          };
+        } finally {
+          setDeletingCommentId("");
+        }
+      },
+      [
+        currentUser,
+        deletingCommentId,
+        getCommentId,
+        postId,
+        removeCommentFromState,
+      ]
+    );
+
+  const deleteReply =
+    useCallback(
+      async (comment, reply) => {
+        const commentId =
+          getCommentId(comment);
+
+        const replyId =
+          getReplyId(reply);
+
+        if (
+          !postId ||
+          !commentId ||
+          !replyId ||
+          deletingReplyId
+        ) {
+          return {
+            success: false,
+          };
+        }
+
+        if (!currentUser) {
+          setDeleteCommentError(
+            "Trebuie să fii autentificat pentru a șterge un răspuns."
+          );
+
+          return {
+            success: false,
+          };
+        }
+
+        try {
+          setDeletingReplyId(replyId);
+          setDeleteCommentError("");
+
+          const response = await fetch(
+            `/api/posts/${postId}/comments/${commentId}/replies/${replyId}`,
+            {
+              method: "DELETE",
+              credentials: "include",
+            }
+          );
+
+          const data =
+            await response.json();
+
+          if (
+            !response.ok ||
+            !data?.success
+          ) {
+            throw new Error(
+              data?.message ||
+                "Răspunsul nu a putut fi șters."
+            );
+          }
+
+          removeReplyFromState({
+            commentId:
+              data?.parentCommentId ||
+              commentId,
+
+            replyId:
+              data?.deletedReplyId ||
+              replyId,
+
+            repliesCount:
+              data?.repliesCount,
+
+            commentsCount:
+              data?.commentsCount,
+          });
+
+          return {
+            success: true,
+            data,
+          };
+        } catch (deleteError) {
+          console.error(
+            "Eroare la ștergerea răspunsului:",
+            deleteError
+          );
+
+          setDeleteCommentError(
+            deleteError?.message ||
+              "Răspunsul nu a putut fi șters."
+          );
+
+          return {
+            success: false,
+            error:
+              deleteError?.message ||
+              "Răspunsul nu a putut fi șters.",
+          };
+        } finally {
+          setDeletingReplyId("");
+        }
+      },
+      [
+        currentUser,
+        deletingReplyId,
+        getCommentId,
+        getReplyId,
+        postId,
+        removeReplyFromState,
+      ]
+    );
+
   useEffect(() => {
     setCommentsCount(
       Number.isFinite(
@@ -846,6 +1330,9 @@ export default function useComments({
     commentsLoading,
     commentsError,
 
+    hasMoreComments,
+    isLoadingMoreComments,
+
     commentContent,
     commentError,
     isCommentSubmitting,
@@ -861,10 +1348,15 @@ export default function useComments({
     repliesCountByComment,
     expandedRepliesByComment,
 
+    deletingCommentId,
+    deletingReplyId,
+    deleteCommentError,
+
     setCommentContent,
     setCommentError,
     setReplyContent,
     setReplyError,
+    setDeleteCommentError,
 
     submitComment,
 
@@ -876,7 +1368,13 @@ export default function useComments({
     toggleReplies,
     loadReplies,
 
+    deleteComment,
+    deleteReply,
+
     removeCommentFromState,
+    removeReplyFromState,
+    
+    loadMoreComments,
 
     refetchComments:
       loadComments,

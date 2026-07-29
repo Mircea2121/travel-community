@@ -7,7 +7,11 @@ export default function CommentsSection({
   commentsLoading = false,
   commentsError = "",
 
+  hasMoreComments = false,
+  isLoadingMoreComments = false,
+
   currentUser = null,
+  postAuthorId = "",
 
   commentContent = "",
   commentError = "",
@@ -24,6 +28,9 @@ export default function CommentsSection({
   repliesCountByComment = {},
   expandedRepliesByComment = {},
 
+  deletingCommentId = "",
+  deletingReplyId = "",
+
   onCommentContentChange,
   onCommentSubmit,
 
@@ -33,7 +40,13 @@ export default function CommentsSection({
   onReplyContentChange,
   onReplySubmit,
   onToggleReplies,
-  onOpenCommentMenu,
+
+  onDeleteComment,
+  onDeleteReply,
+  onReportComment,
+  onReportReply,
+
+  onLoadMoreComments,
 }) {
   const isAuthenticated =
     Boolean(currentUser);
@@ -42,10 +55,6 @@ export default function CommentsSection({
     <div className="comments-box">
       <div className="comments-section-header">
         <div>
-          <span className="comments-section-label">
-            Discuție
-          </span>
-
           <h2>
             Comentarii și întrebări
           </h2>
@@ -92,108 +101,161 @@ export default function CommentsSection({
           Fii primul care răspunde.
         </p>
       ) : (
-        <div className="comments-list">
-          {comments.map((comment) => {
-            const commentId = String(
-              comment?._id ||
-                comment?.id ||
-                ""
-            );
+        <>
+          <div className="comments-list">
+            {comments.map(
+              (comment) => {
+                const commentId =
+                  String(
+                    comment?._id ||
+                      comment?.id ||
+                      ""
+                  );
 
-            const replies =
-              repliesByComment[
-                commentId
-              ] || [];
+                if (!commentId) {
+                  return null;
+                }
 
-            const isRepliesLoading =
-              Boolean(
-                repliesLoadingByComment[
-                  commentId
-                ]
-              );
+                const replies =
+                  repliesByComment[
+                    commentId
+                  ] || [];
 
-            const repliesCountValue =
-              Number(
-                repliesCountByComment[
-                  commentId
-                ]
-              );
+                const isRepliesLoading =
+                  Boolean(
+                    repliesLoadingByComment[
+                      commentId
+                    ]
+                  );
 
-            const repliesCount =
-              Number.isFinite(
-                repliesCountValue
-              )
-                ? repliesCountValue
-                : replies.length;
+                const repliesCountValue =
+                  Number(
+                    repliesCountByComment[
+                      commentId
+                    ]
+                  );
 
-            const isRepliesExpanded =
-              Boolean(
-                expandedRepliesByComment[
-                  commentId
-                ]
-              );
+                const repliesCount =
+                  Number.isFinite(
+                    repliesCountValue
+                  )
+                    ? repliesCountValue
+                    : replies.length;
 
-            const isReplyFormOpen =
-              activeReplyCommentId ===
-              commentId;
+                const isRepliesExpanded =
+                  Boolean(
+                    expandedRepliesByComment[
+                      commentId
+                    ]
+                  );
 
-            return (
-              <CommentItem
-                key={commentId}
-                comment={comment}
-                replies={replies}
-                repliesCount={
-                  repliesCount
+                const isReplyFormOpen =
+                  activeReplyCommentId ===
+                  commentId;
+
+                const isCommentDeleting =
+                  deletingCommentId ===
+                  commentId;
+
+                return (
+                  <CommentItem
+                    key={commentId}
+                    comment={comment}
+                    replies={replies}
+                    repliesCount={
+                      repliesCount
+                    }
+                    isRepliesLoading={
+                      isRepliesLoading
+                    }
+                    isRepliesExpanded={
+                      isRepliesExpanded
+                    }
+                    isReplyFormOpen={
+                      isReplyFormOpen
+                    }
+                    replyToUser={
+                      replyToUser
+                    }
+                    replyValue={
+                      replyContent
+                    }
+                    replyError={
+                      replyError
+                    }
+                    isReplySubmitting={
+                      isReplySubmitting
+                    }
+                    isAuthenticated={
+                      isAuthenticated
+                    }
+                    currentUser={
+                      currentUser
+                    }
+                    postAuthorId={
+                      postAuthorId
+                    }
+                    isCommentDeleting={
+                      isCommentDeleting
+                    }
+                    deletingReplyId={
+                      deletingReplyId
+                    }
+                    onOpenReplyForm={
+                      onOpenReplyForm
+                    }
+                    onReplyToReply={
+                      onReplyToReply
+                    }
+                    onCloseReplyForm={
+                      onCloseReplyForm
+                    }
+                    onReplyChange={
+                      onReplyContentChange
+                    }
+                    onReplySubmit={
+                      onReplySubmit
+                    }
+                    onToggleReplies={
+                      onToggleReplies
+                    }
+                    onDeleteComment={
+                      onDeleteComment
+                    }
+                    onDeleteReply={
+                      onDeleteReply
+                    }
+                    onReportComment={
+                      onReportComment
+                    }
+                    onReportReply={
+                      onReportReply
+                    }
+                  />
+                );
+              }
+            )}
+          </div>
+
+          {hasMoreComments && (
+            <div className="load-more-comments-wrapper">
+              <button
+                type="button"
+                className="load-more-comments-button"
+                disabled={
+                  isLoadingMoreComments
                 }
-                isRepliesLoading={
-                  isRepliesLoading
+                onClick={
+                  onLoadMoreComments
                 }
-                isRepliesExpanded={
-                  isRepliesExpanded
-                }
-                isReplyFormOpen={
-                  isReplyFormOpen
-                }
-                replyToUser={
-                  replyToUser
-                }
-                replyValue={
-                  replyContent
-                }
-                replyError={
-                  replyError
-                }
-                isReplySubmitting={
-                  isReplySubmitting
-                }
-                isAuthenticated={
-                  isAuthenticated
-                }
-                onOpenReplyForm={
-                  onOpenReplyForm
-                }
-                onReplyToReply={
-                  onReplyToReply
-                }
-                onCloseReplyForm={
-                  onCloseReplyForm
-                }
-                onReplyChange={
-                  onReplyContentChange
-                }
-                onReplySubmit={
-                  onReplySubmit
-                }
-                onToggleReplies={
-                  onToggleReplies
-                }
-                onOpenMenu={
-                  onOpenCommentMenu
-                }
-              />
-            );
-          })}
-        </div>
+              >
+                {isLoadingMoreComments
+                  ? "Se încarcă..."
+                  : "Încarcă mai multe comentarii"}
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

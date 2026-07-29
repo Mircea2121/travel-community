@@ -1,9 +1,83 @@
 "use client";
 
 import "./about.css";
+
+import {
+  useEffect,
+  useState,
+} from "react";
+
 import { useRouter } from "next/navigation";
+
 export default function About() {
   const router = useRouter();
+
+  const [user, setUser] = useState(null);
+
+  const [isLoadingUser, setIsLoadingUser] =
+    useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadUser() {
+      try {
+        const response = await fetch(
+          "/api/auth/me",
+          {
+            method: "GET",
+            credentials: "include",
+            cache: "no-store",
+          }
+        );
+
+        if (!response.ok) {
+          if (isMounted) {
+            setUser(null);
+          }
+
+          return;
+        }
+
+        const data = await response.json();
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (data?.success && data?.user) {
+          setUser(data.user);
+        } else {
+          setUser(null);
+        }
+      } catch {
+        if (isMounted) {
+          setUser(null);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingUser(false);
+        }
+      }
+    }
+
+    loadUser();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  function handleCommunityClick() {
+    if (isLoadingUser) {
+      return;
+    }
+
+    router.push(
+      user ? "/profile" : "/register"
+    );
+  }
+
   return (
     <section
       id="about"
@@ -22,7 +96,6 @@ export default function About() {
           împărtășită.
         </h2>
 
-    
         <p>
           Ne dorim să construim cea mai mare
           comunitate de călători din România,
@@ -41,7 +114,8 @@ export default function About() {
         <button
           type="button"
           className="about-button"
-          onClick={() => router.push("/login")}
+          onClick={handleCommunityClick}
+          disabled={isLoadingUser}
         >
           Alătură-te comunității
         </button>

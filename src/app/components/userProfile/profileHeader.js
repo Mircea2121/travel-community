@@ -1,9 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Mail } from "lucide-react";
+import {
+  Check,
+  Mail,
+  Pencil,
+  X,
+} from "lucide-react";
 
 import "./userProfile.css";
+
+const MAX_BIO_LENGTH = 180;
 
 export default function ProfileHeader({
   user,
@@ -11,12 +18,13 @@ export default function ProfileHeader({
   isFollowing = false,
   onFollow,
   onMessage,
-  onEditProfile,
+  onSaveBio,
 }) {
   const effectiveIsOwnProfile =
-    isOwnProfile === true || user?.isOwnProfile === true;
+    isOwnProfile === true ||
+    user?.isOwnProfile === true;
 
-  const getValidImageUrl = (image) => {
+  function getValidImageUrl(image) {
     if (!image) {
       return null;
     }
@@ -34,7 +42,7 @@ export default function ProfileHeader({
     }
 
     return imageUrl.trim();
-  };
+  }
 
   const [avatarPreview, setAvatarPreview] = useState(
     getValidImageUrl(user?.avatar)
@@ -47,10 +55,21 @@ export default function ProfileHeader({
   const [avatarLoadFailed, setAvatarLoadFailed] =
     useState(false);
 
+  const [bio, setBio] = useState(user?.bio || "");
+  const [bioDraft, setBioDraft] = useState(user?.bio || "");
+  const [isEditingBio, setIsEditingBio] = useState(false);
+  const [isSavingBio, setIsSavingBio] = useState(false);
+  const [bioError, setBioError] = useState("");
+
   useEffect(() => {
     setAvatarPreview(getValidImageUrl(user?.avatar));
     setCoverPreview(getValidImageUrl(user?.coverImage));
     setAvatarLoadFailed(false);
+
+    setBio(user?.bio || "");
+    setBioDraft(user?.bio || "");
+    setIsEditingBio(false);
+    setBioError("");
   }, [user]);
 
   useEffect(() => {
@@ -86,6 +105,9 @@ export default function ProfileHeader({
 
   const fallbackInitial =
     fullName.trim().charAt(0).toUpperCase() || "?";
+
+  const shouldShowAvatarImage =
+    Boolean(avatarPreview) && !avatarLoadFailed;
 
   function handleAvatarChange(event) {
     const file = event.target.files?.[0];
@@ -150,14 +172,71 @@ export default function ProfileHeader({
     }
   }
 
-  function handleEditProfileClick() {
-    if (typeof onEditProfile === "function") {
-      onEditProfile(user);
+  function handleStartBioEdit() {
+    setBioDraft(bio);
+    setBioError("");
+    setIsEditingBio(true);
+  }
+
+  function handleCancelBioEdit() {
+    setBioDraft(bio);
+    setBioError("");
+    setIsEditingBio(false);
+  }
+
+  function handleBioChange(event) {
+    const nextValue = event.target.value;
+
+    if (nextValue.length > MAX_BIO_LENGTH) {
+      return;
+    }
+
+    setBioDraft(nextValue);
+
+    if (bioError) {
+      setBioError("");
     }
   }
 
-  const shouldShowAvatarImage =
-    Boolean(avatarPreview) && !avatarLoadFailed;
+  async function handleSaveBio() {
+    if (isSavingBio) {
+      return;
+    }
+
+    const normalizedBio = bioDraft.trim();
+
+    if (normalizedBio.length > MAX_BIO_LENGTH) {
+      setBioError(
+        `Descrierea poate avea maximum ${MAX_BIO_LENGTH} de caractere.`
+      );
+
+      return;
+    }
+
+    setIsSavingBio(true);
+    setBioError("");
+
+    try {
+      if (typeof onSaveBio !== "function") {
+        throw new Error(
+          "Salvarea descrierii nu este încă conectată."
+        );
+      }
+
+      await onSaveBio(normalizedBio);
+
+      setBio(normalizedBio);
+      setBioDraft(normalizedBio);
+      setIsEditingBio(false);
+    } catch (error) {
+      setBioError(
+        error?.message ||
+          "Descrierea nu a putut fi salvată."
+      );
+    } finally {
+      setIsSavingBio(false);
+    }
+  }
 
   return (
     <section className="travel-profile-hero">
@@ -188,8 +267,8 @@ export default function ProfileHeader({
           </label>
         )}
 
-        <div className="travel-profile-cover-actions">
-          {!effectiveIsOwnProfile && (
+        {!effectiveIsOwnProfile && (
+          <div className="travel-profile-cover-actions">
             <button
               type="button"
               className="travel-profile-action-btn travel-profile-action-message"
@@ -203,24 +282,18 @@ export default function ProfileHeader({
 
               <span>Mesaj</span>
             </button>
-          )}
 
-          <button
-            type="button"
-            className="travel-profile-action-btn travel-profile-action-primary"
-            onClick={
-              effectiveIsOwnProfile
-                ? handleEditProfileClick
-                : handleFollowClick
-            }
-          >
-            {effectiveIsOwnProfile
-              ? "Editează profilul"
-              : isFollowing
+            <button
+              type="button"
+              className="travel-profile-action-btn travel-profile-action-primary"
+              onClick={handleFollowClick}
+            >
+              {isFollowing
                 ? "Urmărești"
                 : "Urmărește"}
-          </button>
-        </div>
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="travel-profile-info-card">
@@ -301,11 +374,94 @@ export default function ProfileHeader({
             </p>
           )}
 
-          {user.bio && (
-            <p className="travel-profile-bio">
-              {user.bio}
-            </p>
-          )}
+          <div className="travel-profile-bio-section">
+            {isEditingBio ? (
+              <div className="travel-profile-bio-editor">
+                <textarea
+                  value={bioDraft}
+                  onChange={handleBioChange}
+                  placeholder="Scrie o descriere scurtă despre tine..."
+                  maxLength={MAX_BIO_LENGTH}
+                  disabled={isSavingBio}
+                  autoFocus
+                />
+
+                <div className="travel-profile-bio-editor-footer">
+                  <span className="travel-profile-bio-counter">
+                    {bioDraft.length}/{MAX_BIO_LENGTH}
+                  </span>
+
+                  <div className="travel-profile-bio-editor-actions">
+                    <button
+                      type="button"
+                      className="travel-profile-bio-cancel"
+                      onClick={handleCancelBioEdit}
+                      disabled={isSavingBio}
+                    >
+                      <X
+                        size={17}
+                        aria-hidden="true"
+                      />
+
+                      <span>Anulează</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="travel-profile-bio-save"
+                      onClick={handleSaveBio}
+                      disabled={isSavingBio}
+                    >
+                      <Check
+                        size={17}
+                        aria-hidden="true"
+                      />
+
+                      <span>
+                        {isSavingBio
+                          ? "Se salvează..."
+                          : "Salvează"}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                {bioError && (
+                  <p
+                    className="travel-profile-bio-error"
+                    role="alert"
+                  >
+                    {bioError}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="travel-profile-bio-display">
+                <p className="travel-profile-bio">
+                  {bio ||
+                    (effectiveIsOwnProfile
+                      ? "Adaugă o descriere scurtă despre tine."
+                      : "Utilizatorul nu a adăugat încă o descriere.")}
+                </p>
+
+                {effectiveIsOwnProfile && (
+                  <button
+                    type="button"
+                    className="travel-profile-bio-edit"
+                    onClick={handleStartBioEdit}
+                    aria-label="Editează descrierea scurtă"
+                    title="Editează descrierea"
+                  >
+                    <Pencil
+                      size={17}
+                      strokeWidth={2.2}
+                      aria-hidden="true"
+                    />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </section>
