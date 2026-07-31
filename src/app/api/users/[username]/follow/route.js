@@ -1,340 +1,511 @@
+import { ObjectId } from "mongodb";
+import { NextResponse } from "next/server";
+
 import { getCurrentUser } from "../../../../utils/currentUser";
 import { getUsersCollection } from "../../../../utils/database";
-import { USERNAME_PATTERN } from "../../../../utils/validation";
 
-export async function POST(request, { params }) {
+function jsonResponse(body, status = 200) {
+  return NextResponse.json(body, {
+    status,
+    headers: {
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
+function normalizeUsername(value) {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return value.trim().toLowerCase();
+}
+
+function getValidObjectId(value) {
+  const normalizedValue = String(value || "");
+
+  if (!ObjectId.isValid(normalizedValue)) {
+    return null;
+  }
+
+  return new ObjectId(normalizedValue);
+}
+
+async function getFollowUsers(rawUsername) {
+  const username = normalizeUsername(rawUsername);
+
+  if (!username) {
+    return {
+      error: jsonResponse(
+        {
+          success: false,
+          message: "Username-ul este obligatoriu.",
+        },
+        400
+      ),
+    };
+  }
+
+  const currentUser = await getCurrentUser();
+
+  if (!currentUser) {
+    return {
+      error: jsonResponse(
+        {
+          success: false,
+          message:
+            "Trebuie să fii autentificat pentru a urmări un utilizator.",
+        },
+        401
+      ),
+    };
+  }
+
+  const currentUserId = getValidObjectId(
+    currentUser._id
+  );
+
+  if (!currentUserId) {
+    return {
+      error: jsonResponse(
+        {
+          success: false,
+          message:
+            "Utilizatorul autentificat nu este valid.",
+        },
+        401
+      ),
+    };
+  }
+
+  const usersCollection =
+    await getUsersCollection();
+
+  const profileUser =
+    await usersCollection.findOne(
+      {
+        username,
+      },
+      {
+        projection: {
+          _id: 1,
+          username: 1,
+          followers: 1,
+          following: 1,
+        },
+      }
+    );
+
+  if (!profileUser) {
+    return {
+      error: jsonResponse(
+        {
+          success: false,
+          message:
+            "Utilizatorul pe care încerci să îl urmărești nu a fost găsit.",
+        },
+        404
+      ),
+    };
+  }
+
+  const profileUserId = getValidObjectId(
+    profileUser._id
+  );
+
+  if (!profileUserId) {
+    return {
+      error: jsonResponse(
+        {
+          success: false,
+          message:
+            "Profilul utilizatorului nu este valid.",
+        },
+        400
+      ),
+    };
+  }
+
+  if (
+    currentUserId.toString() ===
+    profileUserId.toString()
+  ) {
+    return {
+      error: jsonResponse(
+        {
+          success: false,
+          message:
+            "Nu îți poți urmări propriul profil.",
+        },
+        400
+      ),
+    };
+  }
+
+  return {
+    currentUserId,
+    profileUserId,
+    profileUser,
+    usersCollection,
+  };
+}
+
+export async function POST(
+  request,
+  { params }
+) {
   try {
-    const currentUser = await getCurrentUser();
+    const { username } = await params;
 
-    if (!currentUser) {
-      return Response.json(
-        {
-          success: false,
-          message: "Trebuie să fii autentificat pentru a urmări un utilizator.",
-        },
-        {
-          status: 401,
-        }
-      );
+    const result =
+      await getFollowUsers(username);
+
+    if (result.error) {
+      return result.error;
     }
 
-    const { username: rawUsername } = await params;
+    const {
+      currentUserId,
+      profileUserId,
+      usersCollection,
+    } = result;
 
-    const username = rawUsername?.trim().toLowerCase();
-
-    if (!username || !USERNAME_PATTERN.test(username)) {
-      return Response.json(
+    const alreadyFollowing =
+      await usersCollection.findOne(
         {
-          success: false,
-          message: "Username-ul nu este valid.",
+          _id: currentUserId,
+          following: profileUserId,
         },
         {
-          status: 400,
+          projection: {
+            _id: 1,
+          },
         }
       );
-    }
 
-    const usersCollection = await getUsersCollection();
+    if (alreadyFollowing) {
+      const [
+        followersCount,
+        followingCount,
+      ] = await Promise.all([
+        usersCollection.countDocuments({
+          _id: profileUserId,
+          followers: currentUserId,
+        }),
 
-    const userToFollow = await usersCollection.findOne({
-      username,
-    });
+        usersCollection.countDocuments({
+          _id: currentUserId,
+          following: profileUserId,
+        }),
+      ]);
 
-    if (!userToFollow) {
-      return Response.json(
-        {
-          success: false,
-          message: "Utilizatorul nu a fost găsit.",
-        },
-        {
-          status: 404,
-        }
-      );
-    }
-
-    if (currentUser._id.toString() === userToFollow._id.toString()) {
-      return Response.json(
-        {
-          success: false,
-          message: "Nu îți poți urmări propriul profil.",
-        },
-        {
-          status: 400,
-        }
-      );
+      return jsonResponse({
+        success: true,
+        isFollowing: true,
+        followersCount:
+          followersCount > 0
+            ? Array.isArray(
+                (
+                  await usersCollection.findOne(
+                    {
+                      _id: profileUserId,
+                    },
+                    {
+                      projection: {
+                        followers: 1,
+                      },
+                    }
+                  )
+                )?.followers
+              )
+              ? (
+                  await usersCollection.findOne(
+                    {
+                      _id: profileUserId,
+                    },
+                    {
+                      projection: {
+                        followers: 1,
+                      },
+                    }
+                  )
+                ).followers.length
+              : 0
+            : 0,
+        followingCount:
+          followingCount > 0
+            ? Array.isArray(
+                (
+                  await usersCollection.findOne(
+                    {
+                      _id: currentUserId,
+                    },
+                    {
+                      projection: {
+                        following: 1,
+                      },
+                    }
+                  )
+                )?.following
+              )
+              ? (
+                  await usersCollection.findOne(
+                    {
+                      _id: currentUserId,
+                    },
+                    {
+                      projection: {
+                        following: 1,
+                      },
+                    }
+                  )
+                ).following.length
+              : 0
+            : 0,
+        message:
+          "Urmărești deja acest utilizator.",
+      });
     }
 
     const now = new Date();
 
-    const currentUserUpdate = await usersCollection.updateOne(
-      {
-        _id: currentUser._id,
-        following: {
-          $ne: userToFollow._id,
+    const profileUpdate =
+      await usersCollection.updateOne(
+        {
+          _id: profileUserId,
         },
-      },
-      {
-        $addToSet: {
-          following: userToFollow._id,
-        },
-        $inc: {
-          "stats.followingCount": 1,
-        },
-        $set: {
-          updatedAt: now,
-        },
-      }
-    );
+        {
+          $addToSet: {
+            followers: currentUserId,
+          },
+          $set: {
+            updatedAt: now,
+          },
+        }
+      );
 
-    if (currentUserUpdate.modifiedCount === 0) {
-      return Response.json(
+    if (profileUpdate.matchedCount === 0) {
+      return jsonResponse(
         {
           success: false,
-          message: "Urmărești deja acest utilizator.",
+          message:
+            "Profilul utilizatorului nu a fost găsit.",
         },
-        {
-          status: 409,
-        }
+        404
       );
     }
 
-    const followedUserUpdate = await usersCollection.updateOne(
-      {
-        _id: userToFollow._id,
-        followers: {
-          $ne: currentUser._id,
-        },
-      },
-      {
-        $addToSet: {
-          followers: currentUser._id,
-        },
-        $inc: {
-          "stats.followersCount": 1,
-        },
-        $set: {
-          updatedAt: now,
-        },
-      }
-    );
-
-    if (followedUserUpdate.modifiedCount === 0) {
+    const currentUserUpdate =
       await usersCollection.updateOne(
         {
-          _id: currentUser._id,
+          _id: currentUserId,
+        },
+        {
+          $addToSet: {
+            following: profileUserId,
+          },
+          $set: {
+            updatedAt: now,
+          },
+        }
+      );
+
+    if (currentUserUpdate.matchedCount === 0) {
+      await usersCollection.updateOne(
+        {
+          _id: profileUserId,
         },
         {
           $pull: {
-            following: userToFollow._id,
-          },
-          $inc: {
-            "stats.followingCount": -1,
-          },
-          $set: {
-            updatedAt: new Date(),
+            followers: currentUserId,
           },
         }
       );
 
-      return Response.json(
+      return jsonResponse(
         {
           success: false,
-          message: "Nu s-a putut realiza urmărirea utilizatorului.",
+          message:
+            "Lista utilizatorilor urmăriți nu a putut fi actualizată.",
         },
-        {
-          status: 409,
-        }
+        500
       );
     }
 
-    return Response.json(
-      {
-        success: true,
-        message: `Acum îl urmărești pe ${userToFollow.name}.`,
-        isFollowing: true,
-      },
-      {
-        status: 200,
-      }
-    );
-  } catch (error) {
-    console.error("Eroare la urmărirea utilizatorului:", error);
+    const [
+      updatedProfileUser,
+      updatedCurrentUser,
+    ] = await Promise.all([
+      usersCollection.findOne(
+        {
+          _id: profileUserId,
+        },
+        {
+          projection: {
+            followers: 1,
+          },
+        }
+      ),
 
-    return Response.json(
+      usersCollection.findOne(
+        {
+          _id: currentUserId,
+        },
+        {
+          projection: {
+            following: 1,
+          },
+        }
+      ),
+    ]);
+
+    return jsonResponse({
+      success: true,
+      isFollowing: true,
+
+      followersCount: Array.isArray(
+        updatedProfileUser?.followers
+      )
+        ? updatedProfileUser.followers.length
+        : 0,
+
+      followingCount: Array.isArray(
+        updatedCurrentUser?.following
+      )
+        ? updatedCurrentUser.following.length
+        : 0,
+
+      message:
+        "Acum urmărești acest utilizator.",
+    });
+  } catch (error) {
+    console.error(
+      "Eroare la urmărirea utilizatorului:",
+      error
+    );
+
+    return jsonResponse(
       {
         success: false,
-        message: "A apărut o eroare la urmărirea utilizatorului.",
+        message:
+          "Utilizatorul nu a putut fi urmărit.",
       },
-      {
-        status: 500,
-      }
+      500
     );
   }
 }
 
-export async function DELETE(request, { params }) {
+export async function DELETE(
+  request,
+  { params }
+) {
   try {
-    const currentUser = await getCurrentUser();
+    const { username } = await params;
 
-    if (!currentUser) {
-      return Response.json(
-        {
-          success: false,
-          message:
-            "Trebuie să fii autentificat pentru a nu mai urmări un utilizator.",
-        },
-        {
-          status: 401,
-        }
-      );
+    const result =
+      await getFollowUsers(username);
+
+    if (result.error) {
+      return result.error;
     }
 
-    const { username: rawUsername } = await params;
-
-    const username = rawUsername?.trim().toLowerCase();
-
-    if (!username || !USERNAME_PATTERN.test(username)) {
-      return Response.json(
-        {
-          success: false,
-          message: "Username-ul nu este valid.",
-        },
-        {
-          status: 400,
-        }
-      );
-    }
-
-    const usersCollection = await getUsersCollection();
-
-    const userToUnfollow = await usersCollection.findOne({
-      username,
-    });
-
-    if (!userToUnfollow) {
-      return Response.json(
-        {
-          success: false,
-          message: "Utilizatorul nu a fost găsit.",
-        },
-        {
-          status: 404,
-        }
-      );
-    }
-
-    if (currentUser._id.toString() === userToUnfollow._id.toString()) {
-      return Response.json(
-        {
-          success: false,
-          message: "Nu poți renunța la urmărirea propriului profil.",
-        },
-        {
-          status: 400,
-        }
-      );
-    }
+    const {
+      currentUserId,
+      profileUserId,
+      usersCollection,
+    } = result;
 
     const now = new Date();
 
-    const currentUserUpdate = await usersCollection.updateOne(
-      {
-        _id: currentUser._id,
-        following: userToUnfollow._id,
-      },
-      {
-        $pull: {
-          following: userToUnfollow._id,
-        },
-        $inc: {
-          "stats.followingCount": -1,
-        },
-        $set: {
-          updatedAt: now,
-        },
-      }
-    );
-
-    if (currentUserUpdate.modifiedCount === 0) {
-      return Response.json(
+    await Promise.all([
+      usersCollection.updateOne(
         {
-          success: false,
-          message: "Nu urmărești acest utilizator.",
+          _id: profileUserId,
         },
         {
-          status: 409,
-        }
-      );
-    }
-
-    const unfollowedUserUpdate = await usersCollection.updateOne(
-      {
-        _id: userToUnfollow._id,
-        followers: currentUser._id,
-      },
-      {
-        $pull: {
-          followers: currentUser._id,
-        },
-        $inc: {
-          "stats.followersCount": -1,
-        },
-        $set: {
-          updatedAt: now,
-        },
-      }
-    );
-
-    if (unfollowedUserUpdate.modifiedCount === 0) {
-      await usersCollection.updateOne(
-        {
-          _id: currentUser._id,
-        },
-        {
-          $addToSet: {
-            following: userToUnfollow._id,
-          },
-          $inc: {
-            "stats.followingCount": 1,
+          $pull: {
+            followers: currentUserId,
           },
           $set: {
-            updatedAt: new Date(),
+            updatedAt: now,
           },
         }
-      );
+      ),
 
-      return Response.json(
+      usersCollection.updateOne(
         {
-          success: false,
-          message: "Nu s-a putut elimina urmărirea utilizatorului.",
+          _id: currentUserId,
         },
         {
-          status: 409,
+          $pull: {
+            following: profileUserId,
+          },
+          $set: {
+            updatedAt: now,
+          },
         }
-      );
-    }
+      ),
+    ]);
 
-    return Response.json(
-      {
-        success: true,
-        message: `Nu îl mai urmărești pe ${userToUnfollow.name}.`,
-        isFollowing: false,
-      },
-      {
-        status: 200,
-      }
-    );
+    const [
+      updatedProfileUser,
+      updatedCurrentUser,
+    ] = await Promise.all([
+      usersCollection.findOne(
+        {
+          _id: profileUserId,
+        },
+        {
+          projection: {
+            followers: 1,
+          },
+        }
+      ),
+
+      usersCollection.findOne(
+        {
+          _id: currentUserId,
+        },
+        {
+          projection: {
+            following: 1,
+          },
+        }
+      ),
+    ]);
+
+    return jsonResponse({
+      success: true,
+      isFollowing: false,
+
+      followersCount: Array.isArray(
+        updatedProfileUser?.followers
+      )
+        ? updatedProfileUser.followers.length
+        : 0,
+
+      followingCount: Array.isArray(
+        updatedCurrentUser?.following
+      )
+        ? updatedCurrentUser.following.length
+        : 0,
+
+      message:
+        "Nu mai urmărești acest utilizator.",
+    });
   } catch (error) {
-    console.error("Eroare la eliminarea urmăririi:", error);
+    console.error(
+      "Eroare la oprirea urmăririi utilizatorului:",
+      error
+    );
 
-    return Response.json(
+    return jsonResponse(
       {
         success: false,
-        message: "A apărut o eroare la eliminarea urmăririi utilizatorului.",
+        message:
+          "Urmărirea utilizatorului nu a putut fi oprită.",
       },
-      {
-        status: 500,
-      }
+      500
     );
   }
 }

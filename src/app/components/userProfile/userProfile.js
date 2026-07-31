@@ -1,6 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
+
 import { useRouter } from "next/navigation";
 
 import ProfileHeader from "./profileHeader";
@@ -13,6 +17,8 @@ import "./userProfile.css";
 
 export default function UserProfile({
   user: initialUser,
+  isOwnProfile: initialIsOwnProfile = false,
+  isFollowing: initialIsFollowing = false,
 }) {
   const router = useRouter();
 
@@ -35,8 +41,23 @@ export default function UserProfile({
     useState(false);
 
   const [error, setError] = useState("");
+
   const [postsError, setPostsError] =
     useState("");
+
+  const [isFollowing, setIsFollowing] =
+    useState(
+      initialIsFollowing === true
+    );
+
+  const [followLoading, setFollowLoading] =
+    useState(false);
+
+  useEffect(() => {
+    setIsFollowing(
+      initialIsFollowing === true
+    );
+  }, [initialIsFollowing]);
 
   useEffect(() => {
     let isMounted = true;
@@ -81,14 +102,42 @@ export default function UserProfile({
         }
 
         const displayedUser =
-          initialUser || authenticatedUser;
+          initialIsOwnProfile === true
+            ? authenticatedUser
+            : initialUser || authenticatedUser;
 
         if (!isMounted) {
           return;
         }
 
-        setCurrentUser(authenticatedUser);
-        setUser(displayedUser);
+        setCurrentUser(
+          authenticatedUser
+        );
+
+        setUser((previousUser) => {
+          if (!previousUser) {
+            return displayedUser;
+          }
+
+          return {
+            ...previousUser,
+            ...displayedUser,
+
+            stats: {
+              ...(previousUser.stats ||
+                {}),
+              ...(displayedUser.stats ||
+                {}),
+            },
+
+            level: {
+              ...(previousUser.level ||
+                {}),
+              ...(displayedUser.level ||
+                {}),
+            },
+          };
+        });
 
         const profileUsername =
           displayedUser?.username
@@ -102,15 +151,16 @@ export default function UserProfile({
 
         setPostsLoading(true);
 
-        const postsResponse = await fetch(
-          `/api/posts?username=${encodeURIComponent(
-            profileUsername
-          )}`,
-          {
-            method: "GET",
-            cache: "no-store",
-          }
-        );
+        const postsResponse =
+          await fetch(
+            `/api/posts?username=${encodeURIComponent(
+              profileUsername
+            )}`,
+            {
+              method: "GET",
+              cache: "no-store",
+            }
+          );
 
         const postsData =
           await postsResponse.json();
@@ -130,7 +180,9 @@ export default function UserProfile({
         }
 
         setPosts(
-          Array.isArray(postsData.posts)
+          Array.isArray(
+            postsData.posts
+          )
             ? postsData.posts
             : []
         );
@@ -164,7 +216,9 @@ export default function UserProfile({
   }, [initialUser]);
 
   const displayedUserId = String(
-    user?.id || user?._id || ""
+    user?.id ||
+      user?._id ||
+      ""
   );
 
   const currentUserId = String(
@@ -174,9 +228,13 @@ export default function UserProfile({
   );
 
   const isOwnProfile =
-    Boolean(displayedUserId) &&
-    Boolean(currentUserId) &&
-    displayedUserId === currentUserId;
+    initialIsOwnProfile === true ||
+    (
+      Boolean(displayedUserId) &&
+      Boolean(currentUserId) &&
+      displayedUserId ===
+        currentUserId
+    );
 
   function handleEditProfile() {
     if (!isOwnProfile) {
@@ -200,14 +258,127 @@ export default function UserProfile({
     );
   }
 
-  function handleFollow() {
-    if (isOwnProfile) {
+  async function handleFollow() {
+    if (
+      isOwnProfile ||
+      followLoading
+    ) {
       return;
     }
 
-    console.log(
-      "Funcția de urmărire va fi conectată la backend."
-    );
+    const username =
+      user?.username
+        ?.trim()
+        .toLowerCase();
+
+    if (!username) {
+      window.alert(
+        "Username-ul profilului lipsește."
+      );
+
+      return;
+    }
+
+    setFollowLoading(true);
+
+    try {
+      const response = await fetch(
+        `/api/users/${encodeURIComponent(
+          username
+        )}/follow`,
+        {
+          method: isFollowing
+            ? "DELETE"
+            : "POST",
+
+          credentials: "include",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+        }
+      );
+
+      const data =
+        await response.json();
+
+      if (
+        !response.ok ||
+        !data?.success
+      ) {
+        throw new Error(
+          data?.message ||
+            "Urmărirea nu a putut fi actualizată."
+        );
+      }
+
+      const nextIsFollowing =
+        data.isFollowing === true;
+
+      setIsFollowing(
+        nextIsFollowing
+      );
+
+      setUser((previousUser) => {
+        if (!previousUser) {
+          return previousUser;
+        }
+
+        const previousStats =
+          previousUser.stats || {};
+
+        const previousFollowersCount =
+          Number(
+            previousStats.followersCount
+          ) || 0;
+
+        const nextFollowersCount =
+          Number.isFinite(
+            Number(
+              data.followersCount
+            )
+          )
+            ? Number(
+                data.followersCount
+              )
+            : Math.max(
+                previousFollowersCount +
+                  (
+                    nextIsFollowing
+                      ? 1
+                      : -1
+                  ),
+                0
+              );
+
+        return {
+          ...previousUser,
+
+          stats: {
+            ...previousStats,
+
+            followersCount:
+              nextFollowersCount,
+          },
+
+          isFollowing:
+            nextIsFollowing,
+        };
+      });
+    } catch (followError) {
+      console.error(
+        "Eroare follow/unfollow:",
+        followError
+      );
+
+      window.alert(
+        followError?.message ||
+          "Urmărirea nu a putut fi actualizată."
+      );
+    } finally {
+      setFollowLoading(false);
+    }
   }
 
   function handleTabChange(tabKey) {
@@ -218,7 +389,9 @@ export default function UserProfile({
     return (
       <main className="user-profile-page">
         <div className="user-profile-loading">
-          <p>Se încarcă profilul...</p>
+          <p>
+            Se încarcă profilul...
+          </p>
         </div>
       </main>
     );
@@ -229,7 +402,8 @@ export default function UserProfile({
       <main className="user-profile-page">
         <div className="user-profile-error">
           <h2>
-            Profilul nu a putut fi încărcat
+            Profilul nu a putut fi
+            încărcat
           </h2>
 
           <p>{error}</p>
@@ -242,10 +416,13 @@ export default function UserProfile({
     return (
       <main className="user-profile-page">
         <div className="user-profile-error">
-          <h2>Utilizator indisponibil</h2>
+          <h2>
+            Utilizator indisponibil
+          </h2>
 
           <p>
-            Nu am găsit datele profilului.
+            Nu am găsit datele
+            profilului.
           </p>
         </div>
       </main>
@@ -253,7 +430,9 @@ export default function UserProfile({
   }
 
   const userId =
-    user.id || user._id || null;
+    user.id ||
+    user._id ||
+    null;
 
   const userName =
     user.name ||
@@ -270,45 +449,56 @@ export default function UserProfile({
     name: userName,
     fullName: userName,
 
-    username: user.username || "",
+    username:
+      user.username || "",
+
+    isFollowing,
 
     avatar:
       user.avatar &&
-      typeof user.avatar === "object"
+      typeof user.avatar ===
+        "object"
         ? user.avatar
         : {
             url:
-              typeof user.avatar === "string"
+              typeof user.avatar ===
+              "string"
                 ? user.avatar
                 : "",
+
             publicId: "",
           },
 
     coverImage:
       user.coverImage &&
-      typeof user.coverImage === "object"
+      typeof user.coverImage ===
+        "object"
         ? user.coverImage
         : {
             url:
-              typeof user.coverImage === "string"
+              typeof user.coverImage ===
+              "string"
                 ? user.coverImage
                 : "",
+
             publicId: "",
           },
 
     posts,
 
-    savedPosts: Array.isArray(
-      user.savedPosts
-    )
-      ? user.savedPosts
-      : [],
+    savedPosts:
+      Array.isArray(
+        user.savedPosts
+      )
+        ? user.savedPosts
+        : [],
 
-    destinations: Array.isArray(
-      user.destinations
-    )
-      ? user.destinations
-      : [],
+    destinations:
+      Array.isArray(
+        user.destinations
+      )
+        ? user.destinations
+        : [],
   };
 
   return (
@@ -317,12 +507,15 @@ export default function UserProfile({
         <ProfileHeader
           user={normalizedUser}
           isOwnProfile={isOwnProfile}
-          isFollowing={Boolean(
-            normalizedUser.isFollowing
-          )}
+          isFollowing={isFollowing}
+          isFollowLoading={
+            followLoading
+          }
           onFollow={handleFollow}
           onMessage={handleMessage}
-          onEditProfile={handleEditProfile}
+          onEditProfile={
+            handleEditProfile
+          }
         />
 
         <ProfileStats
@@ -332,11 +525,14 @@ export default function UserProfile({
         <ProfileTabs
           isOwnProfile={isOwnProfile}
           activeTab={activeTab}
-          onTabChange={handleTabChange}
+          onTabChange={
+            handleTabChange
+          }
         />
 
         <div className="user-profile-tab-content">
-          {activeTab === "posts" && (
+          {activeTab ===
+            "posts" && (
             <>
               {postsLoading ? (
                 <div className="profile-empty-state">
@@ -345,11 +541,14 @@ export default function UserProfile({
                   </div>
 
                   <h3>
-                    Se încarcă postările
+                    Se încarcă
+                    postările
                   </h3>
 
                   <p>
-                    Pregătim experiențele publicate.
+                    Pregătim
+                    experiențele
+                    publicate.
                   </p>
                 </div>
               ) : postsError ? (
@@ -359,20 +558,27 @@ export default function UserProfile({
                   </div>
 
                   <h3>
-                    Postările nu au putut fi încărcate
+                    Postările nu au
+                    putut fi
+                    încărcate
                   </h3>
 
-                  <p>{postsError}</p>
+                  <p>
+                    {postsError}
+                  </p>
                 </div>
               ) : (
                 <UserPostsGrid
-                  posts={normalizedUser.posts}
+                  posts={
+                    normalizedUser.posts
+                  }
                 />
               )}
             </>
           )}
 
-          {activeTab === "saved" &&
+          {activeTab ===
+            "saved" &&
             isOwnProfile && (
               <SavedPostsGrid
                 posts={
@@ -381,13 +587,16 @@ export default function UserProfile({
               />
             )}
 
-          {activeTab === "about" && (
+          {activeTab ===
+            "about" && (
             <section className="profile-empty-state">
               <div className="profile-empty-icon">
                 👤
               </div>
 
-              <h3>Despre utilizator</h3>
+              <h3>
+                Despre utilizator
+              </h3>
 
               <p>
                 {normalizedUser.bio ||

@@ -3,6 +3,7 @@ import { ObjectId } from "mongodb";
 
 import { getUsersCollection } from "../../../utils/database";
 import { verifyToken } from "../../../utils/auth";
+import { getProfileStats } from "../../../utils/profileStats";
 
 export async function GET() {
   try {
@@ -23,7 +24,10 @@ export async function GET() {
 
     const payload = await verifyToken(token);
 
-    if (!payload?.userId || !ObjectId.isValid(payload.userId)) {
+    if (
+      !payload?.userId ||
+      !ObjectId.isValid(payload.userId)
+    ) {
       return Response.json(
         {
           success: false,
@@ -35,7 +39,8 @@ export async function GET() {
       );
     }
 
-    const usersCollection = await getUsersCollection();
+    const usersCollection =
+      await getUsersCollection();
 
     const user = await usersCollection.findOne(
       {
@@ -60,9 +65,13 @@ export async function GET() {
       );
     }
 
+    const profileData =
+      await getProfileStats(user._id);
+
     return Response.json(
       {
         success: true,
+
         user: {
           id: user._id.toString(),
 
@@ -77,8 +86,8 @@ export async function GET() {
           avatar: user.avatar,
           coverImage: user.coverImage,
 
-          stats: user.stats,
-          level: user.level,
+          stats: profileData.stats,
+          level: profileData.level,
 
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
@@ -89,12 +98,16 @@ export async function GET() {
       }
     );
   } catch (error) {
-    console.error("Eroare la verificarea sesiunii:", error);
+    console.error(
+      "Eroare la verificarea sesiunii:",
+      error
+    );
 
     return Response.json(
       {
         success: false,
-        message: "Sesiunea nu este validă sau a expirat.",
+        message:
+          "Sesiunea nu este validă sau a expirat.",
       },
       {
         status: 401,

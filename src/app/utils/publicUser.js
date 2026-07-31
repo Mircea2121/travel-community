@@ -1,4 +1,9 @@
-export function getPublicUser(user) {
+import { getProfileStats } from "./profileStats";
+
+export async function getPublicUser(user) {
+  const profileData =
+    await getProfileStats(user._id);
+
   return {
     id: user._id.toString(),
 
@@ -11,8 +16,8 @@ export function getPublicUser(user) {
     avatar: user.avatar,
     coverImage: user.coverImage,
 
-    stats: user.stats,
-    level: user.level,
+    stats: profileData.stats,
+    level: profileData.level,
 
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,

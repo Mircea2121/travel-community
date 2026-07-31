@@ -612,15 +612,6 @@ body {
   );
 }
 
-.travel-profile-stat-icon-destinations {
-  color: #0796b8;
-  background: linear-gradient(
-    145deg,
-    #effcff,
-    #dff7fb
-  );
-}
-
 .travel-profile-stat-icon-likes {
   color: #ef476f;
   background: linear-gradient(

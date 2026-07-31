@@ -4,71 +4,164 @@ import { getCurrentUser } from "../../../utils/currentUser";
 import { getUsersCollection } from "../../../utils/database";
 import { getPublicUser } from "../../../utils/publicUser";
 
-export async function GET(request, { params }) {
-  try {
-    const { username: rawUsername } = await params;
+function createResponse(body, status = 200) {
+  return NextResponse.json(body, {
+    status,
+    headers: {
+      "Cache-Control":
+        "no-store, no-cache, must-revalidate",
+    },
+  });
+}
 
-    const username = rawUsername?.trim().toLowerCase();
+function normalizeUsername(value) {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return value
+    .trim()
+    .toLowerCase();
+}
+
+function normalizeId(value) {
+  if (!value) {
+    return "";
+  }
+
+  return value.toString();
+}
+
+export async function GET(
+  request,
+  { params }
+) {
+  try {
+    const {
+      username: rawUsername,
+    } = await params;
+
+    const username =
+      normalizeUsername(rawUsername);
 
     if (!username) {
-      return NextResponse.json(
+      return createResponse(
         {
           success: false,
-          message: "Username-ul este obligatoriu.",
+          message:
+            "Username-ul este obligatoriu.",
         },
-        {
-          status: 400,
-        }
+        400
       );
     }
 
-    const usersCollection = await getUsersCollection();
+    const usersCollection =
+      await getUsersCollection();
 
-    const profileUser = await usersCollection.findOne({
-      username,
-    });
+    const profileUser =
+      await usersCollection.findOne({
+        username,
+      });
 
     if (!profileUser) {
-      return NextResponse.json(
+      return createResponse(
         {
           success: false,
-          message: "Utilizatorul nu a fost găsit.",
+          message:
+            "Utilizatorul nu a fost găsit.",
         },
-        {
-          status: 404,
-        }
+        404
       );
     }
 
-    const currentUser = await getCurrentUser();
+    const currentUser =
+      await getCurrentUser();
+
+    const currentUserId =
+      normalizeId(currentUser?._id);
+
+    const profileUserId =
+      normalizeId(profileUser?._id);
 
     const isOwnProfile =
-      currentUser?._id.toString() === profileUser._id.toString();
+      Boolean(currentUserId) &&
+      Boolean(profileUserId) &&
+      currentUserId === profileUserId;
 
-    const isFollowing = currentUser
-      ? profileUser.followers?.some(
-          (followerId) =>
-            followerId.toString() === currentUser._id.toString()
-        ) ?? false
-      : false;
+    const followers = Array.isArray(
+      profileUser.followers
+    )
+      ? profileUser.followers
+      : [];
 
-    return NextResponse.json({
+    const following = Array.isArray(
+      profileUser.following
+    )
+      ? profileUser.following
+      : [];
+
+    const isFollowing =
+      !isOwnProfile &&
+      Boolean(currentUserId) &&
+      followers.some(
+        (followerId) =>
+          normalizeId(followerId) ===
+          currentUserId
+      );
+
+    const publicUser =
+      await getPublicUser(
+        profileUser
+      );
+
+    const followersCount =
+      Number(
+        publicUser?.stats
+          ?.followersCount
+      ) || followers.length;
+
+    const followingCount =
+      Number(
+        publicUser?.stats
+          ?.followingCount
+      ) || following.length;
+
+    return createResponse({
       success: true,
-      user: getPublicUser(profileUser),
+
+      user: {
+        ...publicUser,
+
+        stats: {
+          ...(publicUser?.stats ||
+            {}),
+
+          followersCount,
+          followingCount,
+        },
+
+        isOwnProfile,
+        isFollowing,
+      },
+
       isOwnProfile,
       isFollowing,
+      followersCount,
+      followingCount,
     });
   } catch (error) {
-    console.error("Eroare la citirea profilului public:", error);
+    console.error(
+      "Eroare la citirea profilului public:",
+      error
+    );
 
-    return NextResponse.json(
+    return createResponse(
       {
         success: false,
-        message: "A apărut o eroare la încărcarea profilului.",
+        message:
+          "A apărut o eroare la încărcarea profilului.",
       },
-      {
-        status: 500,
-      }
+      500
     );
   }
 }
