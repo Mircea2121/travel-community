@@ -5,7 +5,7 @@ import {
   useMemo,
   useState,
 } from "react";
-
+import "./postGallery.css";
 import { createPortal } from "react-dom";
 
 import {

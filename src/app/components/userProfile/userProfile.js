@@ -31,6 +31,9 @@ export default function UserProfile({
 
   const [posts, setPosts] = useState([]);
 
+  const [savedPosts, setSavedPosts] =
+    useState([]);
+
   const [activeTab, setActiveTab] =
     useState("posts");
 
@@ -40,10 +43,20 @@ export default function UserProfile({
   const [postsLoading, setPostsLoading] =
     useState(false);
 
+  const [
+    savedPostsLoading,
+    setSavedPostsLoading,
+  ] = useState(false);
+
   const [error, setError] = useState("");
 
   const [postsError, setPostsError] =
     useState("");
+
+  const [
+    savedPostsError,
+    setSavedPostsError,
+  ] = useState("");
 
   const [isFollowing, setIsFollowing] =
     useState(
@@ -67,6 +80,7 @@ export default function UserProfile({
         setLoading(true);
         setError("");
         setPostsError("");
+        setSavedPostsError("");
 
         const authResponse = await fetch(
           "/api/auth/me",
@@ -146,6 +160,7 @@ export default function UserProfile({
 
         if (!profileUsername) {
           setPosts([]);
+          setSavedPosts([]);
           return;
         }
 
@@ -186,6 +201,70 @@ export default function UserProfile({
             ? postsData.posts
             : []
         );
+
+        if (initialIsOwnProfile === true) {
+          try {
+            setSavedPostsLoading(true);
+            setSavedPostsError("");
+
+            const savedResponse =
+              await fetch(
+                "/api/posts/saved",
+                {
+                  method: "GET",
+                  credentials: "include",
+                  cache: "no-store",
+                }
+              );
+
+            const savedData =
+              await savedResponse.json();
+
+            if (
+              !savedResponse.ok ||
+              !savedData?.success
+            ) {
+              throw new Error(
+                savedData?.message ||
+                  "Postările salvate nu au putut fi încărcate."
+              );
+            }
+
+            if (!isMounted) {
+              return;
+            }
+
+            setSavedPosts(
+              Array.isArray(
+                savedData.posts
+              )
+                ? savedData.posts
+                : []
+            );
+          } catch (savedError) {
+            console.error(
+              "Eroare la încărcarea postărilor salvate:",
+              savedError
+            );
+
+            if (!isMounted) {
+              return;
+            }
+
+            setSavedPosts([]);
+
+            setSavedPostsError(
+              savedError?.message ||
+                "Postările salvate nu au putut fi încărcate."
+            );
+          } finally {
+            if (isMounted) {
+              setSavedPostsLoading(false);
+            }
+          }
+        } else {
+          setSavedPosts([]);
+        }
       } catch (fetchError) {
         console.error(
           "Eroare la încărcarea profilului:",
@@ -213,7 +292,10 @@ export default function UserProfile({
     return () => {
       isMounted = false;
     };
-  }, [initialUser]);
+  }, [
+    initialUser,
+    initialIsOwnProfile,
+  ]);
 
   const displayedUserId = String(
     user?.id ||
@@ -486,12 +568,7 @@ export default function UserProfile({
 
     posts,
 
-    savedPosts:
-      Array.isArray(
-        user.savedPosts
-      )
-        ? user.savedPosts
-        : [],
+    savedPosts,
 
     destinations:
       Array.isArray(
@@ -580,11 +657,48 @@ export default function UserProfile({
           {activeTab ===
             "saved" &&
             isOwnProfile && (
-              <SavedPostsGrid
-                posts={
-                  normalizedUser.savedPosts
-                }
-              />
+              <>
+                {savedPostsLoading ? (
+                  <div className="profile-empty-state">
+                    <div className="profile-empty-icon">
+                      ⏳
+                    </div>
+
+                    <h3>
+                      Se încarcă
+                      postările salvate
+                    </h3>
+
+                    <p>
+                      Pregătim
+                      experiențele
+                      salvate.
+                    </p>
+                  </div>
+                ) : savedPostsError ? (
+                  <div className="profile-empty-state">
+                    <div className="profile-empty-icon">
+                      ⚠️
+                    </div>
+
+                    <h3>
+                      Postările salvate
+                      nu au putut fi
+                      încărcate
+                    </h3>
+
+                    <p>
+                      {savedPostsError}
+                    </p>
+                  </div>
+                ) : (
+                  <SavedPostsGrid
+                    posts={
+                      normalizedUser.savedPosts
+                    }
+                  />
+                )}
+              </>
             )}
 
           {activeTab ===

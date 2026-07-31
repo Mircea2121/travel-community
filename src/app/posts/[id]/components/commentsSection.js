@@ -1,6 +1,6 @@
 import CommentForm from "./commentForm";
 import CommentItem from "./commentItem";
-
+import "./postComments.css";
 export default function CommentsSection({
   comments = [],
   commentsCount = 0,

@@ -1,7 +1,8 @@
 import Link from "next/link";
 
 import {
-  Edit3,
+  ChevronLeft,
+  Pencil,
   Trash2,
 } from "lucide-react";
 
@@ -33,10 +34,9 @@ export default function PostHeader({
       ? post.username.trim()
       : "";
 
-  const profileHref =
-    username
-      ? `/users/${username}`
-      : "";
+  const profileHref = username
+    ? `/users/${username}`
+    : "";
 
   const avatarContent = (
     <div className="post-details-avatar">
@@ -69,42 +69,53 @@ export default function PostHeader({
       <div className="post-details-topbar">
         <button
           type="button"
-          className="back-button"
+          className="post-topbar-icon-button post-back-icon-button"
           onClick={onBack}
+          aria-label="Înapoi"
+          title="Înapoi"
         >
-          Înapoi
+          <ChevronLeft
+            size={23}
+            strokeWidth={2.4}
+          />
         </button>
 
         {isOwner && (
           <div className="post-owner-actions">
             <button
               type="button"
-              className="post-edit-button"
+              className="post-topbar-icon-button post-edit-icon-button"
               onClick={onEdit}
               disabled={isDeleting}
+              aria-label="Editează postarea"
+              title="Editează"
             >
-              <Edit3
-                size={17}
+              <Pencil
+                size={19}
                 strokeWidth={2.2}
               />
-
-              Editează
             </button>
 
             <button
               type="button"
-              className="post-delete-button"
+              className="post-topbar-icon-button post-delete-icon-button"
               onClick={onDelete}
               disabled={isDeleting}
+              aria-label={
+                isDeleting
+                  ? "Se șterge postarea"
+                  : "Șterge postarea"
+              }
+              title={
+                isDeleting
+                  ? "Se șterge..."
+                  : "Șterge"
+              }
             >
               <Trash2
-                size={17}
+                size={19}
                 strokeWidth={2.2}
               />
-
-              {isDeleting
-                ? "Se șterge..."
-                : "Șterge"}
             </button>
           </div>
         )}

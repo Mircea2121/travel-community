@@ -36,6 +36,10 @@ function getLikesCount(post) {
     return post.likesCount;
   }
 
+  if (Array.isArray(post?.likes)) {
+    return post.likes.length;
+  }
+
   return 0;
 }
 
@@ -44,6 +48,10 @@ function getCommentsCount(post) {
     typeof post?.commentsCount === "number"
   ) {
     return post.commentsCount;
+  }
+
+  if (Array.isArray(post?.comments)) {
+    return post.comments.length;
   }
 
   return 0;
@@ -64,7 +72,31 @@ function formatCategory(category) {
   return categoryLabels[category] || category;
 }
 
-export default function UserPostsGrid({
+function formatBudget(post) {
+  const rawBudget =
+    post?.totalCost ??
+    post?.budget ??
+    post?.cost ??
+    null;
+
+  if (
+    rawBudget === null ||
+    rawBudget === undefined ||
+    rawBudget === ""
+  ) {
+    return "Buget nespecificat";
+  }
+
+  const budgetText = String(rawBudget).trim();
+
+  if (budgetText.includes("€")) {
+    return `Buget: ${budgetText}`;
+  }
+
+  return `Buget: ${budgetText} €`;
+}
+
+export default function SavedPostsGrid({
   posts = [],
 }) {
   if (
@@ -74,13 +106,15 @@ export default function UserPostsGrid({
     return (
       <div className="profile-empty-state">
         <div className="profile-empty-icon">
-          📷
+          🔖
         </div>
 
-        <h3>Nu există încă postări</h3>
+        <h3>
+          Nu există încă postări salvate
+        </h3>
 
         <p>
-          Experiențele publicate de utilizator vor
+          Postările pe care le salvezi vor
           apărea aici.
         </p>
       </div>
@@ -92,8 +126,10 @@ export default function UserPostsGrid({
       {posts.map((post, index) => {
         const postId = getPostId(post);
         const imageUrl = getPostImage(post);
+
         const likesCount =
           getLikesCount(post);
+
         const commentsCount =
           getCommentsCount(post);
 
@@ -106,9 +142,8 @@ export default function UserPostsGrid({
           post?.description ||
           "Nu există încă o descriere pentru această experiență.";
 
-        const postCost =
-          post?.totalCost ||
-          "Cost nespecificat";
+        const postBudget =
+          formatBudget(post);
 
         const cardContent = (
           <>
@@ -122,7 +157,9 @@ export default function UserPostsGrid({
                 />
               ) : (
                 <div className="user-post-image-fallback">
-                  <span>Fără imagine</span>
+                  <span>
+                    Fără imagine
+                  </span>
                 </div>
               )}
 
@@ -149,7 +186,9 @@ export default function UserPostsGrid({
                   💬 {commentsCount}
                 </span>
 
-                <span>{postCost}</span>
+                <span>
+                  {postBudget}
+                </span>
               </div>
             </div>
           </>
@@ -158,7 +197,7 @@ export default function UserPostsGrid({
         if (!postId) {
           return (
             <article
-              key={`user-post-${index}`}
+              key={`saved-post-${index}`}
               className="user-post-card"
             >
               {cardContent}

@@ -24,6 +24,12 @@ export default function usePostDetails(postId) {
   const [isDeleting, setIsDeleting] =
     useState(false);
 
+  const [isSaved, setIsSaved] =
+    useState(false);
+
+  const [isSaveLoading, setIsSaveLoading] =
+    useState(false);
+
   const loadPostDetails =
     useCallback(async () => {
       if (!postId) {
@@ -38,6 +44,7 @@ export default function usePostDetails(postId) {
         const [
           postResponse,
           authResponse,
+          savedResponse,
         ] = await Promise.all([
           fetch(`/api/posts/${postId}`, {
             method: "GET",
@@ -46,6 +53,12 @@ export default function usePostDetails(postId) {
           }),
 
           fetch("/api/auth/me", {
+            method: "GET",
+            credentials: "include",
+            cache: "no-store",
+          }),
+
+          fetch(`/api/posts/${postId}/save`, {
             method: "GET",
             credentials: "include",
             cache: "no-store",
@@ -77,8 +90,20 @@ export default function usePostDetails(postId) {
             null;
         }
 
+        let savedState = false;
+
+        if (savedResponse.ok) {
+          const savedData =
+            await savedResponse.json();
+
+          savedState = Boolean(
+            savedData?.isSaved
+          );
+        }
+
         setPost(postData.post);
         setCurrentUser(authenticatedUser);
+        setIsSaved(savedState);
       } catch (loadError) {
         console.error(
           "Eroare la încărcarea postării:",
@@ -86,6 +111,7 @@ export default function usePostDetails(postId) {
         );
 
         setPost(null);
+        setIsSaved(false);
 
         setError(
           loadError?.message ||
@@ -156,6 +182,75 @@ export default function usePostDetails(postId) {
       }
     }, [isDeleting, postId]);
 
+  const toggleSavedPost =
+    useCallback(async () => {
+      if (!postId || isSaveLoading) {
+        return {
+          success: false,
+        };
+      }
+
+      try {
+        setIsSaveLoading(true);
+        setActionError("");
+
+        const response = await fetch(
+          `/api/posts/${postId}/save`,
+          {
+            method: "POST",
+            credentials: "include",
+          }
+        );
+
+        const data =
+          await response.json();
+
+        if (
+          !response.ok ||
+          !data?.success
+        ) {
+          throw new Error(
+            data?.message ||
+              "Postarea nu a putut fi salvată."
+          );
+        }
+
+        const nextSavedState = Boolean(
+          data?.isSaved
+        );
+
+        setIsSaved(nextSavedState);
+
+        return {
+          success: true,
+          isSaved: nextSavedState,
+          message:
+            data?.message ||
+            (nextSavedState
+              ? "Postarea a fost salvată."
+              : "Postarea a fost eliminată din salvate."),
+        };
+      } catch (saveError) {
+        console.error(
+          "Eroare la salvarea postării:",
+          saveError
+        );
+
+        const message =
+          saveError?.message ||
+          "Postarea nu a putut fi salvată.";
+
+        setActionError(message);
+
+        return {
+          success: false,
+          message,
+        };
+      } finally {
+        setIsSaveLoading(false);
+      }
+    }, [isSaveLoading, postId]);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -184,11 +279,14 @@ export default function usePostDetails(postId) {
     error,
     actionError,
     isDeleting,
+    isSaved,
+    isSaveLoading,
 
     setError,
     setActionError,
 
     deletePost,
+    toggleSavedPost,
     refetchPost: loadPostDetails,
   };
 }

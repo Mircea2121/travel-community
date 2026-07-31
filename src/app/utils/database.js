@@ -19,3 +19,21 @@ export async function getPostsCollection() {
 
   return database.collection("posts");
 }
+
+export async function getSavedPostsCollection() {
+  const database = await getDatabase();
+
+  return database.collection("savedPosts");
+}
+
+export async function getConversationsCollection() {
+  const database = await getDatabase();
+
+  return database.collection("conversations");
+}
+
+export async function getMessagesCollection() {
+  const database = await getDatabase();
+
+  return database.collection("messages");
+}

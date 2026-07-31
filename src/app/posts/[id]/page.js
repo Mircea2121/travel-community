@@ -79,8 +79,11 @@ export default function PostDetailsPage() {
     error,
     actionError,
     isDeleting,
+    isSaved,
+    isSaveLoading,
     setActionError,
     deletePost,
+    toggleSavedPost,
   } = usePostDetails(postId);
 
   const {
@@ -186,6 +189,29 @@ export default function PostDetailsPage() {
     setLikeError("");
 
     await toggleLike();
+  }
+
+  async function handleSave() {
+    setActionError("");
+
+    if (!currentUser) {
+      router.push("/login");
+      return;
+    }
+
+    const result =
+      await toggleSavedPost();
+
+    if (!result?.success) {
+      return;
+    }
+
+    toast.success(
+      result.message,
+      result.isSaved
+        ? "Postare salvată"
+        : "Postare eliminată"
+    );
   }
 
   async function handleDeleteComment(
@@ -509,7 +535,12 @@ export default function PostDetailsPage() {
               isLikeLoading={
                 isLikeLoading
               }
+              isSaved={isSaved}
+              isSaveLoading={
+                isSaveLoading
+              }
               onLike={handleLike}
+              onSave={handleSave}
             />
 
             <CommentsSection
