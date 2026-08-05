@@ -1,33 +1,31 @@
 import { ObjectId } from "mongodb";
 
-import { getCurrentUser } from "../../utils/currentUser";
-import { getDatabase } from "../../utils/database";
-
-const REPORT_REASONS = [
-  "spam",
-  "offensive_language",
-  "harassment",
-  "sexual_content",
-  "violence",
-  "false_information",
-  "fraud",
-  "other",
-];
-
-const REPORT_TARGET_TYPES = [
-  "post",
-  "comment",
-];
-
-const MAX_DETAILS_LENGTH = 1000;
+import { getCurrentUser } from "@/app/utils/currentUser";
+import { getDatabase } from "@/app/utils/database";
+import {
+  REPORT_MAX_DETAILS_LENGTH,
+  isReportReason,
+  isReportTargetType,
+} from "@/app/utils/reportConfig";
 
 let reportsIndexesPromise = null;
 
-async function getReportsCollection() {
-  const database = await getDatabase();
+function createResponse(body, status = 200) {
+  return Response.json(body, { status });
+}
 
-  const reportsCollection =
-    database.collection("reports");
+function createError(message, status) {
+  return createResponse(
+    {
+      success: false,
+      message,
+    },
+    status
+  );
+}
+
+async function getReportsCollection(database) {
+  const reportsCollection = database.collection("reports");
 
   if (!reportsIndexesPromise) {
     reportsIndexesPromise = Promise.all([
@@ -40,7 +38,6 @@ async function getReportsCollection() {
           name: "reports_by_status",
         }
       ),
-
       reportsCollection.createIndex(
         {
           reportedBy: 1,
@@ -50,7 +47,16 @@ async function getReportsCollection() {
           name: "reports_by_user",
         }
       ),
-
+      reportsCollection.createIndex(
+        {
+          targetOwnerId: 1,
+          status: 1,
+          createdAt: -1,
+        },
+        {
+          name: "reports_by_target_owner",
+        }
+      ),
       reportsCollection.createIndex(
         {
           targetType: 1,
@@ -59,10 +65,17 @@ async function getReportsCollection() {
           status: 1,
         },
         {
-          name: "prevent_duplicate_pending_reports",
+          name: "unique_pending_report_per_user_target",
+          unique: true,
+          partialFilterExpression: {
+            status: "pending",
+          },
         }
       ),
-    ]);
+    ]).catch((error) => {
+      reportsIndexesPromise = null;
+      throw error;
+    });
   }
 
   await reportsIndexesPromise;
@@ -71,398 +84,475 @@ async function getReportsCollection() {
 }
 
 function getObjectId(value) {
-  if (!value || !ObjectId.isValid(value)) {
+  const normalizedValue = String(value || "").trim();
+
+  return ObjectId.isValid(normalizedValue)
+    ? new ObjectId(normalizedValue)
+    : null;
+}
+
+function createTargetResult({
+  ownerId = null,
+  preview = "",
+  contextId = null,
+}) {
+  return {
+    found: true,
+    hasAccess: true,
+    ownerId,
+    preview:
+      typeof preview === "string"
+        ? preview.trim().slice(0, 200)
+        : "",
+    contextId,
+  };
+}
+
+function targetNotFound() {
+  return {
+    found: false,
+    hasAccess: false,
+    ownerId: null,
+    preview: "",
+    contextId: null,
+  };
+}
+
+function targetForbidden() {
+  return {
+    found: true,
+    hasAccess: false,
+    ownerId: null,
+    preview: "",
+    contextId: null,
+  };
+}
+
+function isParticipant(conversation, userId) {
+  return (
+    Array.isArray(conversation?.participants) &&
+    conversation.participants.some(
+      (participantId) =>
+        String(participantId) === String(userId)
+    )
+  );
+}
+
+function getOtherParticipantId(conversation, userId) {
+  if (!Array.isArray(conversation?.participants)) {
     return null;
   }
 
-  return new ObjectId(value);
+  return (
+    conversation.participants.find(
+      (participantId) =>
+        String(participantId) !== String(userId)
+    ) || null
+  );
 }
 
-function getCurrentUserObjectId(currentUser) {
-  return getObjectId(
-    String(currentUser?._id || "")
-  );
+function getMessagePreview(message) {
+  if (message?.isDeleted === true) {
+    return "Mesaj șters";
+  }
+
+  if (typeof message?.text === "string" && message.text.trim()) {
+    return message.text;
+  }
+
+  const imageCount = Array.isArray(message?.images)
+    ? message.images.length
+    : 0;
+
+  if (imageCount === 1) {
+    return "Mesaj cu o imagine";
+  }
+
+  if (imageCount > 1) {
+    return `Mesaj cu ${imageCount} imagini`;
+  }
+
+  return "Mesaj";
 }
 
 async function getReportTarget({
   database,
   targetType,
   targetObjectId,
+  currentUserId,
 }) {
   if (targetType === "post") {
-    const postsCollection =
-      database.collection("posts");
-
-    const post =
-      await postsCollection.findOne(
-        {
-          _id: targetObjectId,
+    const post = await database.collection("posts").findOne(
+      {
+        _id: targetObjectId,
+      },
+      {
+        projection: {
+          _id: 1,
+          userId: 1,
+          authorId: 1,
+          title: 1,
         },
-        {
-          projection: {
-            _id: 1,
-            userId: 1,
-            authorId: 1,
-            title: 1,
-          },
-        }
-      );
+      }
+    );
 
     if (!post) {
-      return null;
+      return targetNotFound();
     }
 
-    return {
-      ownerId:
-        post.authorId ||
-        post.userId ||
-        null,
-
-      targetPreview:
-        typeof post.title === "string"
-          ? post.title.slice(0, 200)
-          : "",
-    };
+    return createTargetResult({
+      ownerId: post.authorId || post.userId || null,
+      preview: post.title || "",
+    });
   }
 
   if (targetType === "comment") {
-    const commentsCollection =
-      database.collection("comments");
+    const comment = await database.collection("comments").findOne(
+      {
+        _id: targetObjectId,
+      },
+      {
+        projection: {
+          _id: 1,
+          userId: 1,
+          content: 1,
+          postId: 1,
+        },
+      }
+    );
 
-    const comment =
-      await commentsCollection.findOne(
+    if (!comment) {
+      return targetNotFound();
+    }
+
+    return createTargetResult({
+      ownerId: comment.userId || null,
+      preview: comment.content || "",
+      contextId: comment.postId || null,
+    });
+  }
+
+  if (targetType === "user") {
+    const user = await database.collection("users").findOne(
+      {
+        _id: targetObjectId,
+      },
+      {
+        projection: {
+          _id: 1,
+          name: 1,
+          fullName: 1,
+          username: 1,
+        },
+      }
+    );
+
+    if (!user) {
+      return targetNotFound();
+    }
+
+    const displayName =
+      user.name || user.fullName || user.username || "Utilizator";
+
+    return createTargetResult({
+      ownerId: user._id,
+      preview: user.username
+        ? `${displayName} (@${user.username})`
+        : displayName,
+    });
+  }
+
+  if (targetType === "conversation") {
+    const conversation = await database
+      .collection("conversations")
+      .findOne(
         {
           _id: targetObjectId,
         },
         {
           projection: {
             _id: 1,
-            userId: 1,
-            content: 1,
+            participants: 1,
+            lastMessage: 1,
+            lastMessageType: 1,
           },
         }
       );
 
-    if (!comment) {
-      return null;
+    if (!conversation) {
+      return targetNotFound();
     }
 
-    return {
-      ownerId: comment.userId || null,
+    if (!isParticipant(conversation, currentUserId)) {
+      return targetForbidden();
+    }
 
-      targetPreview:
-        typeof comment.content === "string"
-          ? comment.content.slice(0, 200)
-          : "",
-    };
+    const otherParticipantId = getOtherParticipantId(
+      conversation,
+      currentUserId
+    );
+
+    return createTargetResult({
+      ownerId: otherParticipantId,
+      preview:
+        conversation.lastMessage ||
+        (conversation.lastMessageType === "image"
+          ? "Conversație cu imagini"
+          : "Conversație"),
+      contextId: conversation._id,
+    });
   }
 
-  return null;
+  if (targetType === "message") {
+    const message = await database.collection("messages").findOne(
+      {
+        _id: targetObjectId,
+      },
+      {
+        projection: {
+          _id: 1,
+          conversationId: 1,
+          senderId: 1,
+          text: 1,
+          images: 1,
+          isDeleted: 1,
+          deletedFor: 1,
+        },
+      }
+    );
+
+    if (!message?.conversationId) {
+      return targetNotFound();
+    }
+
+    const conversation = await database
+      .collection("conversations")
+      .findOne(
+        {
+          _id: message.conversationId,
+        },
+        {
+          projection: {
+            _id: 1,
+            participants: 1,
+          },
+        }
+      );
+
+    if (!conversation) {
+      return targetNotFound();
+    }
+
+    if (!isParticipant(conversation, currentUserId)) {
+      return targetForbidden();
+    }
+
+    const isHiddenForCurrentUser =
+      Array.isArray(message.deletedFor) &&
+      message.deletedFor.some(
+        (userId) => String(userId) === String(currentUserId)
+      );
+
+    if (isHiddenForCurrentUser) {
+      return targetNotFound();
+    }
+
+    return createTargetResult({
+      ownerId: message.senderId || null,
+      preview: getMessagePreview(message),
+      contextId: message.conversationId,
+    });
+  }
+
+  return targetNotFound();
+}
+
+function getTargetNotFoundMessage(targetType) {
+  const messages = {
+    post: "Postarea nu a fost găsită.",
+    comment: "Comentariul nu a fost găsit.",
+    conversation: "Conversația nu a fost găsită.",
+    message: "Mesajul nu a fost găsit.",
+    user: "Utilizatorul nu a fost găsit.",
+  };
+
+  return messages[targetType] || "Conținutul nu a fost găsit.";
 }
 
 export async function POST(request) {
   try {
-    const currentUser =
-      await getCurrentUser();
+    const currentUser = await getCurrentUser();
 
-    if (!currentUser) {
-      return Response.json(
-        {
-          success: false,
-          message:
-            "Trebuie să fii autentificat pentru a trimite un raport.",
-        },
-        {
-          status: 401,
-        }
+    if (!currentUser?._id) {
+      return createError(
+        "Trebuie să fii autentificat pentru a trimite un raport.",
+        401
       );
     }
 
-    const currentUserObjectId =
-      getCurrentUserObjectId(currentUser);
+    const currentUserId = getObjectId(currentUser._id);
 
-    if (!currentUserObjectId) {
-      return Response.json(
-        {
-          success: false,
-          message:
-            "Utilizatorul autentificat nu este valid.",
-        },
-        {
-          status: 401,
-        }
-      );
+    if (!currentUserId) {
+      return createError("Utilizatorul autentificat nu este valid.", 401);
     }
 
-    let requestBody;
+    let body;
 
     try {
-      requestBody =
-        await request.json();
+      body = await request.json();
     } catch {
-      return Response.json(
-        {
-          success: false,
-          message:
-            "Datele raportului nu sunt valide.",
-        },
-        {
-          status: 400,
-        }
-      );
+      return createError("Datele raportului nu sunt valide.", 400);
     }
 
     const targetType =
-      typeof requestBody?.targetType ===
-      "string"
-        ? requestBody.targetType.trim()
+      typeof body?.targetType === "string"
+        ? body.targetType.trim().toLowerCase()
         : "";
-
     const targetId =
-      typeof requestBody?.targetId ===
-      "string"
-        ? requestBody.targetId.trim()
+      typeof body?.targetId === "string"
+        ? body.targetId.trim()
         : "";
-
     const reason =
-      typeof requestBody?.reason ===
-      "string"
-        ? requestBody.reason.trim()
+      typeof body?.reason === "string"
+        ? body.reason.trim().toLowerCase()
         : "";
-
     const details =
-      typeof requestBody?.details ===
-      "string"
-        ? requestBody.details.trim()
+      typeof body?.details === "string"
+        ? body.details.trim()
         : "";
 
-    if (
-      !REPORT_TARGET_TYPES.includes(
-        targetType
-      )
-    ) {
-      return Response.json(
-        {
-          success: false,
-          message:
-            "Tipul conținutului raportat nu este valid.",
-        },
-        {
-          status: 400,
-        }
+    if (!isReportTargetType(targetType)) {
+      return createError(
+        "Tipul conținutului raportat nu este valid.",
+        400
       );
     }
 
-    const targetObjectId =
-      getObjectId(targetId);
+    const targetObjectId = getObjectId(targetId);
 
     if (!targetObjectId) {
-      return Response.json(
-        {
-          success: false,
-          message:
-            "Conținutul raportat nu este valid.",
-        },
-        {
-          status: 400,
-        }
+      return createError("Conținutul raportat nu este valid.", 400);
+    }
+
+    if (!isReportReason(reason)) {
+      return createError(
+        "Selectează un motiv valid pentru raportare.",
+        400
       );
     }
 
-    if (
-      !REPORT_REASONS.includes(reason)
-    ) {
-      return Response.json(
-        {
-          success: false,
-          message:
-            "Selectează un motiv valid pentru raportare.",
-        },
-        {
-          status: 400,
-        }
+    if (reason === "other" && !details) {
+      return createError("Descrie motivul raportării.", 400);
+    }
+
+    if (details.length > REPORT_MAX_DETAILS_LENGTH) {
+      return createError(
+        `Detaliile raportului pot avea maximum ${REPORT_MAX_DETAILS_LENGTH} de caractere.`,
+        400
       );
     }
 
-    if (
-      reason === "other" &&
-      !details
-    ) {
-      return Response.json(
-        {
-          success: false,
-          message:
-            "Descrie motivul raportării.",
-        },
-        {
-          status: 400,
-        }
-      );
+    const database = await getDatabase();
+    const target = await getReportTarget({
+      database,
+      targetType,
+      targetObjectId,
+      currentUserId,
+    });
+
+    if (!target.found) {
+      return createError(getTargetNotFoundMessage(targetType), 404);
     }
 
-    if (
-      details.length >
-      MAX_DETAILS_LENGTH
-    ) {
-      return Response.json(
-        {
-          success: false,
-          message:
-            `Detaliile raportului pot avea maximum ${MAX_DETAILS_LENGTH} de caractere.`,
-        },
-        {
-          status: 400,
-        }
-      );
-    }
-
-    const database =
-      await getDatabase();
-
-    const target =
-      await getReportTarget({
-        database,
-        targetType,
-        targetObjectId,
-      });
-
-    if (!target) {
-      return Response.json(
-        {
-          success: false,
-          message:
-            targetType === "post"
-              ? "Postarea nu a fost găsită."
-              : "Comentariul nu a fost găsit.",
-        },
-        {
-          status: 404,
-        }
-      );
+    if (!target.hasAccess) {
+      return createError("Nu ai acces la conținutul raportat.", 403);
     }
 
     if (
       target.ownerId &&
-      String(target.ownerId) ===
-        String(currentUserObjectId)
+      String(target.ownerId) === String(currentUserId)
     ) {
-      return Response.json(
-        {
-          success: false,
-          message:
-            "Nu îți poți raporta propriul conținut.",
-        },
-        {
-          status: 400,
-        }
+      return createError(
+        "Nu îți poți raporta propriul conținut sau propriul cont.",
+        400
       );
     }
 
-    const reportsCollection =
-      await getReportsCollection();
-
-    const existingReport =
-      await reportsCollection.findOne({
+    const reportsCollection = await getReportsCollection(database);
+    const existingReport = await reportsCollection.findOne(
+      {
         targetType,
         targetId: targetObjectId,
-        reportedBy:
-          currentUserObjectId,
+        reportedBy: currentUserId,
         status: "pending",
-      });
+      },
+      {
+        projection: {
+          _id: 1,
+        },
+      }
+    );
 
     if (existingReport) {
-      return Response.json(
-        {
-          success: false,
-          message:
-            "Ai raportat deja acest conținut. Echipa de support îl va verifica.",
-        },
-        {
-          status: 409,
-        }
+      return createError(
+        "Ai raportat deja acest conținut. Echipa de suport îl va verifica.",
+        409
       );
     }
 
     const now = new Date();
-
-    const newReport = {
+    const report = {
       targetType,
       targetId: targetObjectId,
-
-      targetOwnerId:
-        target.ownerId || null,
-
-      targetPreview:
-        target.targetPreview,
-
-      reportedBy:
-        currentUserObjectId,
-
-      reportedByUsername:
-        currentUser.username || "",
-
+      targetOwnerId: target.ownerId || null,
+      targetContextId: target.contextId || null,
+      targetPreview: target.preview,
+      reportedBy: currentUserId,
+      reportedByUsername: currentUser.username || "",
       reason,
       details,
-
       status: "pending",
-
       reviewedBy: null,
       reviewedAt: null,
       resolution: "",
-
       createdAt: now,
       updatedAt: now,
     };
 
-    const insertResult =
-      await reportsCollection.insertOne(
-        newReport
-      );
+    let insertResult;
 
-    return Response.json(
+    try {
+      insertResult = await reportsCollection.insertOne(report);
+    } catch (error) {
+      if (error?.code === 11000) {
+        return createError(
+          "Ai raportat deja acest conținut. Echipa de suport îl va verifica.",
+          409
+        );
+      }
+
+      throw error;
+    }
+
+    return createResponse(
       {
         success: true,
-        message:
-          "Raportul a fost trimis către echipa de support.",
-
+        message: "Raportul a fost trimis către echipa de suport.",
         report: {
-          ...newReport,
-          _id: String(
-            insertResult.insertedId
-          ),
-          targetId: String(
-            newReport.targetId
-          ),
-          targetOwnerId:
-            newReport.targetOwnerId
-              ? String(
-                  newReport.targetOwnerId
-                )
-              : null,
-          reportedBy: String(
-            newReport.reportedBy
-          ),
+          ...report,
+          _id: insertResult.insertedId.toString(),
+          targetId: report.targetId.toString(),
+          targetOwnerId: report.targetOwnerId?.toString?.() || null,
+          targetContextId:
+            report.targetContextId?.toString?.() || null,
+          reportedBy: report.reportedBy.toString(),
         },
       },
-      {
-        status: 201,
-      }
+      201
     );
   } catch (error) {
-    console.error(
-      "Eroare la trimiterea raportului:",
-      error
-    );
+    console.error("POST /api/reports error:", error);
 
-    return Response.json(
-      {
-        success: false,
-        message:
-          "Raportul nu a putut fi trimis.",
-      },
-      {
-        status: 500,
-      }
-    );
+    return createError("Raportul nu a putut fi trimis.", 500);
   }
 }

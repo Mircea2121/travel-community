@@ -1,77 +1,37 @@
-import { cookies } from "next/headers";
-import { ObjectId } from "mongodb";
-
-import { getUsersCollection } from "../../../utils/database";
-import { verifyToken } from "../../../utils/auth";
+import { getCurrentUser } from "../../../utils/currentUser";
 import { getProfileStats } from "../../../utils/profileStats";
+
+export const runtime = "nodejs";
+
+function jsonResponse(body, status) {
+  return Response.json(body, {
+    status,
+    headers: {
+      "Cache-Control": "no-store, max-age=0",
+    },
+  });
+}
 
 export async function GET() {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-
-    if (!token) {
-      return Response.json(
-        {
-          success: false,
-          message: "Nu ești autentificat.",
-        },
-        {
-          status: 401,
-        }
-      );
-    }
-
-    const payload = await verifyToken(token);
-
-    if (
-      !payload?.userId ||
-      !ObjectId.isValid(payload.userId)
-    ) {
-      return Response.json(
-        {
-          success: false,
-          message: "Sesiunea nu este validă.",
-        },
-        {
-          status: 401,
-        }
-      );
-    }
-
-    const usersCollection =
-      await getUsersCollection();
-
-    const user = await usersCollection.findOne(
-      {
-        _id: new ObjectId(payload.userId),
-      },
-      {
-        projection: {
-          password: 0,
-        },
-      }
-    );
+    const user = await getCurrentUser();
 
     if (!user) {
-      return Response.json(
+      return jsonResponse(
         {
           success: false,
-          message: "Utilizatorul nu a fost găsit.",
+          message:
+            "Sesiunea nu este validă sau a expirat.",
         },
-        {
-          status: 404,
-        }
+        401
       );
     }
 
-    const profileData =
-      await getProfileStats(user._id);
+    const profileData = await getProfileStats(user._id);
 
-    return Response.json(
+    return jsonResponse(
       {
         success: true,
-
         user: {
           id: user._id.toString(),
 
@@ -93,9 +53,7 @@ export async function GET() {
           updatedAt: user.updatedAt,
         },
       },
-      {
-        status: 200,
-      }
+      200
     );
   } catch (error) {
     console.error(
@@ -103,15 +61,13 @@ export async function GET() {
       error
     );
 
-    return Response.json(
+    return jsonResponse(
       {
         success: false,
         message:
-          "Sesiunea nu este validă sau a expirat.",
+          "Sesiunea nu a putut fi verificată momentan.",
       },
-      {
-        status: 401,
-      }
+      500
     );
   }
 }

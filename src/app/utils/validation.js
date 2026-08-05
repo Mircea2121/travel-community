@@ -39,6 +39,39 @@ export const LOCATION = {
   MAX_LENGTH: 100,
 };
 
+export const PASSWORD = {
+  MIN_LENGTH: 8,
+  MAX_LENGTH: 64,
+  MAX_BYTES: 72,
+};
+
+export function getPasswordValidation(password) {
+  const value =
+    typeof password === "string"
+      ? password
+      : "";
+  const byteLength = new TextEncoder().encode(value).length;
+
+  const rules = {
+    minimumLength:
+      value.length >= PASSWORD.MIN_LENGTH,
+    maximumLength:
+      value.length <= PASSWORD.MAX_LENGTH,
+    maximumBytes:
+      byteLength <= PASSWORD.MAX_BYTES,
+    lowercase: /[a-z]/.test(value),
+    uppercase: /[A-Z]/.test(value),
+    number: /\d/.test(value),
+    atSymbol: value.includes("@"),
+  };
+
+  return {
+    rules,
+    byteLength,
+    isValid: Object.values(rules).every(Boolean),
+  };
+}
+
 export const IMAGE = {
   MAX_SIZE: 5 * 1024 * 1024,
 

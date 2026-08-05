@@ -2,15 +2,20 @@
   "name": "travel-community",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
+    "dev:realtime": "node --env-file=.env.local realtime/server.js",
     "build": "next build",
     "start": "next start",
+    "start:realtime": "node realtime/server.js",
     "lint": "eslint"
   },
   "dependencies": {
+    "@socket.io/redis-adapter": "^8.3.0",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.10.0",
+    "cookie": "^2.0.1",
     "db": "^6.0.3",
     "jose": "^6.2.4",
     "lucide-react": "^1.24.0",
@@ -19,7 +24,11 @@
     "next": "16.2.9",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "react-easy-crop": "^6.2.3"
+    "react-easy-crop": "^6.2.3",
+    "redis": "^6.2.0",
+    "resend": "^6.18.1",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

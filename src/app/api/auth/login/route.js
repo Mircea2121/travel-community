@@ -3,54 +3,105 @@ import { cookies } from "next/headers";
 
 import { getUsersCollection } from "../../../utils/database";
 import { EMAIL_PATTERN } from "../../../utils/validation";
-import { createToken } from "../../../utils/auth";
+import {
+  createToken,
+  getAuthVersion,
+} from "../../../utils/auth";
+
+export const runtime = "nodejs";
+
+function jsonResponse(body, status) {
+  return Response.json(body, {
+    status,
+    headers: {
+      "Cache-Control": "no-store, max-age=0",
+    },
+  });
+}
 
 export async function POST(request) {
   try {
-    const body = await request.json();
+    let body;
 
-    const email = body.email?.trim().toLowerCase();
-    const password = body.password;
+    try {
+      body = await request.json();
+    } catch {
+      return jsonResponse(
+        {
+          success: false,
+          message: "Cererea trimisă nu este validă.",
+        },
+        400
+      );
+    }
+
+    const email =
+      typeof body?.email === "string"
+        ? body.email.trim().toLowerCase()
+        : "";
+    const password =
+      typeof body?.password === "string"
+        ? body.password
+        : "";
 
     if (!email || !password) {
-      return Response.json(
+      return jsonResponse(
         {
           success: false,
           message: "Emailul și parola sunt obligatorii.",
         },
-        {
-          status: 400,
-        }
+        400
       );
     }
 
-    if (!EMAIL_PATTERN.test(email)) {
-      return Response.json(
+    if (
+      email.length > 254 ||
+      !EMAIL_PATTERN.test(email)
+    ) {
+      return jsonResponse(
         {
           success: false,
           message: "Adresa de email nu este validă.",
         },
-        {
-          status: 400,
-        }
+        400
       );
     }
 
-    const usersCollection = await getUsersCollection();
-
-    const user = await usersCollection.findOne({
-      email,
-    });
-
-    if (!user) {
-      return Response.json(
+    if (password.length > 256) {
+      return jsonResponse(
         {
           success: false,
           message: "Emailul sau parola sunt incorecte.",
         },
+        401
+      );
+    }
+
+    const usersCollection = await getUsersCollection();
+    const user = await usersCollection.findOne(
+      {
+        email,
+      },
+      {
+        projection: {
+          _id: 1,
+          name: 1,
+          username: 1,
+          email: 1,
+          password: 1,
+          role: 1,
+          authVersion: 1,
+        },
+      }
+    );
+
+    if (!user?.password) {
+      return jsonResponse(
         {
-          status: 401,
-        }
+          success: false,
+          message: "Emailul sau parola sunt incorecte.",
+        },
+        401
       );
     }
 
@@ -60,14 +111,12 @@ export async function POST(request) {
     );
 
     if (!passwordIsCorrect) {
-      return Response.json(
+      return jsonResponse(
         {
           success: false,
           message: "Emailul sau parola sunt incorecte.",
         },
-        {
-          status: 401,
-        }
+        401
       );
     }
 
@@ -75,6 +124,7 @@ export async function POST(request) {
       userId: user._id.toString(),
       email: user.email,
       role: user.role,
+      authVersion: getAuthVersion(user),
     });
 
     const cookieStore = await cookies();
@@ -87,7 +137,7 @@ export async function POST(request) {
       path: "/",
     });
 
-    return Response.json(
+    return jsonResponse(
       {
         success: true,
         message: "Autentificarea a fost realizată cu succes.",
@@ -99,21 +149,17 @@ export async function POST(request) {
           role: user.role,
         },
       },
-      {
-        status: 200,
-      }
+      200
     );
   } catch (error) {
     console.error("Eroare la autentificare:", error);
 
-    return Response.json(
+    return jsonResponse(
       {
         success: false,
         message: "A apărut o eroare la autentificare.",
       },
-      {
-        status: 500,
-      }
+      500
     );
   }
 }

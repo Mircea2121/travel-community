@@ -14,10 +14,12 @@ import {
 
 import FlagBackground from "../components/flagBackground/flagBackground";
 import { useToast } from "../components/toast/toastProvider";
-
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-
-const USERNAME_PATTERN = /^[a-z0-9._]{3,20}$/;
+import {
+  EMAIL_PATTERN,
+  NAME,
+  USERNAME_PATTERN,
+  getPasswordValidation,
+} from "../utils/validation";
 
 export default function RegisterPage() {
   const toast = useToast();
@@ -29,52 +31,51 @@ export default function RegisterPage() {
     password: "",
     confirmPassword: "",
   });
-
-  const [showPassword, setShowPassword] = useState(false);
-
+  const [showPassword, setShowPassword] =
+    useState(false);
   const [showConfirmPassword, setShowConfirmPassword] =
     useState(false);
-
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [securityChecked, setSecurityChecked] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] =
+    useState(false);
+  const [securityChecked, setSecurityChecked] =
+    useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const passwordRules = {
-    minimumLength: formData.password.length >= 8,
-    lowercase: /[a-z]/.test(formData.password),
-    uppercase: /[A-Z]/.test(formData.password),
-    number: /\d/.test(formData.password),
-    atSymbol: formData.password.includes("@"),
-  };
-
+  const passwordValidation = getPasswordValidation(
+    formData.password
+  );
+  const passwordRules = passwordValidation.rules;
+  const strengthRules = [
+    passwordRules.minimumLength,
+    passwordRules.lowercase,
+    passwordRules.uppercase,
+    passwordRules.number,
+    passwordRules.atSymbol,
+  ];
   const passedPasswordRules =
-    Object.values(passwordRules).filter(Boolean).length;
+    strengthRules.filter(Boolean).length;
 
-  const isNameValid = formData.name.trim().length >= 2;
-
+  const normalizedName = formData.name.trim();
   const normalizedUsername = formData.username
     .trim()
     .toLowerCase();
+  const normalizedEmail = formData.email
+    .trim()
+    .toLowerCase();
 
+  const isNameValid =
+    normalizedName.length >= NAME.MIN_LENGTH &&
+    normalizedName.length <= NAME.MAX_LENGTH;
   const isUsernameValid =
     USERNAME_PATTERN.test(normalizedUsername);
-
-  const isEmailValid = EMAIL_PATTERN.test(
-    formData.email.trim()
-  );
-
-  const isPasswordValid =
-    passwordRules.minimumLength &&
-    passwordRules.lowercase &&
-    passwordRules.uppercase &&
-    passwordRules.number &&
-    passwordRules.atSymbol;
-
+  const isEmailValid =
+    normalizedEmail.length <= 254 &&
+    EMAIL_PATTERN.test(normalizedEmail);
+  const isPasswordValid = passwordValidation.isValid;
   const passwordsMatch =
     formData.confirmPassword.length > 0 &&
     formData.password === formData.confirmPassword;
-
   const isFormValid =
     isNameValid &&
     isUsernameValid &&
@@ -87,7 +88,7 @@ export default function RegisterPage() {
   let passwordStrengthClass = "weak";
   let passwordStrengthText = "Parolă slabă";
 
-  if (passedPasswordRules >= 5) {
+  if (passedPasswordRules >= 5 && isPasswordValid) {
     passwordStrengthClass = "strong";
     passwordStrengthText = "Parolă puternică";
   } else if (passedPasswordRules >= 3) {
@@ -97,7 +98,6 @@ export default function RegisterPage() {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-
     const nextValue =
       name === "username"
         ? value.toLowerCase().replace(/\s/g, "")
@@ -107,7 +107,6 @@ export default function RegisterPage() {
       ...previousData,
       [name]: nextValue,
     }));
-
     setSubmitted(false);
   };
 
@@ -119,7 +118,6 @@ export default function RegisterPage() {
         "Completează corect toate câmpurile și acceptă termenii.",
         "Formular incomplet"
       );
-
       return;
     }
 
@@ -132,26 +130,26 @@ export default function RegisterPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: formData.name.trim(),
+          name: normalizedName,
           username: normalizedUsername,
-          email: formData.email.trim().toLowerCase(),
+          email: normalizedEmail,
           password: formData.password,
         }),
       });
 
-      const data = await response.json();
+      const data = await response
+        .json()
+        .catch(() => ({}));
 
       if (!response.ok) {
         toast.error(
           data.message || "Contul nu a putut fi creat.",
           "Eroare"
         );
-
         return;
       }
 
       setSubmitted(true);
-
       toast.success(
         "Contul a fost creat cu succes!",
         "Succes"
@@ -164,7 +162,6 @@ export default function RegisterPage() {
         password: "",
         confirmPassword: "",
       });
-
       setAcceptedTerms(false);
       setSecurityChecked(false);
       setShowPassword(false);
@@ -188,7 +185,7 @@ export default function RegisterPage() {
       <section className="auth-card">
         <div className="auth-header">
           <span className="auth-brand-badge">
-            🌍 Travel Community
+            🌍 Comunitatea Călătorilor
           </span>
 
           <h1>Creează cont</h1>
@@ -205,9 +202,7 @@ export default function RegisterPage() {
           noValidate
         >
           <div className="auth-field-group">
-            <label htmlFor="register-name">
-              Numele tău
-            </label>
+            <label htmlFor="register-name">Numele tău</label>
 
             <input
               id="register-name"
@@ -217,6 +212,7 @@ export default function RegisterPage() {
               value={formData.name}
               onChange={handleChange}
               autoComplete="name"
+              maxLength={NAME.MAX_LENGTH}
               className={
                 formData.name.length > 0
                   ? isNameValid
@@ -229,7 +225,7 @@ export default function RegisterPage() {
             {formData.name.length > 0 && !isNameValid && (
               <p className="auth-validation-message error">
                 <X size={15} />
-                Introdu minimum două caractere.
+                Folosește între 2 și 50 de caractere.
               </p>
             )}
           </div>
@@ -268,7 +264,6 @@ export default function RegisterPage() {
                 ) : (
                   <X size={15} />
                 )}
-
                 {isUsernameValid
                   ? "Numele de utilizator este valid."
                   : "Folosește 3–20 caractere: litere mici, cifre, punct sau underscore."}
@@ -289,6 +284,7 @@ export default function RegisterPage() {
               value={formData.email}
               onChange={handleChange}
               autoComplete="email"
+              maxLength={254}
               className={
                 formData.email.length > 0
                   ? isEmailValid
@@ -309,7 +305,6 @@ export default function RegisterPage() {
                 ) : (
                   <X size={15} />
                 )}
-
                 {isEmailValid
                   ? "Adresa de email este validă."
                   : "Introdu o adresă completă, de forma nume@email.ro."}
@@ -331,17 +326,23 @@ export default function RegisterPage() {
                 value={formData.password}
                 onChange={handleChange}
                 autoComplete="new-password"
+                maxLength={64}
+                className={
+                  formData.password.length > 0
+                    ? isPasswordValid
+                      ? "auth-input-valid"
+                      : "auth-input-invalid"
+                    : ""
+                }
               />
 
               {formData.password.length > 0 && (
                 <button
                   type="button"
                   className="auth-password-toggle"
-                  onClick={() =>
-                    setShowPassword(
-                      (previousValue) => !previousValue
-                    )
-                  }
+                  onClick={() => {
+                    setShowPassword((value) => !value);
+                  }}
                   aria-label={
                     showPassword
                       ? "Ascunde parola"
@@ -378,22 +379,25 @@ export default function RegisterPage() {
                     passed={passwordRules.minimumLength}
                     text="Minimum 8 caractere"
                   />
-
+                  <PasswordRule
+                    passed={
+                      passwordRules.maximumLength &&
+                      passwordRules.maximumBytes
+                    }
+                    text="Maximum 64 caractere"
+                  />
                   <PasswordRule
                     passed={passwordRules.uppercase}
                     text="O literă mare"
                   />
-
                   <PasswordRule
                     passed={passwordRules.lowercase}
                     text="O literă mică"
                   />
-
                   <PasswordRule
                     passed={passwordRules.number}
                     text="Cel puțin o cifră"
                   />
-
                   <PasswordRule
                     passed={passwordRules.atSymbol}
                     text="Caracterul @"
@@ -419,6 +423,7 @@ export default function RegisterPage() {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 autoComplete="new-password"
+                maxLength={64}
                 className={
                   formData.confirmPassword.length > 0
                     ? passwordsMatch
@@ -432,11 +437,11 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   className="auth-password-toggle"
-                  onClick={() =>
+                  onClick={() => {
                     setShowConfirmPassword(
-                      (previousValue) => !previousValue
-                    )
-                  }
+                      (value) => !value
+                    );
+                  }}
                   aria-label={
                     showConfirmPassword
                       ? "Ascunde parola"
@@ -463,7 +468,6 @@ export default function RegisterPage() {
                 ) : (
                   <X size={15} />
                 )}
-
                 {passwordsMatch
                   ? "Parolele coincid."
                   : "Parolele nu coincid."}
@@ -475,9 +479,9 @@ export default function RegisterPage() {
             <input
               type="checkbox"
               checked={acceptedTerms}
-              onChange={(event) =>
-                setAcceptedTerms(event.target.checked)
-              }
+              onChange={(event) => {
+                setAcceptedTerms(event.target.checked);
+              }}
             />
 
             <span className="auth-custom-checkbox">
@@ -501,9 +505,9 @@ export default function RegisterPage() {
             <input
               type="checkbox"
               checked={securityChecked}
-              onChange={(event) =>
-                setSecurityChecked(event.target.checked)
-              }
+              onChange={(event) => {
+                setSecurityChecked(event.target.checked);
+              }}
             />
 
             <span className="auth-security-checkbox">
@@ -526,7 +530,9 @@ export default function RegisterPage() {
             className="auth-submit-button"
             disabled={!isFormValid || isLoading}
           >
-            {isLoading ? "Se creează contul..." : "Creează cont"}
+            {isLoading
+              ? "Se creează contul..."
+              : "Creează cont"}
           </button>
         </form>
 
@@ -539,9 +545,7 @@ export default function RegisterPage() {
 
         <p className="auth-switch">
           Ai deja cont?{" "}
-          <Link href="/login">
-            Autentifică-te
-          </Link>
+          <Link href="/login">Autentifică-te</Link>
         </p>
       </section>
     </main>
@@ -556,7 +560,6 @@ function PasswordRule({ passed, text }) {
       ) : (
         <X size={14} />
       )}
-
       {text}
     </span>
   );

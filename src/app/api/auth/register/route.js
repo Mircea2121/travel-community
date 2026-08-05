@@ -3,143 +3,210 @@ import bcrypt from "bcryptjs";
 import { getUsersCollection } from "../../../utils/database";
 import {
   EMAIL_PATTERN,
-  USERNAME_PATTERN,
+  NAME,
   RESERVED_USERNAMES,
+  USERNAME_PATTERN,
+  getPasswordValidation,
 } from "../../../utils/validation";
+
+export const runtime = "nodejs";
+
+function jsonResponse(body, status) {
+  return Response.json(body, {
+    status,
+    headers: {
+      "Cache-Control": "no-store, max-age=0",
+    },
+  });
+}
+
+function duplicateUserResponse(error) {
+  if (error?.code !== 11000) {
+    return null;
+  }
+
+  if (error.keyPattern?.email) {
+    return jsonResponse(
+      {
+        success: false,
+        message:
+          "Există deja un cont cu această adresă de email.",
+      },
+      409
+    );
+  }
+
+  if (error.keyPattern?.username) {
+    return jsonResponse(
+      {
+        success: false,
+        message:
+          "Acest nume de utilizator este deja folosit.",
+      },
+      409
+    );
+  }
+
+  return jsonResponse(
+    {
+      success: false,
+      message:
+        "Există deja un cont cu aceste date.",
+    },
+    409
+  );
+}
 
 export async function POST(request) {
   try {
-    const body = await request.json();
+    let body;
 
-    const name = body.name?.trim();
-    const username = body.username?.trim().toLowerCase();
-    const email = body.email?.trim().toLowerCase();
-    const password = body.password;
+    try {
+      body = await request.json();
+    } catch {
+      return jsonResponse(
+        {
+          success: false,
+          message: "Cererea trimisă nu este validă.",
+        },
+        400
+      );
+    }
+
+    const name =
+      typeof body?.name === "string"
+        ? body.name.trim()
+        : "";
+    const username =
+      typeof body?.username === "string"
+        ? body.username.trim().toLowerCase()
+        : "";
+    const email =
+      typeof body?.email === "string"
+        ? body.email.trim().toLowerCase()
+        : "";
+    const password =
+      typeof body?.password === "string"
+        ? body.password
+        : "";
 
     if (!name || !username || !email || !password) {
-      return Response.json(
+      return jsonResponse(
         {
           success: false,
           message: "Toate câmpurile sunt obligatorii.",
         },
-        {
-          status: 400,
-        }
+        400
       );
     }
 
-    if (name.length < 2) {
-      return Response.json(
+    if (
+      name.length < NAME.MIN_LENGTH ||
+      name.length > NAME.MAX_LENGTH
+    ) {
+      return jsonResponse(
         {
           success: false,
           message:
-            "Numele trebuie să conțină minimum două caractere.",
+            "Numele trebuie să conțină între 2 și 50 de caractere.",
         },
-        {
-          status: 400,
-        }
+        400
       );
     }
 
     if (!USERNAME_PATTERN.test(username)) {
-      return Response.json(
+      return jsonResponse(
         {
           success: false,
           message:
             "Username-ul poate conține doar litere mici, cifre, punct și underscore și trebuie să aibă între 3 și 20 de caractere.",
         },
-        {
-          status: 400,
-        }
+        400
       );
     }
 
     if (RESERVED_USERNAMES.includes(username)) {
-      return Response.json(
+      return jsonResponse(
         {
           success: false,
           message: "Acest username este rezervat.",
         },
-        {
-          status: 409,
-        }
+        409
       );
     }
 
-    if (!EMAIL_PATTERN.test(email)) {
-      return Response.json(
+    if (
+      email.length > 254 ||
+      !EMAIL_PATTERN.test(email)
+    ) {
+      return jsonResponse(
         {
           success: false,
           message: "Adresa de email nu este validă.",
         },
-        {
-          status: 400,
-        }
+        400
       );
     }
 
-    const passwordIsValid =
-      password.length >= 8 &&
-      /[a-z]/.test(password) &&
-      /[A-Z]/.test(password) &&
-      /\d/.test(password) &&
-      password.includes("@");
+    const passwordValidation =
+      getPasswordValidation(password);
 
-    if (!passwordIsValid) {
-      return Response.json(
+    if (!passwordValidation.isValid) {
+      return jsonResponse(
         {
           success: false,
           message:
-            "Parola trebuie să aibă minimum 8 caractere, o literă mare, o literă mică, o cifră și caracterul @.",
+            "Parola trebuie să aibă între 8 și 64 de caractere, maximum 72 de octeți, o literă mare, o literă mică, o cifră și caracterul @.",
         },
-        {
-          status: 400,
-        }
+        400
       );
     }
 
     const usersCollection = await getUsersCollection();
-
-    const existingUser = await usersCollection.findOne({
-      $or: [
-        {
-          email,
+    const existingUser = await usersCollection.findOne(
+      {
+        $or: [
+          {
+            email,
+          },
+          {
+            username,
+          },
+        ],
+      },
+      {
+        projection: {
+          _id: 1,
+          email: 1,
+          username: 1,
         },
-        {
-          username,
-        },
-      ],
-    });
+      }
+    );
 
     if (existingUser?.email === email) {
-      return Response.json(
+      return jsonResponse(
         {
           success: false,
           message:
             "Există deja un cont cu această adresă de email.",
         },
-        {
-          status: 409,
-        }
+        409
       );
     }
 
     if (existingUser?.username === username) {
-      return Response.json(
+      return jsonResponse(
         {
           success: false,
-          message: "Acest nume de utilizator este deja folosit.",
+          message:
+            "Acest nume de utilizator este deja folosit.",
         },
-        {
-          status: 409,
-        }
+        409
       );
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
-
     const now = new Date();
-
     const newUser = {
       name,
       username,
@@ -147,6 +214,8 @@ export async function POST(request) {
       password: hashedPassword,
 
       role: "user",
+      authVersion: 0,
+      passwordChangedAt: now,
 
       bio: "",
       location: "",
@@ -184,9 +253,22 @@ export async function POST(request) {
       updatedAt: now,
     };
 
-    const result = await usersCollection.insertOne(newUser);
+    let result;
 
-    return Response.json(
+    try {
+      result = await usersCollection.insertOne(newUser);
+    } catch (error) {
+      const duplicateResponse =
+        duplicateUserResponse(error);
+
+      if (duplicateResponse) {
+        return duplicateResponse;
+      }
+
+      throw error;
+    }
+
+    return jsonResponse(
       {
         success: true,
         message: "Contul a fost creat cu succes.",
@@ -198,21 +280,17 @@ export async function POST(request) {
           role: newUser.role,
         },
       },
-      {
-        status: 201,
-      }
+      201
     );
   } catch (error) {
     console.error("Eroare la înregistrare:", error);
 
-    return Response.json(
+    return jsonResponse(
       {
         success: false,
         message: "A apărut o eroare la crearea contului.",
       },
-      {
-        status: 500,
-      }
+      500
     );
   }
 }

@@ -326,18 +326,68 @@ export default function UserProfile({
     router.push("/profile/edit");
   }
 
-  function handleMessage() {
+ async function handleMessage() {
     if (isOwnProfile) {
       return;
     }
 
     if (!displayedUserId) {
+      window.alert(
+        "Utilizatorul nu poate fi identificat."
+      );
+
       return;
     }
 
-    router.push(
-      `/messages?user=${displayedUserId}`
-    );
+    try {
+      const response = await fetch(
+        "/api/conversations/start",
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            userId: displayedUserId,
+          }),
+        }
+      );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            "Conversația nu a putut fi creată."
+        );
+      }
+
+      const conversationId =
+        data?.conversation?._id;
+
+      if (!conversationId) {
+        throw new Error(
+          "ID-ul conversației lipsește din răspunsul serverului."
+        );
+      }
+
+      router.push(
+        `/messages?conversation=${conversationId}`
+      );
+    } catch (messageError) {
+      console.error(
+        "Eroare la deschiderea conversației:",
+        messageError
+      );
+
+      window.alert(
+        messageError?.message ||
+          "Conversația nu a putut fi pornită."
+      );
+    }
   }
 
   async function handleFollow() {

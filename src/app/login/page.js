@@ -4,29 +4,31 @@ import "../auth/auth.css";
 
 import { useState } from "react";
 import Link from "next/link";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, LogIn } from "lucide-react";
 
 import FlagBackground from "../components/flagBackground/flagBackground";
 import { useToast } from "../components/toast/toastProvider";
-
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+import { EMAIL_PATTERN } from "../utils/validation";
 
 export default function LoginPage() {
   const toast = useToast();
-
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
+  const [showPassword, setShowPassword] =
+    useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const [showPassword, setShowPassword] = useState(false);
-
-  const isEmailValid = EMAIL_PATTERN.test(
-    formData.email.trim()
-  );
-
-  const isPasswordValid = formData.password.length > 0;
-
+  const normalizedEmail = formData.email
+    .trim()
+    .toLowerCase();
+  const isEmailValid =
+    normalizedEmail.length <= 254 &&
+    EMAIL_PATTERN.test(normalizedEmail);
+  const isPasswordValid =
+    formData.password.length > 0 &&
+    formData.password.length <= 256;
   const isFormValid =
     isEmailValid && isPasswordValid;
 
@@ -42,35 +44,37 @@ export default function LoginPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!isFormValid) {
+    if (!isFormValid || isLoading) {
       toast.warning(
         "Completează corect adresa de email și parola.",
         "Verifică formularul"
       );
-
       return;
     }
 
     try {
+      setIsLoading(true);
+
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: formData.email.trim(),
+          email: normalizedEmail,
           password: formData.password,
         }),
       });
 
-      const data = await response.json();
+      const data = await response
+        .json()
+        .catch(() => ({}));
 
       if (!response.ok) {
         toast.error(
           data.message || "Autentificarea a eșuat.",
           "Eroare"
         );
-
         return;
       }
 
@@ -101,6 +105,8 @@ export default function LoginPage() {
         "Nu s-a putut realiza conexiunea cu serverul.",
         "Eroare"
       );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -108,7 +114,7 @@ export default function LoginPage() {
     <main className="auth-page">
       <FlagBackground />
 
-      <section className="auth-card">
+      <section className="auth-card auth-card-compact">
         <div className="auth-header">
           <span className="auth-brand-badge">
             🌍 Comunitatea Călătorilor
@@ -140,6 +146,7 @@ export default function LoginPage() {
               value={formData.email}
               onChange={handleChange}
               autoComplete="email"
+              maxLength={254}
               className={
                 formData.email.length > 0
                   ? isEmailValid
@@ -159,33 +166,35 @@ export default function LoginPage() {
           </div>
 
           <div className="auth-field-group">
-            <label htmlFor="login-password">
-              Parolă
-            </label>
+            <div className="auth-label-row">
+              <label htmlFor="login-password">
+                Parolă
+              </label>
+
+              <Link href="/forgot-password">
+                Ai uitat parola?
+              </Link>
+            </div>
 
             <div className="auth-password-field">
               <input
                 id="login-password"
-                type={
-                  showPassword ? "text" : "password"
-                }
+                type={showPassword ? "text" : "password"}
                 name="password"
                 placeholder="Introdu parola"
                 value={formData.password}
                 onChange={handleChange}
                 autoComplete="current-password"
+                maxLength={256}
               />
 
               {formData.password.length > 0 && (
                 <button
                   type="button"
                   className="auth-password-toggle"
-                  onClick={() =>
-                    setShowPassword(
-                      (previousValue) =>
-                        !previousValue
-                    )
-                  }
+                  onClick={() => {
+                    setShowPassword((value) => !value);
+                  }}
                   aria-label={
                     showPassword
                       ? "Ascunde parola"
@@ -205,17 +214,18 @@ export default function LoginPage() {
           <button
             type="submit"
             className="auth-submit-button"
-            disabled={!isFormValid}
+            disabled={!isFormValid || isLoading}
           >
-            Autentifică-te
+            <LogIn size={19} />
+            {isLoading
+              ? "Se autentifică..."
+              : "Autentifică-te"}
           </button>
         </form>
 
         <p className="auth-switch">
           Nu ai cont?{" "}
-          <Link href="/register">
-            Creează unul
-          </Link>
+          <Link href="/register">Creează unul</Link>
         </p>
       </section>
     </main>
