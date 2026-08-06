@@ -18,10 +18,15 @@ import {
 } from "lucide-react";
 
 import ImageCropModal from "./imageCropModal";
+import { getUserInitials } from "../../utils/getUserInitials";
 
 import "./userProfile.css";
 
 const MAX_BIO_LENGTH = 180;
+const MIN_NAME_LENGTH = 2;
+const MAX_NAME_LENGTH = 50;
+const NAME_CHANGE_COOLDOWN_MS =
+  15 * 24 * 60 * 60 * 1000;
 
 const LEVEL_BADGES = {
   1: {
@@ -57,6 +62,7 @@ export default function ProfileHeader({
   isFollowLoading = false,
   onFollow,
   onMessage,
+  onSaveName,
   onSaveBio,
 }) {
   const effectiveIsOwnProfile =
@@ -119,6 +125,33 @@ export default function ProfileHeader({
     setCropType,
   ] = useState("avatar");
 
+  const [displayName, setDisplayName] =
+    useState(
+      user?.fullName ||
+        user?.name ||
+        user?.username ||
+        "Utilizator"
+    );
+
+  const [nameDraft, setNameDraft] =
+    useState(displayName);
+
+  const [isEditingName, setIsEditingName] =
+    useState(false);
+
+  const [isSavingName, setIsSavingName] =
+    useState(false);
+
+  const [nameError, setNameError] =
+    useState("");
+
+  const [nameChangedAt, setNameChangedAt] =
+    useState(user?.nameChangedAt || null);
+
+  const [currentTimestamp] = useState(
+    () => Date.now()
+  );
+
   const [bio, setBio] = useState(
     user?.bio || ""
   );
@@ -155,6 +188,20 @@ export default function ProfileHeader({
     );
 
     setAvatarLoadFailed(false);
+
+    const nextDisplayName =
+      user?.fullName ||
+      user?.name ||
+      user?.username ||
+      "Utilizator";
+
+    setDisplayName(nextDisplayName);
+    setNameDraft(nextDisplayName);
+    setIsEditingName(false);
+    setNameError("");
+    setNameChangedAt(
+      user?.nameChangedAt || null
+    );
 
     setBio(user?.bio || "");
     setBioDraft(user?.bio || "");
@@ -207,11 +254,40 @@ export default function ProfileHeader({
     return null;
   }
 
-  const fullName =
-    user.fullName ||
-    user.name ||
-    user.username ||
-    "Utilizator";
+  const fullName = displayName;
+
+  const parsedNameChangedAt =
+    nameChangedAt
+      ? new Date(nameChangedAt)
+      : null;
+
+  const nextNameChangeAt =
+    parsedNameChangedAt &&
+    !Number.isNaN(
+      parsedNameChangedAt.getTime()
+    )
+      ? new Date(
+          parsedNameChangedAt.getTime() +
+            NAME_CHANGE_COOLDOWN_MS
+        )
+      : null;
+
+  const canChangeName =
+    !nextNameChangeAt ||
+    nextNameChangeAt.getTime() <=
+      currentTimestamp;
+
+  const nextNameChangeLabel =
+    nextNameChangeAt
+      ? nextNameChangeAt.toLocaleDateString(
+          "ro-RO",
+          {
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+          }
+        )
+      : "";
 
   const levelNumber =
     Number(user?.level?.number) || 1;
@@ -247,11 +323,8 @@ export default function ProfileHeader({
     .filter(Boolean)
     .join(", ");
 
-  const fallbackInitial =
-    fullName
-      .trim()
-      .charAt(0)
-      .toUpperCase() || "?";
+  const fallbackInitials =
+    getUserInitials(fullName);
 
   const shouldShowAvatarImage =
     Boolean(avatarPreview) &&
@@ -460,6 +533,118 @@ export default function ProfileHeader({
     onFollow(user);
   }
 
+  function handleStartNameEdit() {
+    if (!canChangeName) {
+      return;
+    }
+
+    setNameDraft(displayName);
+    setNameError("");
+    setIsEditingName(true);
+  }
+
+  function handleCancelNameEdit() {
+    setNameDraft(displayName);
+    setNameError("");
+    setIsEditingName(false);
+  }
+
+  function handleNameChange(event) {
+    const nextValue = event.target.value;
+
+    if (
+      nextValue.length > MAX_NAME_LENGTH
+    ) {
+      return;
+    }
+
+    setNameDraft(nextValue);
+
+    if (nameError) {
+      setNameError("");
+    }
+  }
+
+  async function handleSaveName() {
+    if (isSavingName) {
+      return;
+    }
+
+    const normalizedName = nameDraft
+      .trim()
+      .replace(/\s+/g, " ");
+
+    if (
+      normalizedName.length <
+        MIN_NAME_LENGTH ||
+      normalizedName.length >
+        MAX_NAME_LENGTH
+    ) {
+      setNameError(
+        `Numele trebuie să conțină între ${MIN_NAME_LENGTH} și ${MAX_NAME_LENGTH} de caractere.`
+      );
+      return;
+    }
+
+    if (normalizedName === displayName) {
+      handleCancelNameEdit();
+      return;
+    }
+
+    setIsSavingName(true);
+    setNameError("");
+
+    try {
+      if (
+        typeof onSaveName !== "function"
+      ) {
+        throw new Error(
+          "Salvarea numelui nu este încă conectată."
+        );
+      }
+
+      const updatedUser =
+        await onSaveName(normalizedName);
+
+      setDisplayName(normalizedName);
+      setNameDraft(normalizedName);
+      setNameChangedAt(
+        updatedUser?.nameChangedAt ||
+          new Date().toISOString()
+      );
+      setIsEditingName(false);
+    } catch (error) {
+      if (error?.nextNameChangeAt) {
+        setNameChangedAt(
+          new Date(
+            new Date(
+              error.nextNameChangeAt
+            ).getTime() -
+              NAME_CHANGE_COOLDOWN_MS
+          ).toISOString()
+        );
+      }
+
+      setNameError(
+        error?.message ||
+          "Numele nu a putut fi salvat."
+      );
+    } finally {
+      setIsSavingName(false);
+    }
+  }
+
+  function handleNameKeyDown(event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      handleSaveName();
+    }
+
+    if (event.key === "Escape") {
+      handleCancelNameEdit();
+    }
+  }
+
   function handleStartBioEdit() {
     setBioDraft(bio);
     setBioError("");
@@ -577,45 +762,6 @@ export default function ProfileHeader({
             </label>
           )}
 
-          {!effectiveIsOwnProfile && (
-            <div className="travel-profile-cover-actions">
-              <button
-                type="button"
-                className="travel-profile-action-btn travel-profile-action-message"
-                onClick={
-                  handleMessageClick
-                }
-              >
-                <Mail
-                  size={17}
-                  strokeWidth={2.2}
-                  aria-hidden="true"
-                />
-
-                <span>Mesaj</span>
-              </button>
-
-              <button
-                type="button"
-                className="travel-profile-action-btn travel-profile-action-primary"
-                onClick={
-                  handleFollowClick
-                }
-                disabled={
-                  isFollowLoading
-                }
-                aria-busy={
-                  isFollowLoading
-                }
-              >
-                {isFollowLoading
-                  ? "Se actualizează..."
-                  : isFollowing
-                  ? "Urmărești"
-                  : "Urmărește"}
-              </button>
-            </div>
-          )}
         </div>
 
         <div className="travel-profile-info-card">
@@ -634,7 +780,7 @@ export default function ProfileHeader({
                 className="travel-profile-avatar travel-profile-avatar-fallback"
                 aria-label={`Avatar ${fullName}`}
               >
-                {fallbackInitial}
+                {fallbackInitials}
               </div>
             )}
 
@@ -668,7 +814,87 @@ export default function ProfileHeader({
             <div className="travel-profile-details-top">
               <div>
                 <div className="travel-profile-name-row">
-                  <h1>{fullName}</h1>
+                  {isEditingName ? (
+                    <div className="travel-profile-name-editor">
+                      <input
+                        type="text"
+                        value={nameDraft}
+                        onChange={handleNameChange}
+                        onKeyDown={
+                          handleNameKeyDown
+                        }
+                        minLength={
+                          MIN_NAME_LENGTH
+                        }
+                        maxLength={
+                          MAX_NAME_LENGTH
+                        }
+                        disabled={
+                          isSavingName
+                        }
+                        aria-label="Numele profilului"
+                        autoComplete="name"
+                        autoFocus
+                      />
+
+                      <button
+                        type="button"
+                        className="travel-profile-name-save"
+                        onClick={handleSaveName}
+                        disabled={isSavingName}
+                        aria-label="Salvează numele"
+                        title="Salvează"
+                      >
+                        <Check
+                          size={18}
+                          aria-hidden="true"
+                        />
+                      </button>
+
+                      <button
+                        type="button"
+                        className="travel-profile-name-cancel"
+                        onClick={
+                          handleCancelNameEdit
+                        }
+                        disabled={isSavingName}
+                        aria-label="Anulează editarea numelui"
+                        title="Anulează"
+                      >
+                        <X
+                          size={18}
+                          aria-hidden="true"
+                        />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <h1>{fullName}</h1>
+
+                      {effectiveIsOwnProfile && (
+                        <button
+                          type="button"
+                          className="travel-profile-name-edit"
+                          onClick={
+                            handleStartNameEdit
+                          }
+                          disabled={!canChangeName}
+                          aria-label="Editează numele"
+                          title={
+                            canChangeName
+                              ? "Editează numele"
+                              : `Numele poate fi schimbat din ${nextNameChangeLabel}`
+                          }
+                        >
+                          <Pencil
+                            size={17}
+                            strokeWidth={2.2}
+                            aria-hidden="true"
+                          />
+                        </button>
+                      )}
+                    </>
+                  )}
 
                   {user.isVerified ===
                     true && (
@@ -680,6 +906,24 @@ export default function ProfileHeader({
                     </span>
                   )}
                 </div>
+
+                {nameError && (
+                  <p
+                    className="travel-profile-name-error"
+                    role="alert"
+                  >
+                    {nameError}
+                  </p>
+                )}
+
+                {effectiveIsOwnProfile &&
+                  !canChangeName &&
+                  !nameError && (
+                  <p className="travel-profile-name-cooldown">
+                    Numele poate fi schimbat din{" "}
+                    {nextNameChangeLabel}.
+                  </p>
+                )}
 
                 {user.username && (
                   <p className="travel-profile-username">
@@ -823,6 +1067,46 @@ export default function ProfileHeader({
                 </div>
               )}
             </div>
+
+            {!effectiveIsOwnProfile && (
+              <div className="travel-profile-actions">
+                <button
+                  type="button"
+                  className="travel-profile-action-btn travel-profile-action-message"
+                  onClick={
+                    handleMessageClick
+                  }
+                >
+                  <Mail
+                    size={17}
+                    strokeWidth={2.2}
+                    aria-hidden="true"
+                  />
+
+                  <span>Mesaj</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="travel-profile-action-btn travel-profile-action-primary"
+                  onClick={
+                    handleFollowClick
+                  }
+                  disabled={
+                    isFollowLoading
+                  }
+                  aria-busy={
+                    isFollowLoading
+                  }
+                >
+                  {isFollowLoading
+                    ? "Se actualizează..."
+                    : isFollowing
+                    ? "Urmărești"
+                    : "Urmărește"}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </section>

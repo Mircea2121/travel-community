@@ -235,7 +235,7 @@ export default function MessageBubble({
   }, [isActionsOpen, isMine]);
 
   async function handleReaction(nextType) {
-    if (isReacting || isDeleted) {
+    if (isMine || isReacting || isDeleted) {
       return;
     }
 
@@ -412,12 +412,14 @@ export default function MessageBubble({
           }`}
           ref={menuRef}
         >
-          <ReactionBar
-            currentReaction={currentReaction}
-            placement={isMine ? "right" : "left"}
-            isUpdating={isReacting}
-            onReaction={handleReaction}
-          />
+          {!isMine ? (
+            <ReactionBar
+              currentReaction={currentReaction}
+              placement="left"
+              isUpdating={isReacting}
+              onReaction={handleReaction}
+            />
+          ) : null}
 
           <div className="message-bubble-external-actions">
             <button

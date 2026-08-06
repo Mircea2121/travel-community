@@ -318,6 +318,171 @@ export default function UserProfile({
         currentUserId
     );
 
+  async function updateOwnProfile({
+    name,
+    bio,
+  }) {
+    if (!isOwnProfile) {
+      throw new Error(
+        "Nu poți modifica acest profil."
+      );
+    }
+
+    if (!name) {
+      throw new Error(
+        "Numele profilului lipsește. Reîncarcă pagina și încearcă din nou."
+      );
+    }
+
+    const existingLocation =
+      typeof user?.location ===
+        "string"
+        ? user.location.trim()
+        : "";
+
+    const location =
+      existingLocation ||
+      [user?.city, user?.country]
+        .filter(
+          (value) =>
+            typeof value ===
+              "string" &&
+            value.trim()
+        )
+        .map((value) => value.trim())
+        .join(", ");
+
+    const response = await fetch(
+      "/api/users/me",
+      {
+        method: "PUT",
+        credentials: "include",
+        cache: "no-store",
+        headers: {
+          "Content-Type":
+            "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          bio,
+          location,
+        }),
+      }
+    );
+
+    const contentType =
+      response.headers.get(
+        "content-type"
+      ) || "";
+
+    let data = null;
+
+    if (
+      contentType.includes(
+        "application/json"
+      )
+    ) {
+      data = await response.json();
+    }
+
+    if (
+      !response.ok ||
+      !data?.success
+    ) {
+      const requestError = new Error(
+        data?.message ||
+          "Profilul nu a putut fi salvat. Încearcă din nou."
+      );
+
+      requestError.code =
+        data?.code || "";
+      requestError.nextNameChangeAt =
+        data?.nextNameChangeAt || null;
+
+      throw requestError;
+    }
+
+    const updatedUser =
+      data?.user || {};
+
+    setUser((previousUser) => {
+      if (!previousUser) {
+        return previousUser;
+      }
+
+      return {
+        ...previousUser,
+        ...updatedUser,
+        id:
+          updatedUser.id ||
+          updatedUser._id ||
+          previousUser.id ||
+          previousUser._id,
+        fullName:
+          updatedUser.fullName ||
+          updatedUser.name ||
+          previousUser.fullName ||
+          previousUser.name,
+        bio:
+          typeof updatedUser.bio ===
+          "string"
+            ? updatedUser.bio
+            : bio,
+        stats: {
+          ...(previousUser.stats ||
+            {}),
+          ...(updatedUser.stats ||
+            {}),
+        },
+      };
+    });
+
+    setCurrentUser(
+      (previousUser) => ({
+        ...(previousUser || {}),
+        ...updatedUser,
+        bio:
+          typeof updatedUser.bio ===
+          "string"
+            ? updatedUser.bio
+            : bio,
+      })
+    );
+
+    router.refresh();
+
+    return updatedUser;
+  }
+
+  async function handleSaveBio(nextBio) {
+    const name = String(
+      user?.name ||
+        user?.fullName ||
+        currentUser?.name ||
+        currentUser?.fullName ||
+        ""
+    )
+      .trim()
+      .replace(/\s+/g, " ");
+
+    return updateOwnProfile({
+      name,
+      bio: nextBio,
+    });
+  }
+
+  async function handleSaveName(nextName) {
+    const bio = String(
+      user?.bio || ""
+    ).trim();
+
+    return updateOwnProfile({
+      name: nextName,
+      bio,
+    });
+  }
+
   function handleEditProfile() {
     if (!isOwnProfile) {
       return;
@@ -640,6 +805,8 @@ export default function UserProfile({
           }
           onFollow={handleFollow}
           onMessage={handleMessage}
+          onSaveName={handleSaveName}
+          onSaveBio={handleSaveBio}
           onEditProfile={
             handleEditProfile
           }
@@ -751,23 +918,6 @@ export default function UserProfile({
               </>
             )}
 
-          {activeTab ===
-            "about" && (
-            <section className="profile-empty-state">
-              <div className="profile-empty-icon">
-                👤
-              </div>
-
-              <h3>
-                Despre utilizator
-              </h3>
-
-              <p>
-                {normalizedUser.bio ||
-                  "Utilizatorul nu a adăugat încă informații suplimentare despre el."}
-              </p>
-            </section>
-          )}
         </div>
       </div>
     </main>

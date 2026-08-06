@@ -167,6 +167,9 @@ export async function PUT(request, { params }) {
     const messageFilter = {
       _id: messageObjectId,
       conversationId: conversationObjectId,
+      senderId: {
+        $ne: currentUserId,
+      },
       isDeleted: {
         $ne: true,
       },
@@ -219,6 +222,32 @@ export async function PUT(request, { params }) {
     );
 
     if (updateResult.matchedCount !== 1) {
+      const ownMessage = await messagesCollection.findOne(
+        {
+          _id: messageObjectId,
+          conversationId: conversationObjectId,
+          senderId: currentUserId,
+          isDeleted: {
+            $ne: true,
+          },
+          deletedFor: {
+            $ne: currentUserId,
+          },
+        },
+        {
+          projection: {
+            _id: 1,
+          },
+        }
+      );
+
+      if (ownMessage) {
+        return createError(
+          "Nu poți reacționa la propriul mesaj.",
+          403
+        );
+      }
+
       return createError(
         "Mesajul nu există sau nu mai poate primi reacții.",
         404

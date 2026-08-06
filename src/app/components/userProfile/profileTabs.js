@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import {
   Bookmark,
-  CircleUserRound,
   PenLine,
 } from "lucide-react";
 
@@ -14,11 +13,6 @@ const PUBLIC_TABS = [
     key: "posts",
     label: "Postări",
     icon: PenLine,
-  },
-  {
-    key: "about",
-    label: "Despre",
-    icon: CircleUserRound,
   },
 ];
 

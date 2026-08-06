@@ -1,6 +1,8 @@
 import UserProfile from "../components/userProfile/userProfile";
 
-import { getCurrentUser } from "../services/users";
+import { getCurrentUser } from "../utils/currentUser";
+
+export const dynamic = "force-dynamic";
 
 function getUsername(user) {
   if (

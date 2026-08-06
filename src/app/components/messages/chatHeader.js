@@ -5,15 +5,18 @@ import {
   useRef,
   useState,
 } from "react";
+import Link from "next/link";
 import {
   ArrowLeft,
   Flag,
   MessageSquareWarning,
   MoreVertical,
   Trash2,
-  UserRound,
   WifiOff,
 } from "lucide-react";
+
+import AvatarViewer from "./avatarViewer";
+import { getUserInitials } from "../../utils/getUserInitials";
 
 function getAvatarUrl(avatar) {
   if (typeof avatar === "string") {
@@ -97,6 +100,8 @@ export default function ChatHeader({
   onReportUser,
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isAvatarOpen, setIsAvatarOpen] = useState(false);
+  const [failedAvatarUrl, setFailedAvatarUrl] = useState("");
   const [now, setNow] = useState(() => new Date());
   const menuRef = useRef(null);
 
@@ -140,7 +145,14 @@ export default function ChatHeader({
     user?.name || user?.fullName || user?.username || "Utilizator";
   const username =
     typeof user?.username === "string" ? user.username.trim() : "";
+  const profileHref = username
+    ? `/users/${encodeURIComponent(username)}`
+    : null;
   const avatarUrl = getAvatarUrl(user?.avatar || user?.avatarData);
+  const shouldShowAvatar =
+    Boolean(avatarUrl) &&
+    failedAvatarUrl !== avatarUrl;
+  const initials = getUserInitials(displayName);
   const isOnline = user?.isOnline === true;
   const hasRealtimeProblem =
     realtimeStatus === "unavailable" || realtimeStatus === "reconnecting";
@@ -168,7 +180,8 @@ export default function ChatHeader({
   }
 
   return (
-    <header className="chat-header">
+    <>
+      <header className="chat-header">
       <div className="chat-header-left">
         <button
           type="button"
@@ -181,13 +194,34 @@ export default function ChatHeader({
         </button>
 
         <div className="chat-header-avatar-wrapper">
-          <div className="chat-header-avatar">
-            {avatarUrl ? (
-              <img src={avatarUrl} alt={`Avatar ${displayName}`} />
+          <button
+            type="button"
+            className="chat-header-avatar chat-header-avatar-button"
+            onClick={() => setIsAvatarOpen(true)}
+            aria-label={
+              `Mărește avatarul utilizatorului ${displayName}`
+            }
+            title={
+              shouldShowAvatar
+                ? "Vezi fotografia de profil"
+                : "Vezi avatarul"
+            }
+          >
+            {shouldShowAvatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={avatarUrl}
+                alt={`Avatar ${displayName}`}
+                onError={() =>
+                  setFailedAvatarUrl(avatarUrl)
+                }
+              />
             ) : (
-              <UserRound size={22} aria-hidden="true" />
+              <span className="chat-avatar-initials" aria-hidden="true">
+                {initials}
+              </span>
             )}
-          </div>
+          </button>
 
           <span
             className={`chat-header-presence-dot${
@@ -198,7 +232,19 @@ export default function ChatHeader({
         </div>
 
         <div className="chat-header-user-info">
-          <h2>{displayName}</h2>
+          <h2>
+            {profileHref ? (
+              <Link
+                href={profileHref}
+                className="chat-header-profile-link"
+                title={`Deschide profilul ${displayName}`}
+              >
+                {displayName}
+              </Link>
+            ) : (
+              displayName
+            )}
+          </h2>
 
           <div className="chat-header-user-status">
             <span
@@ -212,8 +258,14 @@ export default function ChatHeader({
               {statusText}
             </span>
 
-            {username ? (
-              <span className="chat-header-username">@{username}</span>
+            {profileHref ? (
+              <Link
+                href={profileHref}
+                className="chat-header-username"
+                title={`Deschide profilul @${username}`}
+              >
+                @{username}
+              </Link>
             ) : null}
           </div>
         </div>
@@ -267,6 +319,16 @@ export default function ChatHeader({
           </div>
         ) : null}
       </div>
-    </header>
+      </header>
+
+      <AvatarViewer
+        isOpen={isAvatarOpen}
+        imageUrl={shouldShowAvatar ? avatarUrl : ""}
+        displayName={displayName}
+        onClose={() => setIsAvatarOpen(false)}
+      />
+    </>
   );
 }
+
+

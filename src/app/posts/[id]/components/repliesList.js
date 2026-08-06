@@ -22,6 +22,8 @@ import {
   formatCommentDate,
 } from "../utils/postDetailsHelpers";
 
+import ReplyForm from "./replyForm";
+
 function getEntityId(entity) {
   return String(
     entity?._id ||
@@ -405,6 +407,15 @@ export default function RepliesList({
   onReplyToReply,
   onDeleteReply,
   onReportReply,
+  activeReplyTargetId = "",
+  isReplyFormOpen = false,
+  replyToUser = null,
+  replyValue = "",
+  replyError = "",
+  isReplySubmitting = false,
+  onReplyChange,
+  onReplySubmit,
+  onCloseReplyForm,
 }) {
   if (isLoading) {
     return (
@@ -421,47 +432,161 @@ export default function RepliesList({
     return null;
   }
 
+  const repliesById = new Map();
+  const childrenByParentId = new Map();
+  const rootReplies = [];
+
+  replies.forEach((reply) => {
+    const replyId = String(
+      reply?._id ||
+        reply?.id ||
+        ""
+    );
+
+    if (replyId) {
+      repliesById.set(replyId, reply);
+    }
+  });
+
+  replies.forEach((reply) => {
+    const replyId = String(
+      reply?._id ||
+        reply?.id ||
+        ""
+    );
+
+    if (!replyId) {
+      return;
+    }
+
+    const parentReplyId = String(
+      reply?.parentReplyId || ""
+    );
+
+    if (
+      parentReplyId &&
+      repliesById.has(parentReplyId)
+    ) {
+      const siblings =
+        childrenByParentId.get(
+          parentReplyId
+        ) || [];
+
+      siblings.push(reply);
+      childrenByParentId.set(
+        parentReplyId,
+        siblings
+      );
+    } else {
+      rootReplies.push(reply);
+    }
+  });
+
+  function renderReplyBranch(
+    reply,
+    depth = 0
+  ) {
+    const replyId = String(
+      reply?._id ||
+        reply?.id ||
+        ""
+    );
+
+    if (!replyId) {
+      return null;
+    }
+
+    const childReplies =
+      childrenByParentId.get(
+        replyId
+      ) || [];
+
+    const isTarget =
+      isReplyFormOpen &&
+      activeReplyTargetId ===
+        replyId;
+
+    return (
+      <div
+        key={replyId}
+        className="reply-thread-branch"
+        style={{
+          "--reply-depth":
+            Math.min(depth, 3),
+        }}
+      >
+        <ReplyItem
+          reply={reply}
+          isAuthenticated={
+            isAuthenticated
+          }
+          currentUser={currentUser}
+          postAuthorId={
+            postAuthorId
+          }
+          deletingReplyId={
+            deletingReplyId
+          }
+          onReplyToReply={
+            onReplyToReply
+          }
+          onDeleteReply={
+            onDeleteReply
+          }
+          onReportReply={
+            onReportReply
+          }
+        />
+
+        {isTarget && (
+          <div className="reply-inline-form">
+            <ReplyForm
+              value={replyValue}
+              error={replyError}
+              isSubmitting={
+                isReplySubmitting
+              }
+              replyingToName={
+                getUserDisplayName(
+                  reply
+                )
+              }
+              replyToUser={
+                replyToUser
+              }
+              onChange={
+                onReplyChange
+              }
+              onSubmit={
+                onReplySubmit
+              }
+              onCancel={
+                onCloseReplyForm
+              }
+            />
+          </div>
+        )}
+
+        {childReplies.length > 0 && (
+          <div className="reply-thread-children">
+            {childReplies.map(
+              (childReply) =>
+                renderReplyBranch(
+                  childReply,
+                  depth + 1
+                )
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="replies-list">
-      {replies.map((reply) => {
-        const replyId = String(
-          reply?._id ||
-            reply?.id ||
-            ""
-        );
-
-        if (!replyId) {
-          return null;
-        }
-
-        return (
-          <ReplyItem
-            key={replyId}
-            reply={reply}
-            isAuthenticated={
-              isAuthenticated
-            }
-            currentUser={
-              currentUser
-            }
-            postAuthorId={
-              postAuthorId
-            }
-            deletingReplyId={
-              deletingReplyId
-            }
-            onReplyToReply={
-              onReplyToReply
-            }
-            onDeleteReply={
-              onDeleteReply
-            }
-            onReportReply={
-              onReportReply
-            }
-          />
-        );
-      })}
+      {rootReplies.map((reply) =>
+        renderReplyBranch(reply)
+      )}
     </div>
   );
 }

@@ -5,51 +5,12 @@ import {
   getDatabase,
   getPostsCollection,
 } from "../../../../utils/database";
-
-let likesIndexesPromise = null;
+import { updatePostEngagement } from "../../../../utils/postEngagement";
 
 async function getLikesCollection() {
   const database = await getDatabase();
-  const likesCollection = database.collection("likes");
 
-  if (!likesIndexesPromise) {
-    likesIndexesPromise = Promise.all([
-      likesCollection.createIndex(
-        {
-          postId: 1,
-          userId: 1,
-        },
-        {
-          unique: true,
-          name: "unique_post_user_like",
-        }
-      ),
-
-      likesCollection.createIndex(
-        {
-          postId: 1,
-          createdAt: -1,
-        },
-        {
-          name: "likes_by_post",
-        }
-      ),
-
-      likesCollection.createIndex(
-        {
-          userId: 1,
-          createdAt: -1,
-        },
-        {
-          name: "likes_by_user",
-        }
-      ),
-    ]);
-  }
-
-  await likesIndexesPromise;
-
-  return likesCollection;
+  return database.collection("likes");
 }
 
 function getValidPostId(id) {
@@ -74,10 +35,15 @@ function getUserObjectId(currentUser) {
   return new ObjectId(userId);
 }
 
+function getLikesCount(post, fallback = 0) {
+  return typeof post?.likesCount === "number"
+    ? post.likesCount
+    : fallback;
+}
+
 export async function GET(request, { params }) {
   try {
     const { id } = await params;
-
     const postObjectId = getValidPostId(id);
 
     if (!postObjectId) {
@@ -118,22 +84,25 @@ export async function GET(request, { params }) {
     }
 
     const currentUser = await getCurrentUser();
-
     let isLiked = false;
 
     if (currentUser) {
-      const userObjectId =
-        getUserObjectId(currentUser);
+      const userObjectId = getUserObjectId(currentUser);
 
       if (userObjectId) {
-        const likesCollection =
-          await getLikesCollection();
+        const likesCollection = await getLikesCollection();
 
-        const existingLike =
-          await likesCollection.findOne({
+        const existingLike = await likesCollection.findOne(
+          {
             postId: postObjectId,
             userId: userObjectId,
-          });
+          },
+          {
+            projection: {
+              _id: 1,
+            },
+          }
+        );
 
         isLiked = Boolean(existingLike);
       }
@@ -142,10 +111,7 @@ export async function GET(request, { params }) {
     return Response.json({
       success: true,
       liked: isLiked,
-      likesCount:
-        typeof post.likesCount === "number"
-          ? post.likesCount
-          : 0,
+      likesCount: getLikesCount(post),
     });
   } catch (error) {
     console.error(
@@ -156,8 +122,7 @@ export async function GET(request, { params }) {
     return Response.json(
       {
         success: false,
-        message:
-          "Aprecierea nu a putut fi verificată.",
+        message: "Aprecierea nu a putut fi verificată.",
       },
       {
         status: 500,
@@ -184,10 +149,8 @@ export async function POST(request, { params }) {
     }
 
     const { id } = await params;
-
     const postObjectId = getValidPostId(id);
-    const userObjectId =
-      getUserObjectId(currentUser);
+    const userObjectId = getUserObjectId(currentUser);
 
     if (!postObjectId) {
       return Response.json(
@@ -205,8 +168,7 @@ export async function POST(request, { params }) {
       return Response.json(
         {
           success: false,
-          message:
-            "Utilizatorul autentificat nu este valid.",
+          message: "Utilizatorul autentificat nu este valid.",
         },
         {
           status: 401,
@@ -239,49 +201,48 @@ export async function POST(request, { params }) {
       );
     }
 
-    const likesCollection =
-      await getLikesCollection();
+    const likesCollection = await getLikesCollection();
+    const likeDocument = {
+      postId: postObjectId,
+      userId: userObjectId,
+      createdAt: new Date(),
+    };
 
     try {
-      await likesCollection.insertOne({
-        postId: postObjectId,
-        userId: userObjectId,
-        createdAt: new Date(),
-      });
+      await likesCollection.insertOne(likeDocument);
     } catch (error) {
       if (error?.code === 11000) {
         return Response.json({
           success: true,
           liked: true,
-          likesCount:
-            typeof post.likesCount === "number"
-              ? post.likesCount
-              : 0,
-          message:
-            "Ai apreciat deja această postare.",
+          likesCount: getLikesCount(post),
+          message: "Ai apreciat deja această postare.",
         });
       }
 
       throw error;
     }
 
-    const updatedPost =
-      await postsCollection.findOneAndUpdate(
-        {
-          _id: postObjectId,
+    let updatedPost;
+
+    try {
+      updatedPost = await updatePostEngagement({
+        postsCollection,
+        postId: postObjectId,
+        likesDelta: 1,
+        projection: {
+          likesCount: 1,
+          engagementScore: 1,
         },
-        {
-          $inc: {
-            likesCount: 1,
-          },
-        },
-        {
-          returnDocument: "after",
-          projection: {
-            likesCount: 1,
-          },
-        }
-      );
+      });
+    } catch (error) {
+      await likesCollection.deleteOne({
+        postId: postObjectId,
+        userId: userObjectId,
+      });
+
+      throw error;
+    }
 
     if (!updatedPost) {
       await likesCollection.deleteOne({
@@ -303,10 +264,7 @@ export async function POST(request, { params }) {
     return Response.json({
       success: true,
       liked: true,
-      likesCount:
-        typeof updatedPost.likesCount === "number"
-          ? updatedPost.likesCount
-          : 1,
+      likesCount: getLikesCount(updatedPost, 1),
       message: "Postarea a fost apreciată.",
     });
   } catch (error) {
@@ -318,8 +276,7 @@ export async function POST(request, { params }) {
     return Response.json(
       {
         success: false,
-        message:
-          "Aprecierea nu a putut fi adăugată.",
+        message: "Aprecierea nu a putut fi adăugată.",
       },
       {
         status: 500,
@@ -328,10 +285,7 @@ export async function POST(request, { params }) {
   }
 }
 
-export async function DELETE(
-  request,
-  { params }
-) {
+export async function DELETE(request, { params }) {
   try {
     const currentUser = await getCurrentUser();
 
@@ -349,10 +303,8 @@ export async function DELETE(
     }
 
     const { id } = await params;
-
     const postObjectId = getValidPostId(id);
-    const userObjectId =
-      getUserObjectId(currentUser);
+    const userObjectId = getUserObjectId(currentUser);
 
     if (!postObjectId) {
       return Response.json(
@@ -370,8 +322,7 @@ export async function DELETE(
       return Response.json(
         {
           success: false,
-          message:
-            "Utilizatorul autentificat nu este valid.",
+          message: "Utilizatorul autentificat nu este valid.",
         },
         {
           status: 401,
@@ -404,70 +355,54 @@ export async function DELETE(
       );
     }
 
-    const likesCollection =
-      await getLikesCollection();
+    const likesCollection = await getLikesCollection();
 
-    const deleteResult =
-      await likesCollection.deleteOne({
-        postId: postObjectId,
-        userId: userObjectId,
-      });
+    const deletedLike = await likesCollection.findOneAndDelete({
+      postId: postObjectId,
+      userId: userObjectId,
+    });
 
-    if (deleteResult.deletedCount === 0) {
+    if (!deletedLike) {
       return Response.json({
         success: true,
         liked: false,
-        likesCount:
-          typeof post.likesCount === "number"
-            ? post.likesCount
-            : 0,
+        likesCount: getLikesCount(post),
         message:
           "Postarea nu era apreciată de acest utilizator.",
       });
     }
 
-    const updatedPost =
-      await postsCollection.findOneAndUpdate(
-        {
-          _id: postObjectId,
+    let updatedPost;
+
+    try {
+      updatedPost = await updatePostEngagement({
+        postsCollection,
+        postId: postObjectId,
+        likesDelta: -1,
+        projection: {
+          likesCount: 1,
+          engagementScore: 1,
         },
-        [
-          {
-            $set: {
-              likesCount: {
-                $max: [
-                  0,
-                  {
-                    $subtract: [
-                      {
-                        $ifNull: [
-                          "$likesCount",
-                          0,
-                        ],
-                      },
-                      1,
-                    ],
-                  },
-                ],
-              },
-            },
-          },
-        ],
-        {
-          returnDocument: "after",
-          projection: {
-            likesCount: 1,
-          },
+      });
+    } catch (error) {
+      try {
+        await likesCollection.insertOne(deletedLike);
+      } catch (rollbackError) {
+        if (rollbackError?.code !== 11000) {
+          console.error(
+            "Rollback-ul aprecierii retrase a eșuat:",
+            rollbackError
+          );
         }
-      );
+      }
+
+      throw error;
+    }
 
     return Response.json({
       success: true,
       liked: false,
-      likesCount:
-        typeof updatedPost?.likesCount === "number"
-          ? updatedPost.likesCount
-          : 0,
+      likesCount: getLikesCount(updatedPost),
       message: "Aprecierea a fost retrasă.",
     });
   } catch (error) {
@@ -479,8 +414,7 @@ export async function DELETE(
     return Response.json(
       {
         success: false,
-        message:
-          "Aprecierea nu a putut fi retrasă.",
+        message: "Aprecierea nu a putut fi retrasă.",
       },
       {
         status: 500,

@@ -2,6 +2,10 @@ import { randomUUID } from "node:crypto";
 import { ObjectId } from "mongodb";
 
 import { getCurrentUser } from "../../../utils/currentUser";
+import {
+  getPublicAuthorProfilesByIds,
+  hydratePublicAuthor,
+} from "../../../utils/publicUser";
 import { getPostsCollection } from "../../../utils/database";
 import { fileToBase64 } from "../../../utils/image";
 import {
@@ -258,9 +262,23 @@ export async function GET(request, { params }) {
       );
     }
 
+    const authorProfiles =
+      await getPublicAuthorProfilesByIds([
+        post.authorId,
+      ]);
+
+    const hydratedPost =
+      hydratePublicAuthor(
+        post,
+        authorProfiles,
+        {
+          userIdField: "authorId",
+        }
+      );
+
     return Response.json({
       success: true,
-      post: serializePost(post),
+      post: serializePost(hydratedPost),
     });
   } catch (error) {
     console.error(

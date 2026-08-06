@@ -65,7 +65,7 @@ export default function PostHeader({
   );
 
   return (
-    <>
+    <header className="post-details-header">
       <div className="post-details-topbar">
         <button
           type="button"
@@ -79,6 +79,30 @@ export default function PostHeader({
             strokeWidth={2.4}
           />
         </button>
+
+        <div className="post-details-author">
+          {profileHref ? (
+            <Link
+              href={profileHref}
+              aria-label={`Vezi profilul lui ${authorName}`}
+            >
+              {avatarContent}
+            </Link>
+          ) : (
+            avatarContent
+          )}
+
+          {profileHref ? (
+            <Link
+              href={profileHref}
+              className="post-details-author-link"
+            >
+              {authorContent}
+            </Link>
+          ) : (
+            authorContent
+          )}
+        </div>
 
         {isOwner && (
           <div className="post-owner-actions">
@@ -120,30 +144,6 @@ export default function PostHeader({
           </div>
         )}
       </div>
-
-      <div className="post-details-author">
-        {profileHref ? (
-          <Link
-            href={profileHref}
-            aria-label={`Vezi profilul lui ${authorName}`}
-          >
-            {avatarContent}
-          </Link>
-        ) : (
-          avatarContent
-        )}
-
-        {profileHref ? (
-          <Link
-            href={profileHref}
-            className="post-details-author-link"
-          >
-            {authorContent}
-          </Link>
-        ) : (
-          authorContent
-        )}
-      </div>
-    </>
+    </header>
   );
 }

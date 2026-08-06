@@ -349,6 +349,18 @@ body:has(.messages-page) .navbar {
 }
 .conversation-item-avatar img,
 .chat-header-avatar img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.chat-avatar-initials {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #1d4ed8;
+  font-size: 16px;
+  line-height: 1;
+  font-weight: 850;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  user-select: none;
+}
 .conversation-item-presence-dot,
 .chat-header-presence-dot {
   position: absolute;
@@ -1622,3 +1634,269 @@ body:has(.messages-page) .navbar {
     height: 48px;
   }
 }
+
+/* CHAT PROFILE NAVIGATION AND AVATAR VIEWER */
+
+.chat-header-avatar-button {
+  padding: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
+  cursor: zoom-in;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.chat-header-avatar-button:not(:disabled):hover {
+  transform: scale(1.045);
+  box-shadow:
+    0 0 0 3px rgba(37, 99, 235, 0.11),
+    0 8px 20px rgba(15, 23, 42, 0.16);
+}
+
+.chat-header-avatar-button:not(:disabled):focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.3);
+  outline-offset: 3px;
+}
+
+.chat-header-avatar-button:disabled {
+  cursor: default;
+}
+
+.chat-header-profile-link,
+.chat-header-username {
+  text-decoration: none;
+  transition:
+    color 0.16s ease,
+    opacity 0.16s ease;
+}
+
+.chat-header-profile-link {
+  color: inherit;
+}
+
+.chat-header-profile-link:hover,
+.chat-header-profile-link:focus-visible {
+  color: var(--chat-primary);
+}
+
+.chat-header-profile-link:focus-visible,
+.chat-header-username:focus-visible {
+  border-radius: 4px;
+  outline: 3px solid rgba(37, 99, 235, 0.18);
+  outline-offset: 2px;
+}
+
+a.chat-header-username {
+  color: var(--chat-subtle);
+}
+
+a.chat-header-username:hover {
+  color: var(--chat-primary);
+}
+
+.chat-dialog-backdrop:has(.chat-avatar-viewer) {
+  z-index: 2200;
+  padding: 24px;
+  place-items: center;
+  overflow: hidden;
+  background: rgba(2, 6, 23, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.chat-dialog.chat-avatar-viewer {
+  width: min(720px, calc(100vw - 48px));
+  max-width: none;
+  max-height: calc(100dvh - 48px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: #fff;
+  background:
+    radial-gradient(
+      circle at 50% 46%,
+      rgba(51, 65, 85, 0.7),
+      transparent 60%
+    ),
+    #08111f;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 24px;
+  box-shadow: 0 34px 100px rgba(0, 0, 0, 0.5);
+}
+
+.chat-avatar-viewer-header {
+  min-height: 76px;
+  padding: 14px 16px 14px 22px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  background: rgba(2, 6, 23, 0.72);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.chat-avatar-viewer-header > div {
+  min-width: 0;
+}
+
+.chat-avatar-viewer-header h2 {
+  margin: 0 0 3px;
+  overflow: hidden;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 820;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-avatar-viewer-header p {
+  margin: 0;
+  overflow: hidden;
+  color: #a8b5c7;
+  font-size: 12px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-avatar-viewer-close {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 50%;
+  cursor: pointer;
+  transition:
+    background-color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.chat-avatar-viewer-close:hover {
+  background: rgba(255, 255, 255, 0.19);
+  transform: rotate(4deg) scale(1.04);
+}
+
+.chat-avatar-viewer-close:focus-visible {
+  outline: 3px solid rgba(96, 165, 250, 0.55);
+  outline-offset: 3px;
+}
+
+.chat-avatar-viewer-content {
+  min-width: 0;
+  min-height: 0;
+  padding: 24px;
+  flex: 1 1 auto;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.chat-avatar-viewer-content > img {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: calc(100dvh - 172px);
+  display: block;
+  object-fit: contain;
+  border-radius: 16px;
+  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.42);
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.chat-avatar-viewer-fallback {
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.chat-avatar-viewer-fallback strong {
+  width: 120px;
+  height: 120px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(96, 165, 250, 0.28);
+  border-radius: 50%;
+  background: linear-gradient(145deg, #1d4ed8, #0ea5e9);
+  color: #ffffff;
+  font-size: 38px;
+  line-height: 1;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  box-shadow: 0 18px 42px rgba(14, 165, 233, 0.2);
+}
+
+@media (max-width: 767px) {
+  .chat-dialog-backdrop:has(.chat-avatar-viewer) {
+    padding: 0;
+    align-items: stretch;
+  }
+
+  .chat-dialog.chat-avatar-viewer {
+    width: 100vw;
+    height: 100dvh;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .chat-avatar-viewer-header {
+    min-height: 68px;
+    padding:
+      max(10px, env(safe-area-inset-top))
+      12px
+      10px
+      16px;
+  }
+
+  .chat-avatar-viewer-close {
+    width: 42px;
+    height: 42px;
+  }
+
+  .chat-avatar-viewer-content {
+    padding:
+      16px
+      12px
+      max(16px, env(safe-area-inset-bottom));
+  }
+
+  .chat-avatar-viewer-content > img {
+    max-height: calc(100dvh - 112px);
+    border-radius: 12px;
+  }
+
+  .chat-avatar-viewer-fallback {
+    min-height: 240px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-header-avatar-button,
+  .chat-header-profile-link,
+  .chat-header-username,
+  .chat-avatar-viewer-close {
+    transition: none;
+  }
+
+  .chat-header-avatar-button:not(:disabled):hover,
+  .chat-avatar-viewer-close:hover {
+    transform: none;
+  }
+}
+
+

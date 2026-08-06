@@ -4,14 +4,14 @@
   position: relative;
 
   width: 100%;
-  height: 520px;
-  margin-bottom: 28px;
+  height: clamp(300px, 38vw, 460px);
+  margin-bottom: 22px;
 
   overflow: hidden;
 
-  border-radius: 24px;
+  border-radius: 19px;
 
-  background: #e2e8f0;
+  background: #0f172a;
 }
 
 .post-gallery-image-button {
@@ -36,7 +36,7 @@
 
   display: block;
 
-  object-fit: cover;
+  object-fit: contain;
 
   transition:
     transform 0.35s ease,
@@ -274,5 +274,115 @@
 
   to {
     opacity: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .post-gallery {
+    height: clamp(260px, 58vw, 380px);
+    margin-bottom: 18px;
+    border-radius: 16px;
+  }
+
+  .post-gallery-arrow {
+    width: 44px;
+    height: 44px;
+  }
+
+  .post-gallery-arrow-left {
+    left: 12px;
+  }
+
+  .post-gallery-arrow-right {
+    right: 12px;
+  }
+
+  .post-gallery-counter {
+    right: 12px;
+    bottom: 12px;
+  }
+
+  .post-gallery-fullscreen {
+    padding: 72px 18px 92px;
+  }
+
+  .post-gallery-fullscreen-arrow {
+    top: auto;
+    bottom: 20px;
+    width: 50px;
+    height: 50px;
+    transform: none;
+  }
+
+  .post-gallery-fullscreen-arrow:hover {
+    transform: scale(1.05);
+  }
+
+  .post-gallery-fullscreen-counter {
+    bottom: 27px;
+  }
+}
+
+@media (max-width: 600px) {
+  .post-gallery {
+    height: clamp(230px, 64vw, 320px);
+    margin-bottom: 16px;
+    border-radius: 14px;
+  }
+
+  .post-gallery-arrow {
+    width: 38px;
+    height: 38px;
+  }
+
+  .post-gallery-arrow-left {
+    left: 8px;
+  }
+
+  .post-gallery-arrow-right {
+    right: 8px;
+  }
+
+  .post-gallery-counter {
+    right: 9px;
+    bottom: 9px;
+    min-width: 58px;
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+
+  .post-gallery-fullscreen {
+    padding: 66px 8px 88px;
+  }
+
+  .post-gallery-fullscreen-close {
+    top: 14px;
+    right: 14px;
+    width: 44px;
+    height: 44px;
+  }
+
+  .post-gallery-fullscreen-image {
+    width: 100%;
+    max-height: calc(100vh - 154px);
+    border-radius: 8px;
+  }
+
+  .post-gallery-fullscreen-arrow {
+    bottom: 16px;
+    width: 44px;
+    height: 44px;
+  }
+
+  .post-gallery-fullscreen-arrow-left {
+    left: 12px;
+  }
+
+  .post-gallery-fullscreen-arrow-right {
+    right: 12px;
+  }
+
+  .post-gallery-fullscreen-counter {
+    bottom: 21px;
   }
 }

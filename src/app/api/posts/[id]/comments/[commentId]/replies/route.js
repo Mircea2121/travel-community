@@ -1,6 +1,10 @@
 import { ObjectId } from "mongodb";
 
 import { getCurrentUser } from "../../../../../../utils/currentUser";
+import {
+  getPublicAuthorProfilesByIds,
+  hydratePublicAuthor,
+} from "../../../../../../utils/publicUser";
 
 import {
   getDatabase,
@@ -39,6 +43,19 @@ async function getCommentsCollection() {
         },
         {
           name: "comments_by_user",
+        }
+      ),
+
+      commentsCollection.createIndex(
+        {
+          postId: 1,
+          parentCommentId: 1,
+          parentReplyId: 1,
+          createdAt: 1,
+        },
+        {
+          name:
+            "replies_by_thread_parent",
         }
       ),
     ]);
@@ -105,6 +122,11 @@ function serializeReply(reply) {
   if (reply.replyToUserId) {
     serializedReply.replyToUserId =
       String(reply.replyToUserId);
+  }
+
+  if (reply.parentReplyId) {
+    serializedReply.parentReplyId =
+      String(reply.parentReplyId);
   }
 
   return serializedReply;
@@ -212,15 +234,28 @@ export async function GET(
         })
         .sort({
           createdAt: 1,
+          _id: 1,
         })
         .toArray();
+
+    const authorProfiles =
+      await getPublicAuthorProfilesByIds(
+        replies.map(
+          (reply) => reply.userId
+        )
+      );
 
     return Response.json({
       success: true,
 
       replies:
-        replies.map(
-          serializeReply
+        replies.map((reply) =>
+          serializeReply(
+            hydratePublicAuthor(
+              reply,
+              authorProfiles
+            )
+          )
         ),
 
       repliesCount:
@@ -370,37 +405,32 @@ export async function POST(
       );
     }
 
-    const rawReplyToUserId =
+    const rawParentReplyId =
       getCleanString(
-        requestBody?.replyToUserId,
+        requestBody?.parentReplyId,
         100
       );
 
-    const replyToUserObjectId =
-      rawReplyToUserId
-        ? getObjectId(
-            rawReplyToUserId
-          )
+    const parentReplyObjectId =
+      rawParentReplyId
+        ? getObjectId(rawParentReplyId)
         : null;
 
-    const replyToUsername =
-      getCleanString(
-        requestBody?.replyToUsername,
-        MAX_USERNAME_LENGTH
-      ).toLowerCase();
-
-    const replyToName =
-      getCleanString(
-        requestBody?.replyToName,
-        MAX_NAME_LENGTH
+    if (
+      rawParentReplyId &&
+      !parentReplyObjectId
+    ) {
+      return Response.json(
+        {
+          success: false,
+          message:
+            "Răspunsul selectat nu este valid.",
+        },
+        {
+          status: 400,
+        }
       );
-
-    const isReplyToReply =
-      Boolean(
-        replyToUserObjectId ||
-          replyToUsername ||
-          replyToName
-      );
+    }
 
     const postsCollection =
       await getPostsCollection();
@@ -455,6 +485,31 @@ export async function POST(
       );
     }
 
+    let targetReply = null;
+
+    if (parentReplyObjectId) {
+      targetReply =
+        await commentsCollection.findOne({
+          _id: parentReplyObjectId,
+          postId: postObjectId,
+          parentCommentId:
+            commentObjectId,
+        });
+
+      if (!targetReply) {
+        return Response.json(
+          {
+            success: false,
+            message:
+              "Răspunsul la care răspunzi nu a fost găsit.",
+          },
+          {
+            status: 404,
+          }
+        );
+      }
+    }
+
     const now = new Date();
 
     const newReply = {
@@ -485,16 +540,25 @@ export async function POST(
       updatedAt: now,
     };
 
-    if (isReplyToReply) {
+    if (targetReply) {
+      newReply.parentReplyId =
+        targetReply._id;
+
       newReply.replyToUserId =
-        replyToUserObjectId;
+        targetReply.userId;
 
       newReply.replyToUsername =
-        replyToUsername;
+        getCleanString(
+          targetReply.username,
+          MAX_USERNAME_LENGTH
+        ).toLowerCase();
 
       newReply.replyToName =
-        replyToName ||
-        replyToUsername ||
+        getCleanString(
+          targetReply.name,
+          MAX_NAME_LENGTH
+        ) ||
+        newReply.replyToUsername ||
         "Utilizator";
     }
 

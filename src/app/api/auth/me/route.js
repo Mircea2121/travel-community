@@ -42,6 +42,8 @@ export async function GET() {
 
           bio: user.bio,
           location: user.location,
+          nameChangedAt:
+            user.nameChangedAt || null,
 
           avatar: user.avatar,
           coverImage: user.coverImage,

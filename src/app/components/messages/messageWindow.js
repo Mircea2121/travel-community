@@ -245,10 +245,20 @@ export default function MessageWindow({
   }, []);
 
   const scrollToBottom = useCallback((behavior = "smooth") => {
-    messagesEndRef.current?.scrollIntoView({
-      behavior,
-      block: "end",
-    });
+    const content = contentRef.current;
+
+    if (content) {
+      content.scrollTo({
+        top: content.scrollHeight,
+        behavior,
+      });
+    } else {
+      messagesEndRef.current?.scrollIntoView({
+        behavior,
+        block: "end",
+      });
+    }
+
     setShowNewMessagesButton(false);
   }, []);
 
@@ -465,11 +475,102 @@ export default function MessageWindow({
 
   useEffect(() => {
     if (!initialScrollPendingRef.current || isLoading) {
-      return;
+      return undefined;
     }
 
     initialScrollPendingRef.current = false;
-    window.requestAnimationFrame(() => scrollToBottom("auto"));
+    const content = contentRef.current;
+
+    if (!content) {
+      return undefined;
+    }
+
+    let animationFrame = 0;
+    let settleFrame = 0;
+    let observerTimer = 0;
+    let isCancelled = false;
+    const pendingImages = new Set(
+      [...content.querySelectorAll("img")].filter(
+        (image) => !image.complete
+      )
+    );
+
+    const resizeObserver =
+      typeof ResizeObserver === "function"
+        ? new ResizeObserver(() => {
+            if (!isCancelled) {
+              scrollToBottom("auto");
+            }
+          })
+        : null;
+
+    function scrollAfterLayout() {
+      window.cancelAnimationFrame(animationFrame);
+      window.cancelAnimationFrame(settleFrame);
+
+      animationFrame = window.requestAnimationFrame(() => {
+        if (isCancelled) {
+          return;
+        }
+
+        scrollToBottom("auto");
+        settleFrame = window.requestAnimationFrame(() => {
+          if (!isCancelled) {
+            scrollToBottom("auto");
+          }
+        });
+      });
+    }
+
+    function scheduleObserverDisconnect() {
+      if (pendingImages.size > 0) {
+        return;
+      }
+
+      window.clearTimeout(observerTimer);
+      observerTimer = window.setTimeout(() => {
+        resizeObserver?.disconnect();
+      }, 250);
+    }
+
+    function handleImageSettled(event) {
+      const image = event.currentTarget;
+
+      image.removeEventListener("load", handleImageSettled);
+      image.removeEventListener("error", handleImageSettled);
+      pendingImages.delete(image);
+      scrollAfterLayout();
+      scheduleObserverDisconnect();
+    }
+
+    for (const image of pendingImages) {
+      image.addEventListener("load", handleImageSettled);
+      image.addEventListener("error", handleImageSettled);
+    }
+
+    const messagesContainer = content.querySelector(
+      ".message-window-messages"
+    );
+
+    if (messagesContainer) {
+      resizeObserver?.observe(messagesContainer);
+    }
+
+    scrollAfterLayout();
+    scheduleObserverDisconnect();
+
+    return () => {
+      isCancelled = true;
+      window.cancelAnimationFrame(animationFrame);
+      window.cancelAnimationFrame(settleFrame);
+      window.clearTimeout(observerTimer);
+      resizeObserver?.disconnect();
+
+      for (const image of pendingImages) {
+        image.removeEventListener("load", handleImageSettled);
+        image.removeEventListener("error", handleImageSettled);
+      }
+    };
   }, [isLoading, messages.length, scrollToBottom]);
 
   useEffect(() => {

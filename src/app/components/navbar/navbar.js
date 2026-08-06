@@ -9,8 +9,7 @@ import {
   X,
   UserRound,
   Settings,
-  Bookmark,
-  FileText,
+  MessageCircle,
   LogOut,
 } from "lucide-react";
 
@@ -21,6 +20,24 @@ import {
 } from "react";
 
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { getUserInitials } from "../../utils/getUserInitials";
+
+function getAvatarUrl(avatar) {
+  if (typeof avatar === "string") {
+    return avatar.trim();
+  }
+
+  if (
+    avatar &&
+    typeof avatar === "object" &&
+    typeof avatar.url === "string"
+  ) {
+    return avatar.url.trim();
+  }
+
+  return "";
+}
 
 export default function Navbar() {
   const router = useRouter();
@@ -44,6 +61,9 @@ export default function Navbar() {
   ] = useState(false);
 
   const [user, setUser] = useState(null);
+
+  const [failedAvatarUrl, setFailedAvatarUrl] =
+    useState("");
 
   const [
     isLoadingUser,
@@ -301,17 +321,12 @@ export default function Navbar() {
   };
 
   const getUserInitial = () => {
-    const cleanName =
-      user?.name?.trim();
-
-    if (!cleanName) {
-      return "U";
-    }
-
-    return cleanName
-      .charAt(0)
-      .toUpperCase();
+    return getUserInitials(user);
   };
+
+  const avatarUrl = getAvatarUrl(user?.avatar);
+  const shouldShowAvatar =
+    Boolean(avatarUrl) && failedAvatarUrl !== avatarUrl;
 
   return (
     <>
@@ -395,9 +410,7 @@ export default function Navbar() {
 
           <button
             type="button"
-            onClick={() =>
-              scrollToSection("blog")
-            }
+            onClick={() => navigateTo("/blog")}
           >
             Blog
           </button>
@@ -516,7 +529,20 @@ export default function Navbar() {
                   <div className="profile-dropdown">
                     <div className="profile-dropdown-header">
                       <div className="profile-dropdown-avatar">
-                        {getUserInitial()}
+                        {shouldShowAvatar ? (
+                          <Image
+                            src={avatarUrl}
+                            alt={`Avatar ${user.name || "utilizator"}`}
+                            width={58}
+                            height={58}
+                            sizes="58px"
+                            onError={() =>
+                              setFailedAvatarUrl(avatarUrl)
+                            }
+                          />
+                        ) : (
+                          getUserInitial()
+                        )}
                       </div>
 
                       <div className="profile-dropdown-identity">
@@ -557,39 +583,19 @@ export default function Navbar() {
                         type="button"
                         onClick={() =>
                           navigateTo(
-                            "/my-posts"
+                            "/messages"
                           )
                         }
                       >
                         <span className="profile-dropdown-icon">
-                          <FileText
+                          <MessageCircle
                             size={19}
                             strokeWidth={2}
                           />
                         </span>
 
                         <span>
-                          Postările mele
-                        </span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          navigateTo(
-                            "/saved"
-                          )
-                        }
-                      >
-                        <span className="profile-dropdown-icon">
-                          <Bookmark
-                            size={19}
-                            strokeWidth={2}
-                          />
-                        </span>
-
-                        <span>
-                          Postări salvate
+                          Mesaje
                         </span>
                       </button>
 
@@ -716,9 +722,7 @@ export default function Navbar() {
 
           <button
             type="button"
-            onClick={() =>
-              scrollToSection("blog")
-            }
+            onClick={() => navigateTo("/blog")}
           >
             Blog
           </button>

@@ -1,11 +1,11 @@
 import { ObjectId } from "mongodb";
 
 import { getCurrentUser } from "../../../../utils/currentUser";
-
 import {
   getPostsCollection,
   getSavedPostsCollection,
 } from "../../../../utils/database";
+import { updatePostEngagement } from "../../../../utils/postEngagement";
 
 function serializeSavedPost(savedPost) {
   return {
@@ -14,6 +14,38 @@ function serializeSavedPost(savedPost) {
     userId: String(savedPost.userId),
     postId: String(savedPost.postId),
   };
+}
+
+function getUserObjectId(currentUser) {
+  const userId = String(currentUser?._id || "");
+
+  if (!ObjectId.isValid(userId)) {
+    return null;
+  }
+
+  return new ObjectId(userId);
+}
+
+function getSavesCount(post, fallback = 0) {
+  return typeof post?.savesCount === "number"
+    ? post.savesCount
+    : fallback;
+}
+
+async function restoreSavedPost(
+  savedPostsCollection,
+  savedPost
+) {
+  try {
+    await savedPostsCollection.insertOne(savedPost);
+  } catch (rollbackError) {
+    if (rollbackError?.code !== 11000) {
+      console.error(
+        "Rollback-ul salvării eliminate a eșuat:",
+        rollbackError
+      );
+    }
+  }
 }
 
 export async function GET(request, { params }) {
@@ -47,14 +79,34 @@ export async function GET(request, { params }) {
       );
     }
 
+    const userObjectId = getUserObjectId(currentUser);
+
+    if (!userObjectId) {
+      return Response.json(
+        {
+          success: false,
+          message: "Utilizatorul autentificat nu este valid.",
+        },
+        {
+          status: 401,
+        }
+      );
+    }
+
     const savedPostsCollection =
       await getSavedPostsCollection();
 
-    const savedPost =
-      await savedPostsCollection.findOne({
-        userId: currentUser._id,
+    const savedPost = await savedPostsCollection.findOne(
+      {
+        userId: userObjectId,
         postId: new ObjectId(id),
-      });
+      },
+      {
+        projection: {
+          _id: 1,
+        },
+      }
+    );
 
     return Response.json({
       success: true,
@@ -110,29 +162,41 @@ export async function POST(request, { params }) {
       );
     }
 
-    const postId = new ObjectId(id);
+    const userObjectId = getUserObjectId(currentUser);
 
-    const [
-      postsCollection,
-      savedPostsCollection,
-    ] = await Promise.all([
-      getPostsCollection(),
-      getSavedPostsCollection(),
-    ]);
-
-    const postExists =
-      await postsCollection.findOne(
+    if (!userObjectId) {
+      return Response.json(
         {
-          _id: postId,
+          success: false,
+          message: "Utilizatorul autentificat nu este valid.",
         },
         {
-          projection: {
-            _id: 1,
-          },
+          status: 401,
         }
       );
+    }
 
-    if (!postExists) {
+    const postId = new ObjectId(id);
+
+    const [postsCollection, savedPostsCollection] =
+      await Promise.all([
+        getPostsCollection(),
+        getSavedPostsCollection(),
+      ]);
+
+    const post = await postsCollection.findOne(
+      {
+        _id: postId,
+      },
+      {
+        projection: {
+          _id: 1,
+          savesCount: 1,
+        },
+      }
+    );
+
+    if (!post) {
       return Response.json(
         {
           success: false,
@@ -145,7 +209,7 @@ export async function POST(request, { params }) {
     }
 
     const savedPostFilter = {
-      userId: currentUser._id,
+      userId: userObjectId,
       postId,
     };
 
@@ -155,61 +219,128 @@ export async function POST(request, { params }) {
       );
 
     if (deletedSavedPost) {
+      let updatedPost;
+
+      try {
+        updatedPost = await updatePostEngagement({
+          postsCollection,
+          postId,
+          savesDelta: -1,
+          projection: {
+            savesCount: 1,
+            engagementScore: 1,
+          },
+        });
+      } catch (error) {
+        await restoreSavedPost(
+          savedPostsCollection,
+          deletedSavedPost
+        );
+
+        throw error;
+      }
+
+      if (!updatedPost) {
+        await restoreSavedPost(
+          savedPostsCollection,
+          deletedSavedPost
+        );
+
+        return Response.json(
+          {
+            success: false,
+            message: "Postarea nu a fost găsită.",
+          },
+          {
+            status: 404,
+          }
+        );
+      }
+
       return Response.json({
         success: true,
         isSaved: false,
-        message:
-          "Postarea a fost eliminată din salvate.",
+        savesCount: getSavesCount(updatedPost),
+        message: "Postarea a fost eliminată din salvate.",
       });
     }
 
     const newSavedPost = {
-      userId: currentUser._id,
+      userId: userObjectId,
       postId,
       createdAt: new Date(),
     };
 
-    try {
-      const result =
-        await savedPostsCollection.insertOne(
-          newSavedPost
-        );
+    let insertResult;
 
-      return Response.json(
-        {
-          success: true,
-          isSaved: true,
-          message:
-            "Postarea a fost salvată.",
-          savedPost: serializeSavedPost({
-            ...newSavedPost,
-            _id: result.insertedId,
-          }),
-        },
-        {
-          status: 201,
-        }
+    try {
+      insertResult = await savedPostsCollection.insertOne(
+        newSavedPost
       );
     } catch (error) {
-      /*
-       * Codul 11000 apare atunci când indexul unic
-       * userId + postId oprește o salvare duplicată.
-       *
-       * Situația poate apărea dacă utilizatorul apasă
-       * foarte repede de două ori sau trimite două
-       * cereri simultan.
-       */
       if (error?.code === 11000) {
         return Response.json({
           success: true,
           isSaved: true,
-          message:
-            "Postarea este deja salvată.",
+          savesCount: getSavesCount(post),
+          message: "Postarea este deja salvată.",
         });
       }
 
       throw error;
     }
+
+    let updatedPost;
+
+    try {
+      updatedPost = await updatePostEngagement({
+        postsCollection,
+        postId,
+        savesDelta: 1,
+        projection: {
+          savesCount: 1,
+          engagementScore: 1,
+        },
+      });
+    } catch (error) {
+      await savedPostsCollection.deleteOne({
+        _id: insertResult.insertedId,
+      });
+
+      throw error;
+    }
+
+    if (!updatedPost) {
+      await savedPostsCollection.deleteOne({
+        _id: insertResult.insertedId,
+      });
+
+      return Response.json(
+        {
+          success: false,
+          message: "Postarea nu a fost găsită.",
+        },
+        {
+          status: 404,
+        }
+      );
+    }
+
+    return Response.json(
+      {
+        success: true,
+        isSaved: true,
+        savesCount: getSavesCount(updatedPost, 1),
+        message: "Postarea a fost salvată.",
+        savedPost: serializeSavedPost({
+          ...newSavedPost,
+          _id: insertResult.insertedId,
+        }),
+      },
+      {
+        status: 201,
+      }
+    );
   } catch (error) {
     console.error(
       "Eroare la salvarea postării:",

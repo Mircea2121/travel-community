@@ -3,6 +3,10 @@ import { randomUUID } from "node:crypto";
 import { getCurrentUser } from "../../utils/currentUser";
 import { getPostsCollection } from "../../utils/database";
 import { fileToBase64 } from "../../utils/image";
+import {
+  getPublicAuthorProfilesByIds,
+  hydratePublicAuthor,
+} from "../../utils/publicUser";
 
 import {
   deleteImage,
@@ -52,7 +56,6 @@ function getTextValue(
 
   return value.trim();
 }
-
 function getNumericCost(
   totalCost
 ) {
@@ -290,12 +293,25 @@ export async function GET(
         .limit(limit)
         .toArray();
 
+    const authorProfiles =
+      await getPublicAuthorProfilesByIds(
+        posts.map((post) => post.authorId)
+      );
+
     return Response.json({
       success: true,
 
       posts:
-        posts.map(
-          serializePost
+        posts.map((post) =>
+          serializePost(
+            hydratePublicAuthor(
+              post,
+              authorProfiles,
+              {
+                userIdField: "authorId",
+              }
+            )
+          )
         ),
     });
   } catch (error) {
@@ -523,6 +539,8 @@ export async function POST(
 
       likesCount: 0,
       commentsCount: 0,
+      savesCount: 0,
+      engagementScore: 0,
 
       createdAt: now,
       updatedAt: now,

@@ -1,12 +1,12 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useState } from "react";
 import {
   Image as ImageIcon,
   Images,
   Trash2,
-  UserRound,
 } from "lucide-react";
+import { getUserInitials } from "../../utils/getUserInitials";
 
 function isSameCalendarDay(firstDate, secondDate) {
   return (
@@ -114,6 +114,8 @@ function ConversationItem({
   isTyping = false,
   onSelect,
 }) {
+  const [failedAvatarUrl, setFailedAvatarUrl] =
+    useState("");
   const conversationId = conversation?._id || "";
   const otherUser = conversation?.otherUser || {};
   const displayName =
@@ -122,6 +124,10 @@ function ConversationItem({
     otherUser.username ||
     "Utilizator";
   const avatarUrl = getAvatarUrl(otherUser);
+  const shouldShowAvatar =
+    Boolean(avatarUrl) &&
+    failedAvatarUrl !== avatarUrl;
+  const initials = getUserInitials(displayName);
   const isOnline = otherUser.isOnline === true;
   const unreadCount = Math.max(
     0,
@@ -167,10 +173,19 @@ function ConversationItem({
     >
       <span className="conversation-item-avatar-wrapper">
         <span className="conversation-item-avatar">
-          {avatarUrl ? (
-            <img src={avatarUrl} alt="" loading="lazy" />
+          {shouldShowAvatar ? (
+            <img
+              src={avatarUrl}
+              alt=""
+              loading="lazy"
+              onError={() =>
+                setFailedAvatarUrl(avatarUrl)
+              }
+            />
           ) : (
-            <UserRound size={22} aria-hidden="true" />
+            <span className="chat-avatar-initials" aria-hidden="true">
+              {initials}
+            </span>
           )}
         </span>
 

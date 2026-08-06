@@ -1,11 +1,16 @@
 import { ObjectId } from "mongodb";
 
 import { getCurrentUser } from "../../../../utils/currentUser";
+import {
+  getPublicAuthorProfilesByIds,
+  hydratePublicAuthor,
+} from "../../../../utils/publicUser";
 
 import {
   getDatabase,
   getPostsCollection,
 } from "../../../../utils/database";
+import { updatePostEngagement } from "../../../../utils/postEngagement";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -62,7 +67,6 @@ async function getCommentsCollection() {
 
   return commentsCollection;
 }
-
 function getValidPostId(id) {
   if (
     !id ||
@@ -322,6 +326,13 @@ export async function GET(
           comment._id
       );
 
+    const authorProfiles =
+      await getPublicAuthorProfilesByIds(
+        mainComments.map(
+          (comment) => comment.userId
+        )
+      );
+
     const repliesCountResults =
       mainCommentIds.length > 0
         ? await commentsCollection
@@ -387,8 +398,14 @@ export async function GET(
               comment._id
             );
 
+          const hydratedComment =
+            hydratePublicAuthor(
+              comment,
+              authorProfiles
+            );
+
           return serializeComment(
-            comment,
+            hydratedComment,
             repliesCountMap[
               commentId
             ] || 0
@@ -611,26 +628,30 @@ export async function POST(
         newComment
       );
 
-    const updatedPost =
-      await postsCollection.findOneAndUpdate(
-        {
-          _id:
-            postObjectId,
-        },
-        {
-          $inc: {
-            commentsCount: 1,
-          },
-        },
-        {
-          returnDocument:
-            "after",
+    let updatedPost;
 
+    try {
+      updatedPost =
+        await updatePostEngagement({
+          postsCollection,
+          postId:
+            postObjectId,
+          commentsDelta: 1,
           projection: {
             commentsCount: 1,
+            engagementScore: 1,
           },
+        });
+    } catch (error) {
+      await commentsCollection.deleteOne(
+        {
+          _id:
+            insertResult.insertedId,
         }
       );
+
+      throw error;
+    }
 
     if (!updatedPost) {
       await commentsCollection.deleteOne(

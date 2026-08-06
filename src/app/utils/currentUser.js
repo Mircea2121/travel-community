@@ -7,7 +7,9 @@ import {
 } from "./auth";
 import { getUsersCollection } from "./database";
 
-export async function getCurrentUser() {
+export async function getCurrentUser(
+  { includePassword = false } = {}
+) {
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
@@ -35,11 +37,13 @@ export async function getCurrentUser() {
     {
       _id: new ObjectId(payload.userId),
     },
-    {
-      projection: {
-        password: 0,
-      },
-    }
+    includePassword
+      ? {}
+      : {
+          projection: {
+            password: 0,
+          },
+        }
   );
 
   if (!user || !isAuthTokenCurrent(payload, user)) {

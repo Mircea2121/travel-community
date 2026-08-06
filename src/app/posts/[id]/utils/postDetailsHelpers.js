@@ -1,3 +1,5 @@
+import { getUserInitials } from "../../../utils/getUserInitials";
+
 const CATEGORY_LABELS = {
   plaja: "Plajă",
   "city-break": "City break",
@@ -102,12 +104,9 @@ export function getUserDisplayName(user) {
 }
 
 export function getUserInitial(user) {
-  const displayName =
-    getUserDisplayName(user).trim();
-
-  return displayName
-    ? displayName.charAt(0).toUpperCase()
-    : "U";
+  return getUserInitials(
+    getUserDisplayName(user)
+  );
 }
 
 export function formatCommentDate(dateValue) {

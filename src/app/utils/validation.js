@@ -29,6 +29,9 @@ export const RESERVED_USERNAMES = [
 export const NAME = {
   MIN_LENGTH: 2,
   MAX_LENGTH: 50,
+  CHANGE_COOLDOWN_DAYS: 15,
+  CHANGE_COOLDOWN_MS:
+    15 * 24 * 60 * 60 * 1000,
 };
 
 export const BIO = {

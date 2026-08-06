@@ -747,6 +747,8 @@ export default function useComments({
         );
 
         setReplyToUser({
+          replyId:
+            getReplyId(reply),
           userId: replyAuthorId,
           username: replyUsername,
           name:
@@ -765,6 +767,7 @@ export default function useComments({
       },
       [
         getCommentId,
+        getReplyId,
         getReplyAuthorName,
       ]
     );
@@ -836,16 +839,8 @@ export default function useComments({
                 content:
                   trimmedContent,
 
-                replyToUserId:
-                  replyToUser?.userId ||
-                  null,
-
-                replyToUsername:
-                  replyToUser?.username ||
-                  null,
-
-                replyToName:
-                  replyToUser?.name ||
+                parentReplyId:
+                  replyToUser?.replyId ||
                   null,
               }),
             }

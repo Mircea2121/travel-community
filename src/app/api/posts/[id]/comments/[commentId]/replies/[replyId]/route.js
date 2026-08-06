@@ -269,6 +269,35 @@ export async function DELETE(
       );
     }
 
+    const childrenFilter = {
+      postId: postObjectId,
+      parentCommentId:
+        commentObjectId,
+      parentReplyId:
+        replyObjectId,
+    };
+
+    if (reply.parentReplyId) {
+      await commentsCollection.updateMany(
+        childrenFilter,
+        {
+          $set: {
+            parentReplyId:
+              reply.parentReplyId,
+          },
+        }
+      );
+    } else {
+      await commentsCollection.updateMany(
+        childrenFilter,
+        {
+          $unset: {
+            parentReplyId: "",
+          },
+        }
+      );
+    }
+
     const deleteResult =
       await commentsCollection.deleteOne({
         _id: replyObjectId,

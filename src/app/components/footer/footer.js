@@ -15,25 +15,28 @@ import {
 export default function Footer() {
   const router = useRouter();
 
-  const scrollToSection = (id) => {
-    const section = document.getElementById(id);
-
-    if (!section) {
+  function navigateToSection(id) {
+    if (window.location.pathname !== "/") {
+      router.push(`/#${id}`);
       return;
     }
 
-    section.scrollIntoView({
+    document.getElementById(id)?.scrollIntoView({
       behavior: "smooth",
       block: "start",
     });
-  };
+  }
+
+  function navigateTo(path) {
+    router.push(path);
+  }
 
   return (
     <footer className="footer">
       <div className="footer-container">
         <div className="footer-brand">
           <div className="footer-logo">
-            <Globe size={26} strokeWidth={2} />
+            <Globe size={26} strokeWidth={2} aria-hidden="true" />
           </div>
 
           <h3>Comunitatea Călătorilor</h3>
@@ -50,41 +53,41 @@ export default function Footer() {
 
           <button
             type="button"
-            onClick={() => scrollToSection("hero")}
+            onClick={() => navigateToSection("hero")}
           >
-            <ChevronRight size={16} />
+            <ChevronRight size={16} aria-hidden="true" />
             Explorează
           </button>
 
           <button
             type="button"
-            onClick={() => scrollToSection("destinations")}
+            onClick={() => navigateToSection("destinations")}
           >
-            <ChevronRight size={16} />
+            <ChevronRight size={16} aria-hidden="true" />
             Destinații
           </button>
 
           <button
             type="button"
-            onClick={() => scrollToSection("reviews")}
+            onClick={() => navigateToSection("reviews")}
           >
-            <ChevronRight size={16} />
+            <ChevronRight size={16} aria-hidden="true" />
             Recenzii
           </button>
 
           <button
             type="button"
-            onClick={() => scrollToSection("blog")}
+            onClick={() => navigateTo("/blog")}
           >
-            <ChevronRight size={16} />
+            <ChevronRight size={16} aria-hidden="true" />
             Blog
           </button>
 
           <button
             type="button"
-            onClick={() => scrollToSection("about")}
+            onClick={() => navigateToSection("about")}
           >
-            <ChevronRight size={16} />
+            <ChevronRight size={16} aria-hidden="true" />
             Despre noi
           </button>
         </div>
@@ -94,25 +97,25 @@ export default function Footer() {
 
           <button
             type="button"
-            onClick={() => router.push("/support")}
+            onClick={() => navigateTo("/support")}
           >
-            <LifeBuoy size={16} />
+            <LifeBuoy size={16} aria-hidden="true" />
             Suport
           </button>
 
           <button
             type="button"
-            onClick={() => router.push("/report")}
+            onClick={() => navigateTo("/report")}
           >
-            <ShieldAlert size={16} />
+            <ShieldAlert size={16} aria-hidden="true" />
             Raportează
           </button>
 
           <button
             type="button"
-            onClick={() => router.push("/contact")}
+            onClick={() => navigateTo("/contact")}
           >
-            <Mail size={16} />
+            <Mail size={16} aria-hidden="true" />
             Contact
           </button>
         </div>
@@ -122,25 +125,25 @@ export default function Footer() {
 
           <button
             type="button"
-            onClick={() => router.push("/regulament")}
+            onClick={() => navigateTo("/regulament")}
           >
-            <FileText size={16} />
+            <FileText size={16} aria-hidden="true" />
             Regulament
           </button>
 
           <button
             type="button"
-            onClick={() => router.push("/termeni")}
+            onClick={() => navigateTo("/termeni")}
           >
-            <FileText size={16} />
+            <FileText size={16} aria-hidden="true" />
             Termeni și condiții
           </button>
 
           <button
             type="button"
-            onClick={() => router.push("/confidentialitate")}
+            onClick={() => navigateTo("/confidentialitate")}
           >
-            <FileText size={16} />
+            <FileText size={16} aria-hidden="true" />
             Politica de confidențialitate
           </button>
         </div>

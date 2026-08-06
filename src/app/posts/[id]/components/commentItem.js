@@ -447,7 +447,8 @@ export default function CommentItem({
           )}
         </div>
 
-        {isReplyFormOpen && (
+        {isReplyFormOpen &&
+          !replyToUser?.replyId && (
           <ReplyForm
             value={replyValue}
             error={replyError}
@@ -525,6 +526,33 @@ export default function CommentItem({
             }
             onReplyToReply={
               handleReplyToReply
+            }
+            activeReplyTargetId={
+              replyToUser?.replyId || ""
+            }
+            isReplyFormOpen={
+              isReplyFormOpen
+            }
+            replyToUser={
+              replyToUser
+            }
+            replyValue={
+              replyValue
+            }
+            replyError={
+              replyError
+            }
+            isReplySubmitting={
+              isReplySubmitting
+            }
+            onReplyChange={
+              onReplyChange
+            }
+            onReplySubmit={
+              handleReplySubmit
+            }
+            onCloseReplyForm={
+              onCloseReplyForm
             }
             onDeleteReply={(
               reply

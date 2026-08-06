@@ -34,6 +34,19 @@ async function createUserAuthenticationIndexes(database) {
       },
     }
   );
+
+  await collection.createIndex(
+    {
+      accountStatus: 1,
+      deletedAt: 1,
+    },
+    {
+      name: "deleted_accounts_media_cleanup",
+      partialFilterExpression: {
+        accountStatus: "deleted",
+      },
+    }
+  );
 }
 
 async function createPasswordResetTokenIndexes(database) {

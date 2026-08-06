@@ -3,6 +3,10 @@ import { getCurrentUser } from "../../../utils/currentUser";
 import {
   getSavedPostsCollection,
 } from "../../../utils/database";
+import {
+  getPublicAuthorProfilesByIds,
+  hydratePublicAuthor,
+} from "../../../utils/publicUser";
 
 function serializePost(post) {
   return {
@@ -109,11 +113,26 @@ export async function GET(request) {
         ])
         .toArray();
 
+    const authorProfiles =
+      await getPublicAuthorProfilesByIds(
+        savedPosts.map(
+          (post) => post.authorId
+        )
+      );
+
     return Response.json({
       success: true,
       posts:
-        savedPosts.map(
-          serializePost
+        savedPosts.map((post) =>
+          serializePost(
+            hydratePublicAuthor(
+              post,
+              authorProfiles,
+              {
+                userIdField: "authorId",
+              }
+            )
+          )
         ),
       count:
         savedPosts.length,
