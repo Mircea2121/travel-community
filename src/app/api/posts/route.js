@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { getCurrentUser } from "../../utils/currentUser";
 import { getPostsCollection } from "../../utils/database";
 import { fileToBase64 } from "../../utils/image";
+import { normalizeCountryKey } from "../../utils/discovery";
 import {
   getPublicAuthorProfilesByIds,
   hydratePublicAuthor,
@@ -510,6 +511,9 @@ export async function POST(
 
       country:
         postData.country,
+
+      countryKey:
+        normalizeCountryKey(postData.country),
 
       city:
         postData.city,

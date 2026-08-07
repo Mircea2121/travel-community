@@ -17,8 +17,31 @@
 
 .post-details-container {
   width: 100%;
-  max-width: 1180px;
+  max-width: 1380px;
   margin: 0 auto;
+}
+
+@media (min-width: 1024px) {
+  .post-details-topbar {
+    max-width: 1180px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .post-details-card {
+    padding-left: 48px;
+    padding-right: 48px;
+  }
+
+  .post-details-card > .post-gallery,
+  .post-details-card > .post-details-content,
+  .post-details-card > .post-social-actions,
+  .post-details-card > .comments-box {
+    width: 100%;
+    max-width: 1180px;
+    margin-left: auto;
+    margin-right: auto;
+  }
 }
 
 /* TOPBAR */

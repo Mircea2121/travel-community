@@ -5,17 +5,21 @@ import PopularDestinations from "./components/popularDestinations/popularDestina
 import Feed from "./components/feed/feed";
 import About from "./components/about/about";
 import FlagBackground from "./components/flagBackground/flagBackground";
+import CommunityOverviewProvider from "./components/discovery/communityOverviewProvider";
+import HomeScrollRestorer from "./components/discovery/homeScrollRestorer";
 
 export default function Home() {
   return (
     <main className="home-page">
+      <HomeScrollRestorer />
       <FlagBackground />
-
       <div className="home-page-content">
         <Hero />
-        <Stats />
-        <Categories />
-        <PopularDestinations />
+        <CommunityOverviewProvider>
+          <Stats />
+          <Categories />
+          <PopularDestinations />
+        </CommunityOverviewProvider>
         <Feed />
         <About />
       </div>

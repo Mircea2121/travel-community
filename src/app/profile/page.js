@@ -65,15 +65,38 @@ function getLocation(user) {
   };
 }
 
+function serializeId(value) {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  const serializedValue = String(value);
+
+  return serializedValue === "[object Object]"
+    ? ""
+    : serializedValue;
+}
+
+function serializeDate(value) {
+  if (!value) {
+    return null;
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+
+  return Number.isNaN(date.getTime())
+    ? null
+    : date.toISOString();
+}
+
 function createProfileUser(user) {
   const { city, country } =
     getLocation(user);
 
   return {
-    id:
-      user?.id ||
-      user?._id ||
-      "",
+    id: serializeId(
+      user?.id || user?._id
+    ),
 
     fullName:
       user?.fullName ||
@@ -155,11 +178,13 @@ function createProfileUser(user) {
         "Călător explorator",
     },
 
-    createdAt:
-      user?.createdAt || null,
+    createdAt: serializeDate(
+      user?.createdAt
+    ),
 
-    updatedAt:
-      user?.updatedAt || null,
+    updatedAt: serializeDate(
+      user?.updatedAt
+    ),
   };
 }
 

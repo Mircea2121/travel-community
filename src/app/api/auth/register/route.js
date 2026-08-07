@@ -220,15 +220,9 @@ export async function POST(request) {
       bio: "",
       location: "",
 
-      avatar: {
-        url: process.env.DEFAULT_AVATAR_URL || "",
-        publicId: null,
-      },
+      avatar: null,
 
-      coverImage: {
-        url: process.env.DEFAULT_COVER_URL || "",
-        publicId: null,
-      },
+      coverImage: null,
 
       followers: [],
       following: [],

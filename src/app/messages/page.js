@@ -15,9 +15,7 @@ import {
 
 import ConversationList from "@/app/components/messages/conversationList";
 import MessageWindow from "@/app/components/messages/messageWindow";
-import RealtimeProvider, {
-  useRealtime,
-} from "@/app/components/messages/realtimeProvider";
+import { useRealtime } from "@/app/components/messages/realtimeProvider";
 import { REALTIME_EVENTS } from "@/app/utils/realtimeEvents";
 
 import "./messages.css";
@@ -532,9 +530,7 @@ function MessagesPageFallback() {
 export default function MessagesPage() {
   return (
     <Suspense fallback={<MessagesPageFallback />}>
-      <RealtimeProvider>
-        <MessagesPageContent />
-      </RealtimeProvider>
+      <MessagesPageContent />
     </Suspense>
   );
 }

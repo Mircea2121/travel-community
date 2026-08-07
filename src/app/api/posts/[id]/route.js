@@ -8,6 +8,7 @@ import {
 } from "../../../utils/publicUser";
 import { getPostsCollection } from "../../../utils/database";
 import { fileToBase64 } from "../../../utils/image";
+import { normalizeCountryKey } from "../../../utils/discovery";
 import {
   deleteImage,
   uploadImage,
@@ -553,6 +554,7 @@ export async function PATCH(
         {
           $set: {
             ...postData,
+            countryKey: normalizeCountryKey(postData.country),
             images: finalImages,
             updatedAt: new Date(),
           },

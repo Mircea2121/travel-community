@@ -4,6 +4,10 @@ import "./navbar.css";
 
 import {
   Search,
+  MapPin,
+  Compass,
+  LoaderCircle,
+  ArrowRight,
   CircleUserRound,
   Menu,
   X,
@@ -45,6 +49,18 @@ export default function Navbar() {
   const [searchQuery, setSearchQuery] =
     useState("");
 
+  const [searchSuggestions, setSearchSuggestions] =
+    useState([]);
+
+  const [isSearchLoading, setIsSearchLoading] =
+    useState(false);
+
+  const [isSearchFocused, setIsSearchFocused] =
+    useState(false);
+
+  const [activeSuggestionIndex, setActiveSuggestionIndex] =
+    useState(-1);
+
   const [
     isMobileSearchOpen,
     setIsMobileSearchOpen,
@@ -71,7 +87,100 @@ export default function Navbar() {
   ] = useState(true);
 
   const searchInputRef = useRef(null);
+  const searchFormRef = useRef(null);
   const profileMenuRef = useRef(null);
+
+  useEffect(() => {
+    const cleanQuery = searchQuery.trim().replace(/\s+/g, " ");
+
+    if (cleanQuery.length < 2) {
+      return;
+    }
+
+    const controller = new AbortController();
+
+    const timeoutId = window.setTimeout(async () => {
+      setIsSearchLoading(true);
+
+      try {
+        const params = new URLSearchParams({
+          q: cleanQuery,
+          type: "all",
+          limit: "4",
+        });
+
+        const response = await fetch(`/api/search?${params.toString()}`, {
+          method: "GET",
+          cache: "no-store",
+          signal: controller.signal,
+        });
+
+        const payload = await response.json();
+
+        if (!response.ok || !payload.success) {
+          setSearchSuggestions([]);
+          return;
+        }
+
+        const profileSuggestions = (payload.results?.profiles || []).map(
+          (profile) => ({
+            id: `profile-${profile.id}`,
+            type: "profile",
+            title: profile.name,
+            subtitle: `@${profile.username}`,
+            href: `/users/${profile.username}`,
+          })
+        );
+
+        const destinationSuggestions = (
+          payload.results?.destinations || []
+        ).map((destination) => ({
+          id: `destination-${destination.id}`,
+          type: "destination",
+          title: destination.country,
+          subtitle: "Destinație",
+          href: `/search?q=${encodeURIComponent(
+            destination.country
+          )}&type=experiences`,
+        }));
+
+        const experienceSuggestions = (
+          payload.results?.experiences || []
+        ).map((experience) => ({
+          id: `experience-${experience.id}`,
+          type: "experience",
+          title: experience.title,
+          subtitle:
+            [experience.city, experience.country]
+              .filter(Boolean)
+              .join(", ") || experience.destination,
+          href: `/posts/${experience.id}`,
+        }));
+
+        setSearchSuggestions(
+          [
+            ...profileSuggestions,
+            ...destinationSuggestions,
+            ...experienceSuggestions,
+          ].slice(0, 8)
+        );
+        setActiveSuggestionIndex(-1);
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          setSearchSuggestions([]);
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsSearchLoading(false);
+        }
+      }
+    }, 280);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [searchQuery]);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -117,11 +226,21 @@ export default function Navbar() {
       ) {
         setIsProfileMenuOpen(false);
       }
+
+      if (
+        searchFormRef.current &&
+        !searchFormRef.current.contains(event.target)
+      ) {
+        setIsSearchFocused(false);
+        setActiveSuggestionIndex(-1);
+      }
     };
 
     const handleEscape = (event) => {
       if (event.key === "Escape") {
         setIsProfileMenuOpen(false);
+        setIsSearchFocused(false);
+        setActiveSuggestionIndex(-1);
       }
     };
 
@@ -152,6 +271,8 @@ export default function Navbar() {
     setIsMobileMenuOpen(false);
     setIsMobileSearchOpen(false);
     setIsProfileMenuOpen(false);
+    setIsSearchFocused(false);
+    setActiveSuggestionIndex(-1);
   }
 
   function removeCurrentHash() {
@@ -267,6 +388,60 @@ export default function Navbar() {
       )}`
     );
   };
+
+  const handleSearchQueryChange = (event) => {
+    const value = event.target.value;
+    setSearchQuery(value);
+
+    if (value.trim().length < 2) {
+      setSearchSuggestions([]);
+      setIsSearchLoading(false);
+      setActiveSuggestionIndex(-1);
+    }
+  };
+
+  const openSuggestion = (suggestion) => {
+    closeNavigationMenus();
+    setIsSearchFocused(false);
+    setActiveSuggestionIndex(-1);
+    router.push(suggestion.href);
+  };
+
+  const handleSearchKeyDown = (event) => {
+    if (!isSearchFocused || searchSuggestions.length === 0) {
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setActiveSuggestionIndex((currentIndex) =>
+        currentIndex >= searchSuggestions.length - 1
+          ? 0
+          : currentIndex + 1
+      );
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveSuggestionIndex((currentIndex) =>
+        currentIndex <= 0
+          ? searchSuggestions.length - 1
+          : currentIndex - 1
+      );
+      return;
+    }
+
+    if (event.key === "Enter" && activeSuggestionIndex >= 0) {
+      event.preventDefault();
+      openSuggestion(searchSuggestions[activeSuggestionIndex]);
+    }
+  };
+
+  const showSearchSuggestions =
+    isSearchFocused &&
+    searchQuery.trim().length >= 2 &&
+    (isSearchLoading || searchSuggestions.length > 0);
 
   const toggleMobileMenu = () => {
     setIsMobileSearchOpen(false);
@@ -427,12 +602,15 @@ export default function Navbar() {
 
         <div className="nav-actions">
           <form
+            ref={searchFormRef}
             className={`nav-search ${
               isMobileSearchOpen
                 ? "nav-search-open"
                 : ""
             }`}
             onSubmit={handleSearch}
+            onKeyDown={handleSearchKeyDown}
+            role="search"
           >
             <button
               type="button"
@@ -452,13 +630,20 @@ export default function Navbar() {
               ref={searchInputRef}
               type="search"
               value={searchQuery}
-              onChange={(event) =>
-                setSearchQuery(
-                  event.target.value
-                )
+              onChange={handleSearchQueryChange}
+              onFocus={() => setIsSearchFocused(true)}
+              placeholder="Caută în comunitate"
+              aria-label="Caută profiluri, destinații și experiențe"
+              aria-autocomplete="list"
+              role="combobox"
+              aria-controls="global-search-suggestions"
+              aria-expanded={showSearchSuggestions}
+              aria-activedescendant={
+                activeSuggestionIndex >= 0
+                  ? `global-search-option-${activeSuggestionIndex}`
+                  : undefined
               }
-              placeholder="Caută destinații"
-              aria-label="Caută destinații"
+              maxLength={80}
             />
 
             <button
@@ -485,6 +670,64 @@ export default function Navbar() {
                 strokeWidth={2.2}
               />
             </button>
+
+            {showSearchSuggestions && (
+              <div
+                id="global-search-suggestions"
+                className="nav-search-suggestions"
+                role="listbox"
+                aria-label="Sugestii de căutare"
+              >
+                {isSearchLoading && searchSuggestions.length === 0 ? (
+                  <div className="nav-search-loading">
+                    <LoaderCircle size={18} />
+                    <span>Căutăm...</span>
+                  </div>
+                ) : (
+                  <>
+                    {searchSuggestions.map((suggestion, index) => (
+                      <button
+                        key={suggestion.id}
+                        id={`global-search-option-${index}`}
+                        type="button"
+                        className={
+                          index === activeSuggestionIndex ? "active" : ""
+                        }
+                        onMouseDown={(event) => event.preventDefault()}
+                        onMouseEnter={() => setActiveSuggestionIndex(index)}
+                        onClick={() => openSuggestion(suggestion)}
+                        role="option"
+                        aria-selected={index === activeSuggestionIndex}
+                      >
+                        <span className={`nav-search-result-icon ${suggestion.type}`}>
+                          {suggestion.type === "profile" ? (
+                            <UserRound size={17} />
+                          ) : suggestion.type === "destination" ? (
+                            <MapPin size={17} />
+                          ) : (
+                            <Compass size={17} />
+                          )}
+                        </span>
+                        <span className="nav-search-result-copy">
+                          <strong>{suggestion.title}</strong>
+                          <small>{suggestion.subtitle}</small>
+                        </span>
+                        <ArrowRight size={16} />
+                      </button>
+                    ))}
+
+                    <button
+                      type="submit"
+                      className="nav-search-all-results"
+                      onMouseDown={(event) => event.preventDefault()}
+                    >
+                      <Search size={16} />
+                      Vezi toate rezultatele
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
           </form>
 
           {!isLoadingUser && (

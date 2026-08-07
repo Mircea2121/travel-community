@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import ImageCropModal from "./imageCropModal";
+import ProfileImageViewer from "./profileImageViewer";
 import { getUserInitials } from "../../utils/getUserInitials";
 
 import "./userProfile.css";
@@ -109,6 +110,11 @@ export default function ProfileHeader({
     avatarLoadFailed,
     setAvatarLoadFailed,
   ] = useState(false);
+
+  const [
+    viewedImage,
+    setViewedImage,
+  ] = useState(null);
 
   const [
     cropModalOpen,
@@ -329,6 +335,35 @@ export default function ProfileHeader({
   const shouldShowAvatarImage =
     Boolean(avatarPreview) &&
     !avatarLoadFailed;
+
+  function openViewedImage(type) {
+    const isCover = type === "cover";
+    const imageUrl = isCover
+      ? coverPreview
+      : shouldShowAvatarImage
+        ? avatarPreview
+        : null;
+
+    if (!imageUrl) {
+      return;
+    }
+
+    setViewedImage({
+      type: isCover ? "cover" : "avatar",
+      url: imageUrl,
+      title: isCover
+        ? "Fotografie de copertă"
+        : "Fotografie de profil",
+      subtitle: fullName,
+      alt: isCover
+        ? `Coperta profilului ${fullName}`
+        : `Fotografia de profil a utilizatorului ${fullName}`,
+    });
+  }
+
+  function closeViewedImage() {
+    setViewedImage(null);
+  }
 
   function closeCropModal() {
     setCropModalOpen(false);
@@ -747,6 +782,15 @@ export default function ProfileHeader({
               : undefined
           }
         >
+          {coverPreview && (
+            <button
+              type="button"
+              className="travel-profile-cover-view"
+              onClick={() => openViewedImage("cover")}
+              aria-label={`Deschide coperta profilului ${fullName}`}
+            />
+          )}
+
           {effectiveIsOwnProfile && (
             <label className="travel-profile-cover-upload">
               Schimbă coperta
@@ -767,14 +811,21 @@ export default function ProfileHeader({
         <div className="travel-profile-info-card">
           <div className="travel-profile-avatar-wrap">
             {shouldShowAvatarImage ? (
-              <img
-                src={avatarPreview}
-                alt={`Avatar ${fullName}`}
-                className="travel-profile-avatar"
-                onError={
-                  handleAvatarError
-                }
-              />
+              <button
+                type="button"
+                className="travel-profile-avatar-view"
+                onClick={() => openViewedImage("avatar")}
+                aria-label={`Deschide fotografia de profil a utilizatorului ${fullName}`}
+              >
+                <img
+                  src={avatarPreview}
+                  alt={`Avatar ${fullName}`}
+                  className="travel-profile-avatar"
+                  onError={
+                    handleAvatarError
+                  }
+                />
+              </button>
             ) : (
               <div
                 className="travel-profile-avatar travel-profile-avatar-fallback"
@@ -1110,6 +1161,11 @@ export default function ProfileHeader({
           </div>
         </div>
       </section>
+
+      <ProfileImageViewer
+        image={viewedImage}
+        onClose={closeViewedImage}
+      />
 
       <ImageCropModal
         isOpen={cropModalOpen}
