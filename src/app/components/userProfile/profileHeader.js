@@ -798,8 +798,12 @@ export default function ProfileHeader({
           )}
 
           {effectiveIsOwnProfile && (
-            <label className="travel-profile-cover-upload">
-              Schimbă coperta
+            <label
+              className="travel-profile-cover-upload"
+              aria-label={"Schimbă fotografia de copertă"}
+              title={"Schimbă coperta"}
+            >
+              <Pencil size={17} strokeWidth={2.2} aria-hidden="true" />
 
               <input
                 type="file"

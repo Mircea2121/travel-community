@@ -1,6 +1,8 @@
 /* eslint-disable @next/next/no-img-element -- Imagine dinamică de card, încărcată lazy și controlată de containerul responsive. */
 import Link from "next/link";
 
+import { formatPostCategory } from "../../utils/postCategories";
+
 import "./userProfile.css";
 
 function getPostId(post) {
@@ -166,9 +168,7 @@ export default function UserPostsGrid({ posts = [] }) {
 
               {post?.category && (
                 <div className="user-post-badge">
-                  {typeof post.category === "string"
-                    ? post.category
-                    : post.category?.name}
+                  {formatPostCategory(post.category)}
                 </div>
               )}
             </div>
