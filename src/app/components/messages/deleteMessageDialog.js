@@ -28,9 +28,15 @@ export default function DeleteMessageDialog({
   const cancelButtonRef = useRef(null);
 
   useEffect(() => {
-    if (isOpen) {
-      setScope("me");
+    if (!isOpen) {
+      return undefined;
     }
+
+    const resetTimer = window.setTimeout(() => {
+      setScope("me");
+    }, 0);
+
+    return () => window.clearTimeout(resetTimer);
   }, [isOpen]);
 
   function handleClose() {

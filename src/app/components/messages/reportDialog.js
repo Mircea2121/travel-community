@@ -45,13 +45,19 @@ export default function ReportDialog({
   const firstReasonRef = useRef(null);
 
   useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) {
+      return undefined;
+    }
+
+    const resetTimer = window.setTimeout(() => {
       setReason("");
       setDetails("");
       setError("");
       setSuccessMessage("");
       setIsSubmitting(false);
-    }
+    }, 0);
+
+    return () => window.clearTimeout(resetTimer);
   }, [isOpen, targetId, targetType]);
 
   const normalizedDetails = details.trim();

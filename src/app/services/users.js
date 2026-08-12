@@ -93,7 +93,7 @@ export async function followUser(userId) {
   // Temporar, până construim:
   // POST /api/users/:id/follow
 
-  console.log("Follow:", userId);
+  void userId;
 
   return {
     success: true,
@@ -104,7 +104,7 @@ export async function unfollowUser(userId) {
   // Temporar, până construim:
   // DELETE /api/users/:id/follow
 
-  console.log("Unfollow:", userId);
+  void userId;
 
   return {
     success: true,
@@ -117,10 +117,7 @@ export async function updateProfile(
   // Temporar, până construim:
   // PUT /api/users/me
 
-  console.log(
-    "Update profile:",
-    profileData
-  );
+  void profileData;
 
   return {
     success: true,

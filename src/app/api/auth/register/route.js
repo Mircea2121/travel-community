@@ -8,17 +8,17 @@ import {
   USERNAME_PATTERN,
   getPasswordValidation,
 } from "../../../utils/validation";
+import { consumeAuthRateLimit } from "../../../utils/authRateLimit";
+import { getRequestClientIp } from "../../../utils/requestClient";
+import { isTrustedMutationRequest } from "../../../utils/requestOrigin";
+import {
+  jsonResponse,
+  rateLimitResponse,
+} from "../../../utils/securityResponse";
+import { verifyTurnstile } from "../../../utils/turnstile";
+import { scheduleEmailVerification } from "../../../utils/scheduleEmailVerification";
 
 export const runtime = "nodejs";
-
-function jsonResponse(body, status) {
-  return Response.json(body, {
-    status,
-    headers: {
-      "Cache-Control": "no-store, max-age=0",
-    },
-  });
-}
 
 function duplicateUserResponse(error) {
   if (error?.code !== 11000) {
@@ -29,8 +29,7 @@ function duplicateUserResponse(error) {
     return jsonResponse(
       {
         success: false,
-        message:
-          "Există deja un cont cu această adresă de email.",
+        message: "Există deja un cont cu această adresă de email.",
       },
       409
     );
@@ -40,8 +39,7 @@ function duplicateUserResponse(error) {
     return jsonResponse(
       {
         success: false,
-        message:
-          "Acest nume de utilizator este deja folosit.",
+        message: "Acest nume de utilizator este deja folosit.",
       },
       409
     );
@@ -50,8 +48,7 @@ function duplicateUserResponse(error) {
   return jsonResponse(
     {
       success: false,
-      message:
-        "Există deja un cont cu aceste date.",
+      message: "Există deja un cont cu aceste date.",
     },
     409
   );
@@ -59,6 +56,28 @@ function duplicateUserResponse(error) {
 
 export async function POST(request) {
   try {
+    if (!isTrustedMutationRequest(request)) {
+      return jsonResponse(
+        {
+          success: false,
+          message: "Originea cererii nu este permisă.",
+        },
+        403
+      );
+    }
+
+    const clientIp = getRequestClientIp(request);
+    const rateLimit = await consumeAuthRateLimit({
+      action: "register:ip",
+      identifier: clientIp,
+      limit: 8,
+      windowSeconds: 60 * 60,
+    });
+
+    if (!rateLimit.allowed) {
+      return rateLimitResponse(rateLimit);
+    }
+
     let body;
 
     try {
@@ -73,10 +92,25 @@ export async function POST(request) {
       );
     }
 
-    const name =
-      typeof body?.name === "string"
-        ? body.name.trim()
-        : "";
+    const turnstile = await verifyTurnstile({
+      token: body?.turnstileToken,
+      remoteIp: clientIp,
+      action: "register",
+    });
+
+    if (!turnstile.success) {
+      return jsonResponse(
+        {
+          success: false,
+          code: "SECURITY_CHECK_FAILED",
+          message:
+            "Verificarea de securitate a expirat sau nu a reușit. Încearcă din nou.",
+        },
+        400
+      );
+    }
+
+    const name = typeof body?.name === "string" ? body.name.trim() : "";
     const username =
       typeof body?.username === "string"
         ? body.username.trim().toLowerCase()
@@ -86,9 +120,7 @@ export async function POST(request) {
         ? body.email.trim().toLowerCase()
         : "";
     const password =
-      typeof body?.password === "string"
-        ? body.password
-        : "";
+      typeof body?.password === "string" ? body.password : "";
 
     if (!name || !username || !email || !password) {
       return jsonResponse(
@@ -100,15 +132,11 @@ export async function POST(request) {
       );
     }
 
-    if (
-      name.length < NAME.MIN_LENGTH ||
-      name.length > NAME.MAX_LENGTH
-    ) {
+    if (name.length < NAME.MIN_LENGTH || name.length > NAME.MAX_LENGTH) {
       return jsonResponse(
         {
           success: false,
-          message:
-            "Numele trebuie să conțină între 2 și 50 de caractere.",
+          message: "Numele trebuie să conțină între 2 și 50 de caractere.",
         },
         400
       );
@@ -135,10 +163,7 @@ export async function POST(request) {
       );
     }
 
-    if (
-      email.length > 254 ||
-      !EMAIL_PATTERN.test(email)
-    ) {
+    if (email.length > 254 || !EMAIL_PATTERN.test(email)) {
       return jsonResponse(
         {
           success: false,
@@ -148,8 +173,7 @@ export async function POST(request) {
       );
     }
 
-    const passwordValidation =
-      getPasswordValidation(password);
+    const passwordValidation = getPasswordValidation(password);
 
     if (!passwordValidation.isValid) {
       return jsonResponse(
@@ -164,31 +188,15 @@ export async function POST(request) {
 
     const usersCollection = await getUsersCollection();
     const existingUser = await usersCollection.findOne(
-      {
-        $or: [
-          {
-            email,
-          },
-          {
-            username,
-          },
-        ],
-      },
-      {
-        projection: {
-          _id: 1,
-          email: 1,
-          username: 1,
-        },
-      }
+      { $or: [{ email }, { username }] },
+      { projection: { _id: 1, email: 1, username: 1 } }
     );
 
     if (existingUser?.email === email) {
       return jsonResponse(
         {
           success: false,
-          message:
-            "Există deja un cont cu această adresă de email.",
+          message: "Există deja un cont cu această adresă de email.",
         },
         409
       );
@@ -198,8 +206,7 @@ export async function POST(request) {
       return jsonResponse(
         {
           success: false,
-          message:
-            "Acest nume de utilizator este deja folosit.",
+          message: "Acest nume de utilizator este deja folosit.",
         },
         409
       );
@@ -212,21 +219,16 @@ export async function POST(request) {
       username,
       email,
       password: hashedPassword,
-
+      emailVerifiedAt: null,
       role: "user",
       authVersion: 0,
       passwordChangedAt: now,
-
       bio: "",
       location: "",
-
       avatar: null,
-
       coverImage: null,
-
       followers: [],
       following: [],
-
       stats: {
         postsCount: 0,
         destinationsCount: 0,
@@ -235,14 +237,12 @@ export async function POST(request) {
         followingCount: 0,
         photosUploaded: 0,
       },
-
       level: {
         name: "Călător începător",
         number: 1,
         currentXp: 0,
         nextLevelXp: 500,
       },
-
       createdAt: now,
       updatedAt: now,
     };
@@ -252,8 +252,7 @@ export async function POST(request) {
     try {
       result = await usersCollection.insertOne(newUser);
     } catch (error) {
-      const duplicateResponse =
-        duplicateUserResponse(error);
+      const duplicateResponse = duplicateUserResponse(error);
 
       if (duplicateResponse) {
         return duplicateResponse;
@@ -262,23 +261,29 @@ export async function POST(request) {
       throw error;
     }
 
+    scheduleEmailVerification({
+      ...newUser,
+      _id: result.insertedId,
+    });
+
     return jsonResponse(
       {
         success: true,
-        message: "Contul a fost creat cu succes.",
+        message:
+          "Contul a fost creat. Verifică emailul pentru confirmarea adresei.",
         user: {
           id: result.insertedId.toString(),
           name,
           username,
           email,
           role: newUser.role,
+          emailVerified: false,
         },
       },
       201
     );
   } catch (error) {
     console.error("Eroare la înregistrare:", error);
-
     return jsonResponse(
       {
         success: false,

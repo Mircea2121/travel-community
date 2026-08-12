@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element -- Imagine fullscreen interactivă cu dimensiuni naturale variabile. Imagine de galerie interactivă controlată de viewer și containerul responsive. */
+
 import {
   useEffect,
   useMemo,
@@ -60,16 +62,24 @@ export default function PostGallery({
     validImages.length;
 
   useEffect(() => {
-    setIsMounted(true);
+    const mountTimer = window.setTimeout(() => {
+      setIsMounted(true);
+    }, 0);
 
     return () => {
-      setIsMounted(false);
+      window.clearTimeout(mountTimer);
     };
   }, []);
 
   useEffect(() => {
-    setCurrentIndex(0);
-    setIsFullscreenOpen(false);
+    const resetTimer = window.setTimeout(() => {
+      setCurrentIndex(0);
+      setIsFullscreenOpen(false);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(resetTimer);
+    };
   }, [validImages]);
 
   useEffect(() => {

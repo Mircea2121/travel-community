@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element -- Avatar dinamic cu fallback manual la inițiale în evenimentul onError. */
+
 import {
   useCallback,
   useEffect,

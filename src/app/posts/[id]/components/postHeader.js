@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element -- Avatar dinamic cu fallback la inițiala utilizatorului. */
 import Link from "next/link";
 
 import {

@@ -230,10 +230,9 @@ export default function EmojiPicker({
       return undefined;
     }
 
-    setRecentEmojis(loadRecentEmojis());
-    setSearch("");
-
-    const focusTimer = window.setTimeout(() => {
+    const openTimer = window.setTimeout(() => {
+      setRecentEmojis(loadRecentEmojis());
+      setSearch("");
       searchInputRef.current?.focus();
     }, 0);
 
@@ -257,7 +256,7 @@ export default function EmojiPicker({
     document.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      window.clearTimeout(focusTimer);
+      window.clearTimeout(openTimer);
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
     };

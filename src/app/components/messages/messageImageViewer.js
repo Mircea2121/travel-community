@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element -- Imagine interactivă cu zoom, pan și transformări directe; este necesar elementul nativ. Miniatură interactivă din viewer, încărcată lazy și fără rol LCP. */
+
 import {
   useCallback,
   useEffect,

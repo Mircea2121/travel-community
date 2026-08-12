@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element -- Preview al imaginii existente în editor, cu sursă și dimensiuni variabile. Preview local blob al imaginii noi înainte de upload. */
+
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {

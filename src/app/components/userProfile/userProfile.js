@@ -67,9 +67,13 @@ export default function UserProfile({
     useState(false);
 
   useEffect(() => {
-    setIsFollowing(
-      initialIsFollowing === true
-    );
+    const syncTimer = window.setTimeout(() => {
+      setIsFollowing(
+        initialIsFollowing === true
+      );
+    }, 0);
+
+    return () => window.clearTimeout(syncTimer);
   }, [initialIsFollowing]);
 
   useEffect(() => {

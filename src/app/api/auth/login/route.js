@@ -3,24 +3,42 @@ import { cookies } from "next/headers";
 
 import { getUsersCollection } from "../../../utils/database";
 import { EMAIL_PATTERN } from "../../../utils/validation";
+import { createToken, getAuthVersion } from "../../../utils/auth";
+import { consumeAuthRateLimit } from "../../../utils/authRateLimit";
+import { getRequestClientIp } from "../../../utils/requestClient";
+import { isTrustedMutationRequest } from "../../../utils/requestOrigin";
 import {
-  createToken,
-  getAuthVersion,
-} from "../../../utils/auth";
+  jsonResponse,
+  rateLimitResponse,
+} from "../../../utils/securityResponse";
+import { verifyTurnstile } from "../../../utils/turnstile";
 
 export const runtime = "nodejs";
 
-function jsonResponse(body, status) {
-  return Response.json(body, {
-    status,
-    headers: {
-      "Cache-Control": "no-store, max-age=0",
+const LOGIN_WINDOW_SECONDS = 15 * 60;
+
+function invalidCredentialsResponse() {
+  return jsonResponse(
+    {
+      success: false,
+      message: "Emailul sau parola sunt incorecte.",
     },
-  });
+    401
+  );
 }
 
 export async function POST(request) {
   try {
+    if (!isTrustedMutationRequest(request)) {
+      return jsonResponse(
+        {
+          success: false,
+          message: "Originea cererii nu este permisă.",
+        },
+        403
+      );
+    }
+
     let body;
 
     try {
@@ -40,9 +58,19 @@ export async function POST(request) {
         ? body.email.trim().toLowerCase()
         : "";
     const password =
-      typeof body?.password === "string"
-        ? body.password
-        : "";
+      typeof body?.password === "string" ? body.password : "";
+    const clientIp = getRequestClientIp(request);
+
+    const ipRateLimit = await consumeAuthRateLimit({
+      action: "login:ip",
+      identifier: clientIp,
+      limit: 30,
+      windowSeconds: LOGIN_WINDOW_SECONDS,
+    });
+
+    if (!ipRateLimit.allowed) {
+      return rateLimitResponse(ipRateLimit);
+    }
 
     if (!email || !password) {
       return jsonResponse(
@@ -54,10 +82,7 @@ export async function POST(request) {
       );
     }
 
-    if (
-      email.length > 254 ||
-      !EMAIL_PATTERN.test(email)
-    ) {
+    if (email.length > 254 || !EMAIL_PATTERN.test(email)) {
       return jsonResponse(
         {
           success: false,
@@ -68,20 +93,41 @@ export async function POST(request) {
     }
 
     if (password.length > 256) {
+      return invalidCredentialsResponse();
+    }
+
+    const accountRateLimit = await consumeAuthRateLimit({
+      action: "login:account",
+      identifier: email,
+      limit: 15,
+      windowSeconds: LOGIN_WINDOW_SECONDS,
+    });
+
+    if (!accountRateLimit.allowed) {
+      return rateLimitResponse(accountRateLimit);
+    }
+
+    const turnstile = await verifyTurnstile({
+      token: body?.turnstileToken,
+      remoteIp: clientIp,
+      action: "login",
+    });
+
+    if (!turnstile.success) {
       return jsonResponse(
         {
           success: false,
-          message: "Emailul sau parola sunt incorecte.",
+          code: "SECURITY_CHECK_FAILED",
+          message:
+            "Verificarea de securitate a expirat sau nu a reușit. Încearcă din nou.",
         },
-        401
+        400
       );
     }
 
     const usersCollection = await getUsersCollection();
     const user = await usersCollection.findOne(
-      {
-        email,
-      },
+      { email },
       {
         projection: {
           _id: 1,
@@ -92,33 +138,23 @@ export async function POST(request) {
           role: 1,
           authVersion: 1,
           accountStatus: 1,
+          emailVerifiedAt: 1,
         },
       }
     );
 
     if (!user?.password) {
-      return jsonResponse(
-        {
-          success: false,
-          message: "Emailul sau parola sunt incorecte.",
-        },
-        401
+      await bcrypt.compare(
+        password,
+        "$2b$12$ZQ4bWpQmbnHIWjzrD8lC0O3k9I3FF7vQx3T3oA/vePZwKkHhlyF4q"
       );
+      return invalidCredentialsResponse();
     }
 
-    const passwordIsCorrect = await bcrypt.compare(
-      password,
-      user.password
-    );
+    const passwordIsCorrect = await bcrypt.compare(password, user.password);
 
     if (!passwordIsCorrect) {
-      return jsonResponse(
-        {
-          success: false,
-          message: "Emailul sau parola sunt incorecte.",
-        },
-        401
-      );
+      return invalidCredentialsResponse();
     }
 
     if (user.accountStatus === "suspended") {
@@ -133,6 +169,18 @@ export async function POST(request) {
       );
     }
 
+    if (user.emailVerifiedAt === null) {
+      return jsonResponse(
+        {
+          success: false,
+          code: "EMAIL_VERIFICATION_REQUIRED",
+          message:
+            "Confirmă adresa de email înainte de autentificare. Poți cere un link nou din pagina de retrimitere.",
+        },
+        403
+      );
+    }
+
     const token = await createToken({
       userId: user._id.toString(),
       email: user.email,
@@ -141,7 +189,6 @@ export async function POST(request) {
     });
 
     const cookieStore = await cookies();
-
     cookieStore.set("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -160,13 +207,13 @@ export async function POST(request) {
           username: user.username,
           email: user.email,
           role: user.role,
+          emailVerified: Boolean(user.emailVerifiedAt),
         },
       },
       200
     );
   } catch (error) {
     console.error("Eroare la autentificare:", error);
-
     return jsonResponse(
       {
         success: false,

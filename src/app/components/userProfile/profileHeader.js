@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element -- Avatar interactiv cu fallback manual și deschidere în viewer. */
+
 import {
   useEffect,
   useState,
@@ -183,36 +185,40 @@ export default function ProfileHeader({
   ] = useState("");
 
   useEffect(() => {
-    setAvatarPreview(
-      getValidImageUrl(user?.avatar)
-    );
+    const syncTimer = window.setTimeout(() => {
+      setAvatarPreview(
+        getValidImageUrl(user?.avatar)
+      );
 
-    setCoverPreview(
-      getValidImageUrl(
-        user?.coverImage
-      )
-    );
+      setCoverPreview(
+        getValidImageUrl(
+          user?.coverImage
+        )
+      );
 
-    setAvatarLoadFailed(false);
+      setAvatarLoadFailed(false);
 
-    const nextDisplayName =
-      user?.fullName ||
-      user?.name ||
-      user?.username ||
-      "Utilizator";
+      const nextDisplayName =
+        user?.fullName ||
+        user?.name ||
+        user?.username ||
+        "Utilizator";
 
-    setDisplayName(nextDisplayName);
-    setNameDraft(nextDisplayName);
-    setIsEditingName(false);
-    setNameError("");
-    setNameChangedAt(
-      user?.nameChangedAt || null
-    );
+      setDisplayName(nextDisplayName);
+      setNameDraft(nextDisplayName);
+      setIsEditingName(false);
+      setNameError("");
+      setNameChangedAt(
+        user?.nameChangedAt || null
+      );
 
-    setBio(user?.bio || "");
-    setBioDraft(user?.bio || "");
-    setIsEditingBio(false);
-    setBioError("");
+      setBio(user?.bio || "");
+      setBioDraft(user?.bio || "");
+      setIsEditingBio(false);
+      setBioError("");
+    }, 0);
+
+    return () => window.clearTimeout(syncTimer);
   }, [user]);
 
   useEffect(() => {

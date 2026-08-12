@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element -- Viewer fullscreen pentru avatar și copertă cu dimensiuni naturale variabile. */
+
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
@@ -11,10 +13,12 @@ export default function ProfileImageViewer({
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    setIsMounted(true);
+    const mountTimer = window.setTimeout(() => {
+      setIsMounted(true);
+    }, 0);
 
     return () => {
-      setIsMounted(false);
+      window.clearTimeout(mountTimer);
     };
   }, []);
 

@@ -22,10 +22,13 @@ export default function Template({ children }) {
     );
 
     if (loaderWasShown) {
-      setIsLoading(false);
-      setIsReady(true);
+      const readyTimer = window.setTimeout(() => {
+        setIsLoading(false);
+        setIsReady(true);
+      }, 0);
 
       return () => {
+        window.clearTimeout(readyTimer);
         if ("scrollRestoration" in window.history) {
           window.history.scrollRestoration =
             previousScrollRestoration;
@@ -44,8 +47,10 @@ export default function Template({ children }) {
       "true"
     );
 
-    setIsLoading(true);
-    setIsReady(true);
+    const readyTimer = window.setTimeout(() => {
+      setIsLoading(true);
+      setIsReady(true);
+    }, 0);
 
     const loadingTimer = window.setTimeout(() => {
       setIsLoading(false);
@@ -59,6 +64,7 @@ export default function Template({ children }) {
 
     return () => {
       window.clearTimeout(loadingTimer);
+      window.clearTimeout(readyTimer);
 
       if ("scrollRestoration" in window.history) {
         window.history.scrollRestoration =

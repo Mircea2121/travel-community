@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element -- Preview local blob înainte de upload; este necesar elementul nativ. */
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 

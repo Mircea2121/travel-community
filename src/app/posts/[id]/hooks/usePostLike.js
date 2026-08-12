@@ -162,17 +162,29 @@ export default function usePostLike({
     ]);
 
   useEffect(() => {
-    setLikesCount(
-      Number.isFinite(
-        Number(initialLikesCount)
-      )
-        ? Number(initialLikesCount)
-        : 0
-    );
+    const syncTimer = window.setTimeout(() => {
+      setLikesCount(
+        Number.isFinite(
+          Number(initialLikesCount)
+        )
+          ? Number(initialLikesCount)
+          : 0
+      );
+    }, 0);
+
+    return () => {
+      window.clearTimeout(syncTimer);
+    };
   }, [initialLikesCount]);
 
   useEffect(() => {
-    loadLikeState();
+    const loadTimer = window.setTimeout(() => {
+      void loadLikeState();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(loadTimer);
+    };
   }, [loadLikeState]);
 
   return {

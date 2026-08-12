@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element -- Copertă editorială externă cu dimensiune controlată de cardul responsive. */
+
 import { useCommunityOverview } from "@/app/components/discovery/communityOverviewProvider";
 import RememberScrollLink from "@/app/components/discovery/rememberScrollLink";
 import { getDestinationCover } from "@/app/utils/destinationCovers";

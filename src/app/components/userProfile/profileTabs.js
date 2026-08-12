@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import {
   Bookmark,
   PenLine,
@@ -29,20 +28,11 @@ export default function ProfileTabs({
   activeTab = "posts",
   onTabChange,
 }) {
-  const [selectedTab, setSelectedTab] =
-    useState(activeTab);
-
-  useEffect(() => {
-    setSelectedTab(activeTab);
-  }, [activeTab]);
-
   const tabs = isOwnProfile
     ? [...PUBLIC_TABS, ...PRIVATE_TABS]
     : PUBLIC_TABS;
 
   function handleTabChange(tabKey) {
-    setSelectedTab(tabKey);
-
     if (typeof onTabChange === "function") {
       onTabChange(tabKey);
     }
@@ -56,7 +46,7 @@ export default function ProfileTabs({
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive =
-          selectedTab === tab.key;
+          activeTab === tab.key;
 
         return (
           <button

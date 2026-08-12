@@ -1,0 +1,9 @@
+.auth-turnstile {
+  width: 100%;
+  min-height: 65px;
+}
+
+.auth-turnstile > div {
+  width: 100%;
+}
+

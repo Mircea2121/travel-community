@@ -30,10 +30,12 @@ export default function ChatDialog({
   const dialogRef = useRef(null);
 
   useEffect(() => {
-    setIsMounted(true);
+    const mountTimer = window.setTimeout(() => {
+      setIsMounted(true);
+    }, 0);
 
     return () => {
-      setIsMounted(false);
+      window.clearTimeout(mountTimer);
     };
   }, []);
 

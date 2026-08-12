@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element -- Preview local blob înainte de upload; next/image nu optimizează această etapă temporară. */
+
 import {
   AlertCircle,
   ImageOff,

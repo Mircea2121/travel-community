@@ -29,9 +29,15 @@ export default function EditMessageDialog({
   const textareaRef = useRef(null);
 
   useEffect(() => {
-    if (isOpen) {
-      setText(typeof initialText === "string" ? initialText : "");
+    if (!isOpen) {
+      return undefined;
     }
+
+    const resetTimer = window.setTimeout(() => {
+      setText(typeof initialText === "string" ? initialText : "");
+    }, 0);
+
+    return () => window.clearTimeout(resetTimer);
   }, [initialText, isOpen]);
 
   const normalizedInitialText =

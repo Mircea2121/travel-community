@@ -75,10 +75,12 @@ export default function ReportModal({
   ] = useState(false);
 
   useEffect(() => {
-    setIsMounted(true);
+    const mountTimer = window.setTimeout(() => {
+      setIsMounted(true);
+    }, 0);
 
     return () => {
-      setIsMounted(false);
+      window.clearTimeout(mountTimer);
     };
   }, []);
 

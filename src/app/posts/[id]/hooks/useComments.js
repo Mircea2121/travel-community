@@ -1306,17 +1306,29 @@ export default function useComments({
     );
 
   useEffect(() => {
-    setCommentsCount(
-      Number.isFinite(
-        Number(initialCommentsCount)
-      )
-        ? Number(initialCommentsCount)
-        : 0
-    );
+    const syncTimer = window.setTimeout(() => {
+      setCommentsCount(
+        Number.isFinite(
+          Number(initialCommentsCount)
+        )
+          ? Number(initialCommentsCount)
+          : 0
+      );
+    }, 0);
+
+    return () => {
+      window.clearTimeout(syncTimer);
+    };
   }, [initialCommentsCount]);
 
   useEffect(() => {
-    loadComments();
+    const loadTimer = window.setTimeout(() => {
+      void loadComments();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(loadTimer);
+    };
   }, [loadComments]);
 
   return {

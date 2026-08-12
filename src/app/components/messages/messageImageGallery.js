@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element -- Imagine Cloudinary interactivă deschisă într-un viewer separat și încărcată lazy. */
+
 import { Image as ImageIcon } from "lucide-react";
 
 function getImageAlt(image, index) {

@@ -48,7 +48,13 @@ export default function DiscoveryListing({ mode, value, title, description }) {
     }
   }, [mode, value]);
 
-  useEffect(() => { loadPosts(); }, [loadPosts]);
+  useEffect(() => {
+    const loadTimer = window.setTimeout(() => {
+      loadPosts();
+    }, 0);
+
+    return () => window.clearTimeout(loadTimer);
+  }, [loadPosts]);
 
   function handleBack() {
     const fallbackHref = mode === "category" ? "/#categories" : "/#destinations";

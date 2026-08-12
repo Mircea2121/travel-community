@@ -1,18 +1,19 @@
 "use client";
 
 import "../auth/auth.css";
+import "../auth/production-security.css";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import {
   Check,
   Eye,
   EyeOff,
-  ShieldCheck,
   X,
 } from "lucide-react";
 
 import FlagBackground from "../components/flagBackground/flagBackground";
+import TurnstileWidget from "../components/security/turnstileWidget";
 import { useToast } from "../components/toast/toastProvider";
 import {
   EMAIL_PATTERN,
@@ -37,10 +38,13 @@ export default function RegisterPage() {
     useState(false);
   const [acceptedTerms, setAcceptedTerms] =
     useState(false);
-  const [securityChecked, setSecurityChecked] =
-    useState(false);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const handleTurnstileToken = useCallback((token) => {
+    setTurnstileToken(token);
+  }, []);
 
   const passwordValidation = getPasswordValidation(
     formData.password
@@ -76,6 +80,11 @@ export default function RegisterPage() {
   const passwordsMatch =
     formData.confirmPassword.length > 0 &&
     formData.password === formData.confirmPassword;
+  const turnstileConfigured = Boolean(
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
+  );
+  const securityIsValid =
+    !turnstileConfigured || Boolean(turnstileToken);
   const isFormValid =
     isNameValid &&
     isUsernameValid &&
@@ -83,7 +92,7 @@ export default function RegisterPage() {
     isPasswordValid &&
     passwordsMatch &&
     acceptedTerms &&
-    securityChecked;
+    securityIsValid;
 
   let passwordStrengthClass = "weak";
   let passwordStrengthText = "Parolă slabă";
@@ -134,6 +143,7 @@ export default function RegisterPage() {
           username: normalizedUsername,
           email: normalizedEmail,
           password: formData.password,
+          turnstileToken,
         }),
       });
 
@@ -142,6 +152,8 @@ export default function RegisterPage() {
         .catch(() => ({}));
 
       if (!response.ok) {
+        setTurnstileToken("");
+        setTurnstileResetKey((value) => value + 1);
         toast.error(
           data.message || "Contul nu a putut fi creat.",
           "Eroare"
@@ -163,11 +175,15 @@ export default function RegisterPage() {
         confirmPassword: "",
       });
       setAcceptedTerms(false);
-      setSecurityChecked(false);
+      setTurnstileToken("");
+      setTurnstileResetKey((value) => value + 1);
       setShowPassword(false);
       setShowConfirmPassword(false);
     } catch (error) {
       console.error("Eroare register:", error);
+
+      setTurnstileToken("");
+      setTurnstileResetKey((value) => value + 1);
 
       toast.error(
         "A apărut o eroare la conectarea cu serverul.",
@@ -501,29 +517,11 @@ export default function RegisterPage() {
             </span>
           </label>
 
-          <label className="auth-security-check">
-            <input
-              type="checkbox"
-              checked={securityChecked}
-              onChange={(event) => {
-                setSecurityChecked(event.target.checked);
-              }}
-            />
-
-            <span className="auth-security-checkbox">
-              <Check size={17} />
-            </span>
-
-            <span className="auth-security-content">
-              <strong>Nu sunt robot</strong>
-              <small>Verificare de securitate</small>
-            </span>
-
-            <ShieldCheck
-              className="auth-security-icon"
-              size={30}
-            />
-          </label>
+          <TurnstileWidget
+            action="register"
+            onTokenChange={handleTurnstileToken}
+            resetKey={turnstileResetKey}
+          />
 
           <button
             type="submit"

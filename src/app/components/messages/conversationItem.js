@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element -- Avatar dinamic cu fallback manual la inițiale în evenimentul onError. */
+
 import { memo, useState } from "react";
 import {
   Image as ImageIcon,

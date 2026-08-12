@@ -68,10 +68,12 @@ export default function ImageCropModal({
     : 16 / 6;
 
   useEffect(() => {
-    setIsMounted(true);
+    const mountTimer = window.setTimeout(() => {
+      setIsMounted(true);
+    }, 0);
 
     return () => {
-      setIsMounted(false);
+      window.clearTimeout(mountTimer);
     };
   }, []);
 
@@ -80,16 +82,18 @@ export default function ImageCropModal({
       return;
     }
 
-    setCrop({
-      x: 0,
-      y: 0,
-    });
+    const resetTimer = window.setTimeout(() => {
+      setCrop({
+        x: 0,
+        y: 0,
+      });
+      setZoom(1);
+      setCroppedAreaPixels(null);
+      setIsSaving(false);
+      setError("");
+    }, 0);
 
-    setZoom(1);
-
-    setCroppedAreaPixels(null);
-    setIsSaving(false);
-    setError("");
+    return () => window.clearTimeout(resetTimer);
   }, [
     isOpen,
     imageSource,

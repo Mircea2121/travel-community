@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element -- Steag decorativ extern; elementul nativ evită generarea inutilă de variante pentru fundalul cu opacitate redusă. */
 import "./flagBackground.css";
 
 const flags = [

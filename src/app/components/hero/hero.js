@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element -- Avatar dinamic cu sursă furnizată de utilizator și dimensiune CSS fixă. */
+
 import "./hero.css";
 
 import {

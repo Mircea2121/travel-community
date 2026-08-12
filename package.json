@@ -9,17 +9,19 @@
     "build": "next build",
     "start": "next start",
     "start:realtime": "node realtime/server.js",
-    "lint": "eslint"
+    "lint": "eslint .",
+    "security:indexes": "node --env-file=.env.local scripts/createProductionSecurityIndexes.js",
+    "security:migrate-existing-emails": "node --env-file=.env.local scripts/migrateExistingUsersEmailVerification.js",
+    "audit:dependencies": "npm audit --omit=dev",
+    "test:smoke": "node scripts/smokeProductionRoutes.mjs"
   },
   "dependencies": {
     "@socket.io/redis-adapter": "^8.3.0",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.10.0",
     "cookie": "^2.0.1",
-    "db": "^6.0.3",
     "jose": "^6.2.4",
     "lucide-react": "^1.24.0",
-    "mongo": "^0.1.0",
     "mongodb": "^7.5.0",
     "next": "16.2.9",
     "react": "19.2.4",

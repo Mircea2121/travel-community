@@ -41,6 +41,7 @@ function normalizeError(error) {
 export default function RealtimeProvider({ children }) {
   const [status, setStatus] = useState("connecting");
   const [connectionError, setConnectionError] = useState(null);
+  const [activeSocket, setActiveSocket] = useState(null);
   const socketRef = useRef(null);
   const roomReferencesRef = useRef(new Map());
 
@@ -48,15 +49,19 @@ export default function RealtimeProvider({ children }) {
     const socket = connectRealtime();
 
     if (!socket) {
-      setStatus("unavailable");
-      setConnectionError({
+      queueMicrotask(() => {
+        setStatus("unavailable");
+        setConnectionError({
         code: "REALTIME_BROWSER_UNAVAILABLE",
         message: "Conexiunea realtime nu este disponibilă.",
+        });
       });
       return undefined;
     }
 
     socketRef.current = socket;
+    queueMicrotask(() => setActiveSocket(socket));
+    const roomReferences = roomReferencesRef.current;
 
     function handleConnect() {
       setStatus("connected");
@@ -116,8 +121,9 @@ export default function RealtimeProvider({ children }) {
         handleConnectionError
       );
 
-      roomReferencesRef.current.clear();
+      roomReferences.clear();
       socketRef.current = null;
+      setActiveSocket(null);
       disconnectRealtime();
     };
   }, []);
@@ -229,7 +235,8 @@ export default function RealtimeProvider({ children }) {
 
   const value = useMemo(
     () => ({
-      socket: socketRef.current,
+      socket: activeSocket,
+      activeSocket,
       status,
       isConnected: status === "connected",
       connectionError,
@@ -238,6 +245,7 @@ export default function RealtimeProvider({ children }) {
       leaveConversation,
     }),
     [
+      activeSocket,
       status,
       connectionError,
       emitWithAck,

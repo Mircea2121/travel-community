@@ -127,15 +127,13 @@ export function ToastProvider({ children }) {
 }
 
 function ToastItem({ toast, onClose }) {
-    const Icon = getToastIcon(toast.type);
-
     return (
         <div
             className={`toast toast-${toast.type}`}
             role={toast.type === "error" ? "alert" : "status"}
         >
             <div className="toast-icon">
-                <Icon size={21} strokeWidth={2.2} />
+                {renderToastIcon(toast.type)}
             </div>
 
             <div className="toast-content">
@@ -160,20 +158,20 @@ function ToastItem({ toast, onClose }) {
     );
 }
 
-function getToastIcon(type) {
+function renderToastIcon(type) {
     switch (type) {
         case "error":
-            return CircleX;
+            return <CircleX size={21} strokeWidth={2.2} />;
 
         case "warning":
-            return CircleAlert;
+            return <CircleAlert size={21} strokeWidth={2.2} />;
 
         case "info":
-            return Info;
+            return <Info size={21} strokeWidth={2.2} />;
 
         case "success":
         default:
-            return CheckCircle2;
+            return <CheckCircle2 size={21} strokeWidth={2.2} />;
     }
 }
 

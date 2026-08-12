@@ -1,36 +1,29 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Pachet de consolidare pentru producție
 
-## Getting Started
+Acest director conține numai fișiere noi sau fișiere care trebuie înlocuite în proiectul `travel-community`.
 
-First, run the development server:
+## Ordinea instalării
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+1. Copiază conținutul directorului peste rădăcina proiectului, păstrând structura directoarelor.
+2. Adaugă variabilele descrise în `.env.production.example` în `.env.local` pentru testare și în mediul serverului pentru producție.
+3. Rulează `npm install` numai dacă `package.json` s-a schimbat.
+4. Rulează `npm run lint` și `npm run build` cu serverul de dezvoltare oprit.
+5. De acasă rulează mai întâi `npm run security:migrate-existing-emails`, apoi `npm run security:indexes`.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Cheile și secretele reale nu se salvează în Git.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## Ce conține
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- rate limiting MongoDB pentru login și înregistrare;
+- Cloudflare Turnstile validat obligatoriu pe server în producție;
+- verificarea originii pentru cererile sensibile;
+- confirmarea emailului cu token hash-uit, expirare și retrimitere limitată;
+- verificarea conținutului real al imaginilor JPEG/PNG/WebP;
+- procesare Cloudinary cu eliminarea profilului de metadate;
+- headere HTTP de securitate și CSP;
+- eliminarea dependențelor nefolosite `db` și `mongo`;
+- scripturi de indexare, migrare și smoke testing.
 
-## Learn More
+## Important
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Conturile existente sunt marcate drept verificate numai de scriptul de migrare. Nu activa restricționarea acțiunilor după `emailVerifiedAt` înainte să rulezi migrarea.

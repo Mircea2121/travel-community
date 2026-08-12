@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element -- Imagine editorială externă cu dimensiune controlată integral prin cardul responsive. */
 import { DISCOVERY_CATEGORY_GROUPS } from "@/app/utils/discovery";
 import RememberScrollLink from "@/app/components/discovery/rememberScrollLink";
 import "./categories.css";

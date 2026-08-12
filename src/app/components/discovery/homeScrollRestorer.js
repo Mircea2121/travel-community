@@ -11,19 +11,26 @@ export default function HomeScrollRestorer() {
 
   useLayoutEffect(() => {
     let storedValue = null;
+    let stateTimer = 0;
+
+    function finishWithoutRestoration() {
+      stateTimer = window.setTimeout(() => {
+        setIsRestoring(false);
+      }, 0);
+    }
 
     try {
       storedValue = window.sessionStorage.getItem(
         DISCOVERY_SCROLL_STORAGE_KEY
       );
     } catch {
-      setIsRestoring(false);
-      return undefined;
+      finishWithoutRestoration();
+      return () => window.clearTimeout(stateTimer);
     }
 
     if (!storedValue) {
-      setIsRestoring(false);
-      return undefined;
+      finishWithoutRestoration();
+      return () => window.clearTimeout(stateTimer);
     }
 
     let returnPosition;
@@ -32,8 +39,8 @@ export default function HomeScrollRestorer() {
       returnPosition = JSON.parse(storedValue);
     } catch {
       window.sessionStorage.removeItem(DISCOVERY_SCROLL_STORAGE_KEY);
-      setIsRestoring(false);
-      return undefined;
+      finishWithoutRestoration();
+      return () => window.clearTimeout(stateTimer);
     }
 
     const scrollY = Number(returnPosition?.scrollY);
@@ -46,8 +53,8 @@ export default function HomeScrollRestorer() {
       Date.now() - savedAt > MAX_RESTORE_AGE_MS
     ) {
       window.sessionStorage.removeItem(DISCOVERY_SCROLL_STORAGE_KEY);
-      setIsRestoring(false);
-      return undefined;
+      finishWithoutRestoration();
+      return () => window.clearTimeout(stateTimer);
     }
 
     const root = document.documentElement;
@@ -95,6 +102,7 @@ export default function HomeScrollRestorer() {
     return () => {
       finished = true;
       window.cancelAnimationFrame(frameId);
+      window.clearTimeout(stateTimer);
       root.style.scrollBehavior = previousScrollBehavior;
     };
   }, []);
