@@ -5,6 +5,7 @@ import "./footer.css";
 import { useRouter } from "next/navigation";
 import {
   ChevronRight,
+  Cookie,
   FileText,
   Globe,
   LifeBuoy,
@@ -42,19 +43,15 @@ export default function Footer() {
           <h3>Comunitatea Călătorilor</h3>
 
           <p>
-            O comunitate pentru românii pasionați de călătorii.
-            Experiențe reale, recomandări și sfaturi utile pentru
-            fiecare destinație.
+            O comunitate pentru românii pasionați de călătorii. Experiențe
+            reale, recomandări și sfaturi utile pentru fiecare destinație.
           </p>
         </div>
 
         <div className="footer-column">
           <h4>Navigare</h4>
 
-          <button
-            type="button"
-            onClick={() => navigateToSection("hero")}
-          >
+          <button type="button" onClick={() => navigateToSection("hero")}>
             <ChevronRight size={16} aria-hidden="true" />
             Explorează
           </button>
@@ -67,26 +64,17 @@ export default function Footer() {
             Destinații
           </button>
 
-          <button
-            type="button"
-            onClick={() => navigateToSection("reviews")}
-          >
+          <button type="button" onClick={() => navigateToSection("reviews")}>
             <ChevronRight size={16} aria-hidden="true" />
-            Recenzii
+            Recomandări
           </button>
 
-          <button
-            type="button"
-            onClick={() => navigateTo("/blog")}
-          >
+          <button type="button" onClick={() => navigateTo("/blog")}>
             <ChevronRight size={16} aria-hidden="true" />
             Blog
           </button>
 
-          <button
-            type="button"
-            onClick={() => navigateToSection("about")}
-          >
+          <button type="button" onClick={() => navigateToSection("about")}>
             <ChevronRight size={16} aria-hidden="true" />
             Despre noi
           </button>
@@ -95,26 +83,17 @@ export default function Footer() {
         <div className="footer-column">
           <h4>Ajutor</h4>
 
-          <button
-            type="button"
-            onClick={() => navigateTo("/support")}
-          >
+          <button type="button" onClick={() => navigateTo("/support")}>
             <LifeBuoy size={16} aria-hidden="true" />
             Suport
           </button>
 
-          <button
-            type="button"
-            onClick={() => navigateTo("/report")}
-          >
+          <button type="button" onClick={() => navigateTo("/report")}>
             <ShieldAlert size={16} aria-hidden="true" />
             Raportează
           </button>
 
-          <button
-            type="button"
-            onClick={() => navigateTo("/contact")}
-          >
+          <button type="button" onClick={() => navigateTo("/contact")}>
             <Mail size={16} aria-hidden="true" />
             Contact
           </button>
@@ -123,18 +102,12 @@ export default function Footer() {
         <div className="footer-column">
           <h4>Legal</h4>
 
-          <button
-            type="button"
-            onClick={() => navigateTo("/regulament")}
-          >
+          <button type="button" onClick={() => navigateTo("/regulament")}>
             <FileText size={16} aria-hidden="true" />
             Regulament
           </button>
 
-          <button
-            type="button"
-            onClick={() => navigateTo("/termeni")}
-          >
+          <button type="button" onClick={() => navigateTo("/termeni")}>
             <FileText size={16} aria-hidden="true" />
             Termeni și condiții
           </button>
@@ -145,6 +118,11 @@ export default function Footer() {
           >
             <FileText size={16} aria-hidden="true" />
             Politica de confidențialitate
+          </button>
+
+          <button type="button" onClick={() => navigateTo("/cookies")}>
+            <Cookie size={16} aria-hidden="true" />
+            Politica de cookie-uri
           </button>
         </div>
       </div>

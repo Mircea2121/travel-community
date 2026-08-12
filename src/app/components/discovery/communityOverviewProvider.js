@@ -7,6 +7,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { PRESENCE_UPDATED_EVENT } from "@/app/components/presence/presenceHeartbeat";
 
 const REFRESH_INTERVAL_MS = 30_000;
 const CommunityOverviewContext = createContext(null);
@@ -100,12 +101,14 @@ export default function CommunityOverviewProvider({ children }) {
     }
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener(PRESENCE_UPDATED_EVENT, handleVisibilityChange);
 
     return () => {
       isMounted = false;
       controller?.abort();
       window.clearInterval(intervalId);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener(PRESENCE_UPDATED_EVENT, handleVisibilityChange);
     };
   }, []);
 

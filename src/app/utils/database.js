@@ -83,3 +83,8 @@ export async function getAuthRateLimitsCollection() {
     "authRateLimits"
   );
 }
+
+export async function getSupportRequestsCollection() {
+  const database = await getDatabase();
+  return database.collection("supportRequests");
+}

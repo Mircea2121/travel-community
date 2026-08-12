@@ -580,7 +580,7 @@ export default function Navbar() {
               scrollToSection("reviews")
             }
           >
-            Recenzii
+            Recomandări
           </button>
 
           <button
@@ -960,7 +960,7 @@ export default function Navbar() {
               scrollToSection("reviews")
             }
           >
-            Recenzii
+            Recomandări
           </button>
 
           <button

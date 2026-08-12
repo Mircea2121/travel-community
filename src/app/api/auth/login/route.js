@@ -91,6 +91,7 @@ export async function POST(request) {
           password: 1,
           role: 1,
           authVersion: 1,
+          accountStatus: 1,
         },
       }
     );
@@ -117,6 +118,18 @@ export async function POST(request) {
           message: "Emailul sau parola sunt incorecte.",
         },
         401
+      );
+    }
+
+    if (user.accountStatus === "suspended") {
+      return jsonResponse(
+        {
+          success: false,
+          code: "ACCOUNT_SUSPENDED",
+          message:
+            "Acest cont este suspendat. Contactează echipa de suport dacă dorești să contești decizia.",
+        },
+        403
       );
     }
 

@@ -16,6 +16,7 @@ import {
   REPORT_MAX_DETAILS_LENGTH,
   REPORT_REASONS,
   isReportTargetType,
+  isUrgentReportReason,
 } from "@/app/utils/reportConfig";
 
 import ChatDialog from "./chatDialog";
@@ -192,6 +193,13 @@ export default function ReportDialog({
             );
           })}
         </fieldset>
+
+        {isUrgentReportReason(reason) ? (
+          <div className="chat-dialog-message chat-dialog-message-urgent" role="note">
+            <AlertTriangle size={18} aria-hidden="true" />
+            <span><strong>Situație urgentă?</strong> Dacă există un pericol imediat, contactează serviciile de urgență la 112. Raportul trimis aici va fi analizat separat de echipa platformei.</span>
+          </div>
+        ) : null}
 
         <div className="chat-report-details">
           <label htmlFor="chat-report-details">

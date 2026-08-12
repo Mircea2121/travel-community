@@ -47,6 +47,12 @@ export const REPORT_TARGET_TYPES = Object.freeze([
 
 export const REPORT_MAX_DETAILS_LENGTH = 1000;
 
+export const URGENT_REPORT_REASONS = Object.freeze([
+  "harassment",
+  "violence",
+  "minor_safety",
+]);
+
 const REPORT_REASON_SET = new Set(
   REPORT_REASONS.map((reason) => reason.value)
 );
@@ -65,4 +71,8 @@ export function isReportTargetType(value) {
     typeof value === "string" &&
     REPORT_TARGET_TYPE_SET.has(value)
   );
+}
+
+export function isUrgentReportReason(value) {
+  return URGENT_REPORT_REASONS.includes(value);
 }

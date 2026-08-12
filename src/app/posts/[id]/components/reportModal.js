@@ -10,6 +10,7 @@ import {
 } from "react-dom";
 
 import {
+  AlertTriangle,
   Check,
   Flag,
   X,
@@ -281,6 +282,13 @@ export default function ReportModal({
               }
             )}
           </fieldset>
+
+          {["harassment", "violence"].includes(selectedReason) && (
+            <div className="report-urgent-note" role="note">
+              <AlertTriangle size={19} aria-hidden="true" />
+              <p><strong>Situație urgentă?</strong> Dacă există un pericol imediat, contactează serviciile de urgență la 112. Raportul trimis aici va fi analizat separat de echipa platformei.</p>
+            </div>
+          )}
 
           <div className="report-details-field">
             <label htmlFor="report-details">

@@ -3,6 +3,7 @@ import "./globals.css";
 import Navbar from "./components/navbar/navbar";
 import Footer from "./components/footer/footer";
 import RealtimeProvider from "./components/messages/realtimeProvider";
+import PresenceHeartbeat from "./components/presence/presenceHeartbeat";
 import { ToastProvider } from "./components/toast/toastProvider";
 
 export const metadata = {
@@ -16,6 +17,7 @@ export default function RootLayout({ children }) {
       <body>
         <ToastProvider>
           <RealtimeProvider>
+            <PresenceHeartbeat />
             <Navbar />
             <main>{children}</main>
             <Footer />

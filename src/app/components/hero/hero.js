@@ -4,7 +4,6 @@ import "./hero.css";
 
 import {
   MapPinned,
-  Star,
   Users,
   ArrowRight,
 } from "lucide-react";
@@ -16,93 +15,10 @@ import {
 
 import { useRouter } from "next/navigation";
 
-const fallbackFeaturedPosts = [
-  {
-    id: "featured-post-1",
-    text: "Cea mai frumoasă experiență din viața mea!",
-    destination: "Sardinia, Italia",
-    likesCount: 1254,
-    commentsCount: 218,
-    user: {
-      id: "user-1",
-      name: "Andreea",
-      avatar:
-        "https://randomuser.me/api/portraits/women/44.jpg",
-    },
-  },
-  {
-    id: "featured-post-2",
-    text: "Santorini este și mai frumos decât mi-am imaginat.",
-    destination: "Santorini, Grecia",
-    likesCount: 1086,
-    commentsCount: 174,
-    user: {
-      id: "user-2",
-      name: "Mihai",
-      avatar:
-        "https://randomuser.me/api/portraits/men/32.jpg",
-    },
-  },
-  {
-    id: "featured-post-3",
-    text: "Un loc spectaculos în care m-aș întoarce oricând.",
-    destination: "Madeira, Portugalia",
-    likesCount: 947,
-    commentsCount: 136,
-    user: {
-      id: "user-3",
-      name: "Ioana",
-      avatar:
-        "https://randomuser.me/api/portraits/women/68.jpg",
-    },
-  },
-  {
-    id: "featured-post-4",
-    text: "O vacanță care mi-a depășit toate așteptările.",
-    destination: "Dolomiți, Italia",
-    likesCount: 821,
-    commentsCount: 109,
-    user: {
-      id: "user-4",
-      name: "Alex",
-      avatar:
-        "https://randomuser.me/api/portraits/men/75.jpg",
-    },
-  },
-];
-
-const activeUsers = [
-  {
-    id: 1,
-    name: "Andreea",
-    avatar:
-      "https://randomuser.me/api/portraits/women/44.jpg",
-  },
-  {
-    id: 2,
-    name: "Mihai",
-    avatar:
-      "https://randomuser.me/api/portraits/men/32.jpg",
-  },
-  {
-    id: 3,
-    name: "Ioana",
-    avatar:
-      "https://randomuser.me/api/portraits/women/68.jpg",
-  },
-  {
-    id: 4,
-    name: "Alex",
-    avatar:
-      "https://randomuser.me/api/portraits/men/75.jpg",
-  },
-];
-
 export default function Hero() {
   const router = useRouter();
 
-  const [featuredPosts, setFeaturedPosts] =
-    useState(fallbackFeaturedPosts);
+  const [featuredPosts, setFeaturedPosts] = useState([]);
 
   const [activePostIndex, setActivePostIndex] =
     useState(0);
@@ -171,20 +87,13 @@ export default function Hero() {
   }, []);
 
   useEffect(() => {
-    const apiUrl =
-      process.env.NEXT_PUBLIC_API_URL;
-
-    if (!apiUrl) {
-      return;
-    }
-
     const controller =
       new AbortController();
 
     const loadFeaturedPosts = async () => {
       try {
         const response = await fetch(
-          `${apiUrl}/api/posts/featured?limit=4`,
+          "/api/posts/popular?limit=4",
           {
             method: "GET",
             signal: controller.signal,
@@ -200,10 +109,7 @@ export default function Hero() {
 
         const data = await response.json();
 
-        const receivedPosts =
-          Array.isArray(data)
-            ? data
-            : data.posts;
+        const receivedPosts = Array.isArray(data?.posts) ? data.posts : [];
 
         if (
           Array.isArray(receivedPosts) &&
@@ -211,6 +117,8 @@ export default function Hero() {
         ) {
           setFeaturedPosts(receivedPosts);
           setActivePostIndex(0);
+        } else {
+          setFeaturedPosts([]);
         }
       } catch (error) {
         if (error.name === "AbortError") {
@@ -338,59 +246,6 @@ export default function Hero() {
             </button>
           </div>
 
-          <div className="hero-social">
-            <div className="hero-avatars">
-              {activeUsers.map(
-                (activeUser) => (
-                  <img
-                    key={activeUser.id}
-                    src={activeUser.avatar}
-                    alt={`Avatar ${activeUser.name}`}
-                    title={activeUser.name}
-                  />
-                )
-              )}
-
-              <strong>2.5K+</strong>
-            </div>
-
-            <div className="hero-social-info">
-              <p>
-                Călători activi în comunitate
-              </p>
-
-              <div className="hero-rating">
-                <div className="hero-stars">
-                  <Star
-                    size={15}
-                    fill="currentColor"
-                  />
-
-                  <Star
-                    size={15}
-                    fill="currentColor"
-                  />
-
-                  <Star
-                    size={15}
-                    fill="currentColor"
-                  />
-
-                  <Star
-                    size={15}
-                    fill="currentColor"
-                  />
-
-                  <Star
-                    size={15}
-                    fill="currentColor"
-                  />
-                </div>
-
-                <strong>4.8/5</strong>
-              </div>
-            </div>
-          </div>
         </div>
 
         <div className="hero-review-slider">
@@ -405,18 +260,27 @@ export default function Hero() {
             {featuredPosts.map(
               (post, index) => {
                 const postText =
+                  post.title ??
                   post.text ??
                   post.description ??
                   post.content ??
                   "Descoperă o nouă experiență de călătorie.";
 
                 const postDestination =
-                  post.destination?.name ??
-                  post.destination ??
-                  post.location ??
+                  [post.city, post.country].filter(Boolean).join(", ") ||
+                  post.destination?.name ||
+                  post.destination ||
+                  post.location ||
                   "Destinație";
 
                 const postUser =
+                  (post.name || post.username || post.avatar
+                    ? {
+                        name: post.name,
+                        username: post.username,
+                        avatar: post.avatar,
+                      }
+                    : null) ??
                   post.user ??
                   post.author ?? {
                     name: "Călător",
@@ -429,6 +293,7 @@ export default function Hero() {
                   "Călător";
 
                 const userAvatar =
+                  postUser.avatar?.url ??
                   postUser.avatar ??
                   postUser.profileImage ??
                   "https://randomuser.me/api/portraits/lego/1.jpg";

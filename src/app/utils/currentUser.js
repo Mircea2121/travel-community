@@ -46,7 +46,11 @@ export async function getCurrentUser(
         }
   );
 
-  if (!user || !isAuthTokenCurrent(payload, user)) {
+  if (
+    !user ||
+    user.accountStatus === "suspended" ||
+    !isAuthTokenCurrent(payload, user)
+  ) {
     return null;
   }
 
