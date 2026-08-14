@@ -463,6 +463,8 @@
 /* PROFILE */
 
 .nav-login {
+    position: relative;
+
     width: 48px;
     height: 48px;
 
@@ -491,6 +493,34 @@
         border-color 0.2s ease,
         transform 0.2s ease,
         box-shadow 0.2s ease;
+}
+
+.nav-unread-badge {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    z-index: 2;
+
+    min-width: 20px;
+    height: 20px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0 5px;
+
+    border: 2px solid #ffffff;
+    border-radius: 999px;
+
+    background: #ef4444;
+    color: #ffffff;
+
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1;
+
+    box-shadow: 0 3px 9px rgba(220, 38, 38, 0.35);
 }
 
 .nav-login svg {
@@ -698,6 +728,37 @@
 .profile-dropdown-links button:hover .profile-dropdown-icon {
     background: #e7f5fd;
     color: #0284c7;
+}
+
+.profile-dropdown-link-label {
+    min-width: 0;
+    flex: 1;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.profile-dropdown-unread-badge {
+    min-width: 24px;
+    height: 24px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    padding: 0 7px;
+
+    border-radius: 999px;
+
+    background: #ef4444;
+    color: #ffffff;
+
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1;
 }
 
 .profile-dropdown-logout {

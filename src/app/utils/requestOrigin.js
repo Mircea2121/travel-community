@@ -16,6 +16,16 @@ function getAllowedOrigins() {
 
   if (appOrigin) {
     origins.add(appOrigin);
+
+    const appUrl = new URL(appOrigin);
+
+    if (appUrl.hostname.startsWith("www.")) {
+      appUrl.hostname = appUrl.hostname.slice(4);
+    } else {
+      appUrl.hostname = `www.${appUrl.hostname}`;
+    }
+
+    origins.add(appUrl.origin);
   }
 
   if (process.env.NODE_ENV !== "production") {

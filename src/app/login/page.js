@@ -206,10 +206,6 @@ export default function LoginPage() {
         <p className="auth-switch">
           Nu ai cont? <Link href="/register">Creează unul</Link>
         </p>
-        <p className="auth-switch">
-          Nu ai primit confirmarea?{" "}
-          <Link href="/resend-verification">Retrimite emailul</Link>
-        </p>
       </section>
     </main>
   );

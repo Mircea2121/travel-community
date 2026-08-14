@@ -12,6 +12,7 @@ import {
 import { consumeAuthRateLimit } from "../../../utils/authRateLimit";
 import { getRequestClientIp } from "../../../utils/requestClient";
 import { sendPasswordResetEmail } from "../../../utils/passwordResetEmail";
+import { verifyTurnstile } from "../../../utils/turnstile";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -117,6 +118,23 @@ export async function POST(request) {
     }
 
     const clientIp = getRequestClientIp(request);
+
+    const turnstile = await verifyTurnstile({
+      token: body?.turnstileToken,
+      remoteIp: clientIp,
+      action: "forgot-password",
+    });
+
+    if (!turnstile.success) {
+      return jsonResponse(
+        {
+          success: false,
+          code: "SECURITY_CHECK_FAILED",
+          message: "Verificarea de securitate a expirat sau nu a reușit. Încearcă din nou.",
+        },
+        400
+      );
+    }
 
     const [
       emailHourlyLimit,

@@ -55,6 +55,21 @@ export async function GET(
       );
     }
 
+    const currentUser =
+      await getCurrentUser();
+
+    if (!currentUser) {
+      return createResponse(
+        {
+          success: false,
+          code: "AUTHENTICATION_REQUIRED",
+          message:
+            "Conectează-te pentru a vizualiza profilul.",
+        },
+        401
+      );
+    }
+
     const usersCollection =
       await getUsersCollection();
 
@@ -73,9 +88,6 @@ export async function GET(
         404
       );
     }
-
-    const currentUser =
-      await getCurrentUser();
 
     const currentUserId =
       normalizeId(currentUser?._id);

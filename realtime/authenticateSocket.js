@@ -1,4 +1,4 @@
-import { parse } from "cookie";
+import { parseCookie } from "cookie";
 import { ObjectId } from "mongodb";
 
 import {
@@ -29,7 +29,7 @@ function getTokenFromSocket(socket) {
   }
 
   try {
-    const cookies = parse(cookieHeader);
+    const cookies = parseCookie(cookieHeader);
 
     return typeof cookies.token === "string"
       ? cookies.token.trim()

@@ -9,6 +9,10 @@ import { ToastProvider } from "./components/toast/toastProvider";
 export const metadata = {
   title: "Comunitatea Calatorilor",
   description: "Descopera destinatii, impartaseste experiente si conecteaza-te cu alti calatori.",
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({ children }) {

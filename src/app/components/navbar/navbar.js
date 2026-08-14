@@ -23,9 +23,11 @@ import {
   useState,
 } from "react";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { getUserInitials } from "../../utils/getUserInitials";
+import { useRealtime } from "../messages/realtimeProvider";
+import { REALTIME_EVENTS } from "../../utils/realtimeEvents";
 
 function getAvatarUrl(avatar) {
   if (typeof avatar === "string") {
@@ -45,6 +47,8 @@ function getAvatarUrl(avatar) {
 
 export default function Navbar() {
   const router = useRouter();
+  const pathname = usePathname();
+  const { socket } = useRealtime();
 
   const [searchQuery, setSearchQuery] =
     useState("");
@@ -77,6 +81,8 @@ export default function Navbar() {
   ] = useState(false);
 
   const [user, setUser] = useState(null);
+
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
 
   const [failedAvatarUrl, setFailedAvatarUrl] =
     useState("");
@@ -215,6 +221,94 @@ export default function Navbar() {
 
     loadUser();
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      return undefined;
+    }
+
+    const controller = new AbortController();
+
+    const loadUnreadMessageCount = async () => {
+      try {
+        const response = await fetch("/api/conversations/unread-count", {
+          credentials: "include",
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          setUnreadMessageCount(
+            Math.max(0, Number(data.unreadCount) || 0)
+          );
+        }
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          console.error("Unread message count error:", error);
+        }
+      }
+    };
+
+    loadUnreadMessageCount();
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        loadUnreadMessageCount();
+      }
+    };
+
+    window.addEventListener("focus", loadUnreadMessageCount);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      controller.abort();
+      window.removeEventListener("focus", loadUnreadMessageCount);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [pathname, user]);
+
+  useEffect(() => {
+    if (!socket || !user) {
+      return undefined;
+    }
+
+    let refreshTimeout;
+
+    const refreshUnreadMessageCount = () => {
+      window.clearTimeout(refreshTimeout);
+      refreshTimeout = window.setTimeout(async () => {
+        try {
+          const response = await fetch("/api/conversations/unread-count", {
+            credentials: "include",
+            cache: "no-store",
+          });
+          const data = await response.json();
+
+          if (response.ok && data.success) {
+            setUnreadMessageCount(
+              Math.max(0, Number(data.unreadCount) || 0)
+            );
+          }
+        } catch {
+          // The next realtime event, focus or navigation retries the count.
+        }
+      }, 150);
+    };
+
+    socket.on(
+      REALTIME_EVENTS.CONVERSATION_UPDATED,
+      refreshUnreadMessageCount
+    );
+
+    return () => {
+      window.clearTimeout(refreshTimeout);
+      socket.off(
+        REALTIME_EVENTS.CONVERSATION_UPDATED,
+        refreshUnreadMessageCount
+      );
+    };
+  }, [socket, user]);
 
   useEffect(() => {
     const handleOutsideClick = (event) => {
@@ -484,6 +578,7 @@ export default function Navbar() {
       }
 
       setUser(null);
+      setUnreadMessageCount(0);
       closeNavigationMenus();
 
       window.location.href = "/";
@@ -765,6 +860,11 @@ export default function Navbar() {
                   size={24}
                   strokeWidth={2}
                 />
+                {user && unreadMessageCount > 0 ? (
+                  <span className="nav-unread-badge" aria-hidden="true">
+                    {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
+                  </span>
+                ) : null}
               </button>
 
               {user &&
@@ -837,8 +937,18 @@ export default function Navbar() {
                           />
                         </span>
 
-                        <span>
+                        <span className="profile-dropdown-link-label">
                           Mesaje
+                          {unreadMessageCount > 0 ? (
+                            <span
+                              className="profile-dropdown-unread-badge"
+                              aria-label={`${unreadMessageCount} mesaje necitite`}
+                            >
+                              {unreadMessageCount > 99
+                                ? "99+"
+                                : unreadMessageCount}
+                            </span>
+                          ) : null}
                         </span>
                       </button>
 

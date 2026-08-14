@@ -2,13 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  BarChart3, ClipboardList, Headphones, RefreshCw,
+  BarChart3, ClipboardList, FileText, Headphones, RefreshCw,
   Search, ShieldCheck, Users, XCircle,
 } from "lucide-react";
 import "./adminPanel.css";
 
 const TABS = [
   { id: "overview", label: "Dashboard", icon: BarChart3 },
+  { id: "posts", label: "Postări", icon: FileText },
   { id: "reports", label: "Raportări", icon: ShieldCheck },
   { id: "support", label: "Suport", icon: Headphones },
   { id: "users", label: "Utilizatori", icon: Users },
@@ -37,18 +38,20 @@ export default function AdminPanel() {
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("");
+  const [page, setPage] = useState(1);
 
   const load = useCallback(async () => {
     setLoading(true); setError("");
     try {
       const params = new URLSearchParams();
       if (status) params.set("status", status);
+      params.set("page", String(page));
       if (tab === "users" && query.trim()) params.set("q", query.trim());
       const url = tab === "overview" ? "/api/admin/overview" : `/api/admin/${tab}?${params}`;
       setData(await readJson(await fetch(url, { cache: "no-store" })));
     } catch (err) { setError(err.message); setData(null); }
     finally { setLoading(false); }
-  }, [tab, query, status]);
+  }, [tab, query, status, page]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -58,7 +61,7 @@ export default function AdminPanel() {
     return () => window.clearTimeout(timeoutId);
   }, [load]);
 
-  function changeTab(next) { setTab(next); setQuery(""); setStatus(""); setData(null); }
+  function changeTab(next) { setTab(next); setQuery(""); setStatus(""); setPage(1); setData(null); }
 
   async function patch(path, body) {
     setError("");
@@ -113,7 +116,7 @@ export default function AdminPanel() {
           ))}
         </nav>
 
-        {tab !== "overview" && (
+        {tab !== "overview" && tab !== "posts" && tab !== "audit" && (
           <div className="admin-filters">
             {tab === "users" && <label><Search size={17} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Nume, username sau email" /></label>}
             <select value={status} onChange={(e) => setStatus(e.target.value)}>
@@ -129,11 +132,19 @@ export default function AdminPanel() {
         {loading ? <div className="admin-loading">Se încarcă…</div> : (
           <section className="admin-content">
             {tab === "overview" && <div className="admin-stat-grid">{cards.map(([label, value]) => <article key={label}><strong>{Number(value || 0).toLocaleString("ro-RO")}</strong><span>{label}</span></article>)}</div>}
+            {tab === "posts" && (data?.posts?.length ? <div className="admin-list">{data.posts.map((item) => <article key={item._id} className="admin-item"><div><span className="admin-badge">{item.category || "postare"}</span><h2>{item.title || "Postare fără titlu"}</h2><p>{item.destination}{item.country ? ` · ${item.country}` : ""}</p><small>{formatDate(item.createdAt)} · @{item.authorUsername || "utilizator"}</small></div></article>)}</div> : <Empty>Nu există postări.</Empty>)}
             {tab === "reports" && (data?.reports?.length ? <div className="admin-list">{data.reports.map((item) => <article key={item._id} className="admin-item"><div><span className="admin-badge">{item.targetType}</span><h2>{item.targetPreview || "Conținut raportat"}</h2><p><strong>Motiv:</strong> {item.reason}</p>{item.details && <p>{item.details}</p>}<small>{formatDate(item.createdAt)} · @{item.reportedByUsername || "utilizator"}</small></div><div className="admin-actions"><button onClick={() => patch(`/api/admin/reports/${item._id}`, { status: "reviewing", resolution: "" })}>Preia</button><button onClick={() => resolveReport(item, "resolved")}>Rezolvă</button><button className="danger" onClick={() => resolveReport(item, "dismissed")}>Respinge</button></div></article>)}</div> : <Empty>Nu există raportări în această categorie.</Empty>)}
             {tab === "support" && (data?.requests?.length ? <div className="admin-list">{data.requests.map((item) => <article key={item._id} className="admin-item"><div><span className="admin-badge">{item.reference}</span><h2>{item.subject}</h2><p>{item.message}</p><small>{item.name} · {item.email} · {formatDate(item.createdAt)}</small></div><div className="admin-actions"><button onClick={() => updateSupport(item, "in_progress")}>Preia</button><button onClick={() => updateSupport(item, "resolved")}>Rezolvă</button><button onClick={() => updateSupport(item, "closed")}>Închide</button></div></article>)}</div> : <Empty>Nu există solicitări în această categorie.</Empty>)}
             {tab === "users" && (data?.users?.length ? <div className="admin-list">{data.users.map((item) => <article key={item._id} className="admin-item"><div><span className={`admin-badge ${item.accountStatus === "suspended" ? "red" : ""}`}>{item.accountStatus === "suspended" ? "Suspendat" : "Activ"}</span><h2>{item.name || item.username}</h2><p>@{item.username} · {item.email}</p><small>Creat: {formatDate(item.createdAt)} · Rol: {item.role || "user"}</small>{item.suspensionReason && <p><strong>Motiv:</strong> {item.suspensionReason}</p>}</div><div className="admin-actions"><button className={item.accountStatus === "suspended" ? "" : "danger"} onClick={() => updateUser(item)}>{item.accountStatus === "suspended" ? "Reactivează" : "Suspendă"}</button></div></article>)}</div> : <Empty>Nu au fost găsiți utilizatori.</Empty>)}
             {tab === "audit" && (data?.logs?.length ? <div className="admin-list">{data.logs.map((item) => <article key={item._id} className="admin-item"><div><span className="admin-badge">{item.action}</span><h2>{item.targetType}</h2><p>Administrator: @{item.adminUsername || "admin"}</p><small>{formatDate(item.createdAt)}</small></div></article>)}</div> : <Empty>Jurnalul este gol.</Empty>)}
           </section>
+        )}
+        {!loading && data?.pagination && (
+          <div className="admin-actions">
+            <button type="button" disabled={page <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>Anterior</button>
+            <span>Pagina {data.pagination.page} din {data.pagination.pages}</span>
+            <button type="button" disabled={page >= data.pagination.pages} onClick={() => setPage((value) => value + 1)}>Următor</button>
+          </div>
         )}
       </div>
     </main>

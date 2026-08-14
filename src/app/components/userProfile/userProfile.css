@@ -63,6 +63,26 @@ body {
   font-weight: 900;
 }
 
+.user-profile-login-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  margin-top: 22px;
+  padding: 0 22px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0284c7, #0ea5e9);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 12px 28px rgba(2, 132, 199, 0.22);
+}
+
+.user-profile-login-link:hover {
+  transform: translateY(-1px);
+}
+
 /* =========================
    HEADER PROFIL
 ========================= */

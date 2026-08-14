@@ -29,6 +29,26 @@ const INITIAL_FORM_DATA = {
   description: "",
 };
 
+function getFormText(value) {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  if (Array.isArray(value)) {
+    return value
+      .filter((item) => typeof item === "string" || typeof item === "number")
+      .map((item) => String(item).trim())
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  if (typeof value === "string" || typeof value === "number") {
+    return String(value);
+  }
+
+  return "";
+}
+
 function getImageUrl(image) {
   if (typeof image === "string") {
     return image;
@@ -107,15 +127,15 @@ export default function EditPostPage() {
         const post = data.post;
 
         setFormData({
-          title: post?.title || "",
-          destination: post?.destination || "",
-          country: post?.country || "",
-          city: post?.city || "",
-          category: post?.category || "",
-          travelPeriod: post?.travelPeriod || "",
-          totalCost: post?.totalCost || "",
-          tips: post?.tips || "",
-          description: post?.description || "",
+          title: getFormText(post?.title),
+          destination: getFormText(post?.destination),
+          country: getFormText(post?.country),
+          city: getFormText(post?.city),
+          category: getFormText(post?.category),
+          travelPeriod: getFormText(post?.travelPeriod),
+          totalCost: getFormText(post?.totalCost),
+          tips: getFormText(post?.tips),
+          description: getFormText(post?.description),
         });
 
         setExistingImages(
@@ -347,7 +367,7 @@ export default function EditPostPage() {
         ([fieldName, fieldValue]) => {
           requestData.append(
             fieldName,
-            fieldValue.trim()
+            getFormText(fieldValue).trim()
           );
         }
       );

@@ -506,11 +506,14 @@ export default function RegisterPage() {
 
             <span>
               Sunt de acord cu{" "}
-              <Link href="/terms">
-                Termenii și condițiile
+              <Link href="/termeni">
+                Termenii și condițiile,
               </Link>{" "}
-              și cu{" "}
-              <Link href="/privacy">
+              <Link href="/regulament">
+                Regulamentul
+              </Link>{" "}
+              și{" "}
+              <Link href="/confidentialitate">
                 Politica de confidențialitate
               </Link>
               .

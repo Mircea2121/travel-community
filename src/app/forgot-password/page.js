@@ -2,7 +2,7 @@
 
 import "../auth/auth.css";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import FlagBackground from "../components/flagBackground/flagBackground";
+import TurnstileWidget from "../components/security/turnstileWidget";
 import { useToast } from "../components/toast/toastProvider";
 import { EMAIL_PATTERN } from "../utils/validation";
 
@@ -23,16 +24,31 @@ export default function ForgotPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] =
     useState(false);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+  const handleTurnstileToken = useCallback((token) => {
+    setTurnstileToken(token);
+  }, []);
 
   const normalizedEmail = email.trim().toLowerCase();
   const isEmailValid =
     normalizedEmail.length <= 254 &&
     EMAIL_PATTERN.test(normalizedEmail);
+  const turnstileConfigured = Boolean(
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
+  );
+  const securityIsValid =
+    !turnstileConfigured || Boolean(turnstileToken);
+
+  const resetSecurityCheck = () => {
+    setTurnstileToken("");
+    setTurnstileResetKey((value) => value + 1);
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!isEmailValid || isLoading) {
+    if (!isEmailValid || !securityIsValid || isLoading) {
       toast.warning(
         "Introdu o adresă de email validă.",
         "Verifică emailul"
@@ -52,6 +68,7 @@ export default function ForgotPasswordPage() {
           },
           body: JSON.stringify({
             email: normalizedEmail,
+            turnstileToken,
           }),
         }
       );
@@ -59,6 +76,7 @@ export default function ForgotPasswordPage() {
       const data = await response.json();
 
       if (!response.ok) {
+        resetSecurityCheck();
         toast.error(
           data.message ||
             "Solicitarea nu a putut fi trimisă.",
@@ -86,6 +104,7 @@ export default function ForgotPasswordPage() {
         "Nu s-a putut realiza conexiunea cu serverul.",
         "Eroare de conexiune"
       );
+      resetSecurityCheck();
     } finally {
       setIsLoading(false);
     }
@@ -206,10 +225,16 @@ export default function ForgotPasswordPage() {
                 )}
               </div>
 
+              <TurnstileWidget
+                action="forgot-password"
+                onTokenChange={handleTurnstileToken}
+                resetKey={turnstileResetKey}
+              />
+
               <button
                 type="submit"
                 className="auth-submit-button"
-                disabled={!isEmailValid || isLoading}
+                disabled={!isEmailValid || !securityIsValid || isLoading}
               >
                 <Send size={19} />
                 {isLoading

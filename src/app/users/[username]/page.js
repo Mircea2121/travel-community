@@ -6,6 +6,7 @@ import {
 } from "react";
 
 import { useParams } from "next/navigation";
+import Link from "next/link";
 
 import UserProfile from "../../components/userProfile/userProfile";
 
@@ -36,6 +37,9 @@ export default function UserPage() {
   const [error, setError] =
     useState("");
 
+  const [authenticationRequired, setAuthenticationRequired] =
+    useState(false);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -43,6 +47,7 @@ export default function UserPage() {
       try {
         setLoading(true);
         setError("");
+        setAuthenticationRequired(false);
 
         if (!username) {
           throw new Error(
@@ -63,6 +68,16 @@ export default function UserPage() {
 
         const data =
           await response.json();
+
+        if (response.status === 401) {
+          if (isMounted) {
+            setUser(null);
+            setIsOwnProfile(false);
+            setIsFollowing(false);
+            setAuthenticationRequired(true);
+          }
+          return;
+        }
 
         if (
           !response.ok ||
@@ -132,6 +147,22 @@ export default function UserPage() {
           <p>
             Se încarcă profilul...
           </p>
+        </div>
+      </main>
+    );
+  }
+
+  if (authenticationRequired) {
+    return (
+      <main className="user-profile-page">
+        <div className="user-profile-error">
+          <h2>Conectează-te pentru a vizualiza profilul</h2>
+          <p>
+            Profilurile membrilor sunt disponibile doar utilizatorilor autentificați.
+          </p>
+          <Link className="user-profile-login-link" href="/login">
+            Conectează-te
+          </Link>
         </div>
       </main>
     );

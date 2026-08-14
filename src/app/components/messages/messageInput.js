@@ -138,6 +138,10 @@ export default function MessageInput({
   }
 
   function handleTextChange(event) {
+    if (isSending) {
+      return;
+    }
+
     const nextText = event.target.value;
 
     setText(nextText);
@@ -430,6 +434,10 @@ export default function MessageInput({
       }
 
       setIsSending(false);
+
+      window.requestAnimationFrame(() => {
+        textareaRef.current?.focus({ preventScroll: true });
+      });
     }
   }
 
@@ -552,13 +560,14 @@ export default function MessageInput({
           placeholder="Scrie un mesaj..."
           rows={1}
           maxLength={MESSAGE_POLICY.MAX_TEXT_LENGTH}
-          disabled={isDisabled}
+          disabled={disabled || !conversationId}
           aria-label="Scrie un mesaj"
         />
 
         <button
           type="submit"
           className="message-input-send"
+          onPointerDown={(event) => event.preventDefault()}
           disabled={!canSend}
           aria-label="Trimite mesajul"
           title="Trimite"

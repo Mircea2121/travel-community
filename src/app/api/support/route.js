@@ -11,6 +11,7 @@ import {
   isSupportRequestType,
 } from "@/app/utils/supportConfig";
 import { sendSupportRequestNotification } from "@/app/utils/supportEmail";
+import { verifyTurnstile } from "@/app/utils/turnstile";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -84,6 +85,22 @@ export async function POST(request) {
     }
 
     const clientIp = getRequestClientIp(request);
+    const turnstile = await verifyTurnstile({
+      token: body?.turnstileToken,
+      remoteIp: clientIp,
+      action: "support",
+    });
+    if (!turnstile.success) {
+      return response(
+        {
+          success: false,
+          code: "SECURITY_CHECK_FAILED",
+          message: "Verificarea de securitate a expirat sau nu a reușit. Încearcă din nou.",
+        },
+        400
+      );
+    }
+
     const limits = await Promise.all([
       consumeAuthRateLimit({ action: "support:ip-hour", identifier: clientIp, limit: 8, windowSeconds: 3600 }),
       consumeAuthRateLimit({ action: "support:email-day", identifier: email, limit: 5, windowSeconds: 86400 }),

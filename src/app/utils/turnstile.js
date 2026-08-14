@@ -1,8 +1,29 @@
 const VERIFY_URL =
   "https://challenges.cloudflare.com/turnstile/v0/siteverify";
+const CLOUDFLARE_ALWAYS_PASS_TEST_SECRET =
+  "1x0000000000000000000000000000000AA";
 
 function getSecret() {
   return process.env.TURNSTILE_SECRET_KEY?.trim() || "";
+}
+
+function getExpectedHostnames() {
+  const configuredHostname =
+    process.env.TURNSTILE_EXPECTED_HOSTNAME?.trim().toLowerCase();
+
+  if (!configuredHostname) {
+    return new Set();
+  }
+
+  const hostnames = new Set([configuredHostname]);
+
+  if (configuredHostname.startsWith("www.")) {
+    hostnames.add(configuredHostname.slice(4));
+  } else {
+    hostnames.add(`www.${configuredHostname}`);
+  }
+
+  return hostnames;
 }
 
 export async function verifyTurnstile({ token, remoteIp, action }) {
@@ -72,6 +93,12 @@ export async function verifyTurnstile({ token, remoteIp, action }) {
   const result = await response.json().catch(() => null);
 
   if (!result?.success) {
+    console.warn("Turnstile rejected the verification", {
+      errors: Array.isArray(result?.["error-codes"])
+        ? result["error-codes"]
+        : [],
+    });
+
     return {
       success: false,
       code: "TURNSTILE_REJECTED",
@@ -82,19 +109,32 @@ export async function verifyTurnstile({ token, remoteIp, action }) {
   }
 
   if (action && result.action && result.action !== action) {
+    console.warn("Turnstile action mismatch", {
+      expectedAction: action,
+      receivedAction: result.action,
+    });
+
     return {
       success: false,
       code: "TURNSTILE_ACTION_MISMATCH",
     };
   }
 
-  const expectedHostname =
-    process.env.TURNSTILE_EXPECTED_HOSTNAME?.trim().toLowerCase();
+  const expectedHostnames = getExpectedHostnames();
+  const usesOfficialTestSecret =
+    process.env.NODE_ENV !== "production" &&
+    secret === CLOUDFLARE_ALWAYS_PASS_TEST_SECRET;
 
   if (
-    expectedHostname &&
-    result.hostname?.toLowerCase() !== expectedHostname
+    !usesOfficialTestSecret &&
+    expectedHostnames.size > 0 &&
+    !expectedHostnames.has(result.hostname?.toLowerCase())
   ) {
+    console.warn("Turnstile hostname mismatch", {
+      expectedHostnames: [...expectedHostnames],
+      receivedHostname: result.hostname || null,
+    });
+
     return {
       success: false,
       code: "TURNSTILE_HOSTNAME_MISMATCH",

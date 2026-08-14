@@ -957,7 +957,14 @@ body:has(.messages-page) .navbar {
     height: 28px;
     background: rgba(255,255,255,.9);
   }
-  .message-input-wrapper { padding: 10px 9px max(9px, env(safe-area-inset-bottom)); }
+  .message-input-wrapper {
+    position: sticky;
+    bottom: 0;
+    padding: 10px 9px max(9px, env(safe-area-inset-bottom));
+  }
+  .message-input-field {
+    font-size: 16px;
+  }
   .message-input-tools { gap: 0; }
   .message-input-tool { width: 36px; }
   .message-input-send { width: 44px; padding: 0; }
