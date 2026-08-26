@@ -682,7 +682,7 @@ export default function Navbar() {
             type="button"
             onClick={() => navigateTo("/blog")}
           >
-            Blog
+            Postări
           </button>
 
           <button
@@ -1077,7 +1077,7 @@ export default function Navbar() {
             type="button"
             onClick={() => navigateTo("/blog")}
           >
-            Blog
+            Postări
           </button>
 
           <button

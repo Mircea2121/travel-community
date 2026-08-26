@@ -203,7 +203,7 @@ export default function Feed() {
           <h3>Explorează toate experiențele comunității</h3>
 
           <p>
-            Intră în Blog pentru a vedea toate postările,
+            Intră la Postări pentru a vedea toate postările,
             destinațiile și recomandările publicate de călători.
           </p>
         </div>

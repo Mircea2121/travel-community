@@ -71,7 +71,7 @@ export default function Footer() {
 
           <button type="button" onClick={() => navigateTo("/blog")}>
             <ChevronRight size={16} aria-hidden="true" />
-            Blog
+            Postări
           </button>
 
           <button type="button" onClick={() => navigateToSection("about")}>
