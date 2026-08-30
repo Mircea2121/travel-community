@@ -57,6 +57,36 @@ function getTextValue(
 
   return value.trim();
 }
+
+function getJsonTextValue(body, fieldName) {
+  return typeof body?.[fieldName] === "string"
+    ? body[fieldName].trim()
+    : "";
+}
+
+function getMobileImages(body) {
+  if (!Array.isArray(body?.images)) {
+    return [];
+  }
+
+  return body.images
+    .slice(0, MAX_IMAGES + 1)
+    .map((image) => {
+      const type = typeof image?.type === "string" ? image.type : "";
+      const base64 = typeof image?.base64 === "string" ? image.base64 : "";
+      const normalizedBase64 = base64.replace(/^data:[^;]+;base64,/, "");
+      const size = Math.floor((normalizedBase64.length * 3) / 4);
+
+      return {
+        type,
+        size,
+        mobileBase64: normalizedBase64
+          ? `data:${type};base64,${normalizedBase64}`
+          : "",
+      };
+    })
+    .filter((image) => image.mobileBase64 && image.size > 0);
+}
 function getNumericCost(
   totalCost
 ) {
@@ -359,67 +389,48 @@ export async function POST(
       );
     }
 
-    const formData =
-      await request.formData();
+    const isAndroidJson =
+      request.headers.get("x-client-platform") === "android" &&
+      request.headers.get("content-type")?.includes("application/json");
+    const requestBody = isAndroidJson ? await request.json() : null;
+    const formData = isAndroidJson ? null : await request.formData();
+    const readText = (fieldName) =>
+      isAndroidJson
+        ? getJsonTextValue(requestBody, fieldName)
+        : getTextValue(formData, fieldName);
 
     const postData = {
       title:
-        getTextValue(
-          formData,
-          "title"
-        ),
+        readText("title"),
 
       destination:
-        getTextValue(
-          formData,
-          "destination"
-        ),
+        readText("destination"),
 
       country:
-        getTextValue(
-          formData,
-          "country"
-        ),
+        readText("country"),
 
       city:
-        getTextValue(
-          formData,
-          "city"
-        ),
+        readText("city"),
 
       category:
-        getTextValue(
-          formData,
-          "category"
-        ),
+        readText("category"),
 
       travelPeriod:
-        getTextValue(
-          formData,
-          "travelPeriod"
-        ),
+        readText("travelPeriod"),
 
       totalCost:
-        getTextValue(
-          formData,
-          "totalCost"
-        ),
+        readText("totalCost"),
 
       tips:
-        getTextValue(
-          formData,
-          "tips"
-        ),
+        readText("tips"),
 
       description:
-        getTextValue(
-          formData,
-          "description"
-        ),
+        readText("description"),
     };
 
-    const images =
-      formData
+    const images = isAndroidJson
+      ? getMobileImages(requestBody)
+      : formData
         .getAll("images")
         .filter(
           (image) =>
@@ -453,10 +464,7 @@ export async function POST(
     for (
       const image of images
     ) {
-      const base64Image =
-        await fileToBase64(
-          image
-        );
+      const base64Image = image.mobileBase64 || await fileToBase64(image);
 
       const publicId =
         `travel-community/posts/${currentUser._id}/${randomUUID()}`;

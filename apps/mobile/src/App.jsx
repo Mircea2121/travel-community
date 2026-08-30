@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Capacitor } from "@capacitor/core";
+import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
 import { App as CapacitorApp } from "@capacitor/app";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { Network } from "@capacitor/network";
@@ -42,6 +43,7 @@ import {
   getComments,
   addComment,
   getSavedPosts,
+  createExperience,
 } from "./api";
 import Turnstile from "./Turnstile";
 
@@ -253,6 +255,51 @@ function CommentsSheet({ post, isAuthenticated, onRequireAuth, onClose, onCommen
   return <div className="sheet-backdrop" onClick={onClose}><section className="comments-sheet" onClick={(event) => event.stopPropagation()}><header><div><span>COMENTARII</span><h2>{post.title || post.destination}</h2></div><button onClick={onClose} aria-label="Închide"><X /></button></header><form className="comment-form" onSubmit={submit}><input value={content} onChange={(event) => setContent(event.target.value)} maxLength={1500} placeholder={isAuthenticated ? "Scrie un comentariu…" : "Autentifică-te pentru a comenta"} readOnly={!isAuthenticated} onFocus={() => { if (!isAuthenticated) { onClose(); onRequireAuth(); } }} /><button disabled={!content.trim() || submitting}><Send size={19} /></button></form>{error && <p className="form-error">{error}</p>}<div className="comments-list">{status === "loading" && <p>Încărcăm comentariile…</p>}{status === "ready" && comments.length === 0 && <p>Fii primul care lasă un comentariu.</p>}{comments.map((comment) => <article key={comment._id}><div className="avatar small-avatar">{(comment.name || comment.username || "C").slice(0, 1).toUpperCase()}</div><div><strong>{comment.name || comment.username || "Călător"}</strong><p>{comment.content}</p></div></article>)}</div></section></div>;
 }
 
+const experienceCategories = [
+  ["plaja", "Plajă"], ["city-break", "City break"], ["munte", "Munte"], ["mancare", "Mâncare"],
+  ["aventura", "Aventură"], ["cultura", "Cultură"], ["familie", "Familie"], ["buget-redus", "Buget redus"],
+];
+
+function CreateExperience({ onPublished }) {
+  const [form, setForm] = useState({ title: "", destination: "", country: "", city: "", category: "", travelPeriod: "", totalCost: "", tips: "", description: "" });
+  const [images, setImages] = useState([]); const [status, setStatus] = useState("idle"); const [error, setError] = useState("");
+  const update = (field, value) => setForm((current) => ({ ...current, [field]: value }));
+  const isValid = form.title.trim().length >= 5 && form.destination.trim() && form.country.trim() && form.category && form.tips.trim().length >= 10 && form.description.trim().length >= 20 && images.length > 0;
+
+  const choosePhoto = async () => {
+    if (images.length >= 5) return;
+    setError("");
+    try {
+      const photo = await Camera.getPhoto({ source: CameraSource.Photos, resultType: CameraResultType.Base64, quality: 80, width: 1600, correctOrientation: true });
+      if (!photo.base64String) throw new Error("Fotografia nu a putut fi citită.");
+      const type = photo.format === "png" ? "image/png" : photo.format === "webp" ? "image/webp" : "image/jpeg";
+      setImages((current) => [...current, { id: `${Date.now()}-${current.length}`, type, base64: photo.base64String, preview: `data:${type};base64,${photo.base64String}` }]);
+    } catch (requestError) {
+      if (!String(requestError?.message || "").toLowerCase().includes("cancel")) setError(requestError.message || "Galeria nu a putut fi deschisă.");
+    }
+  };
+
+  const submit = async (event) => {
+    event.preventDefault(); if (!isValid || status === "loading") return; setStatus("loading"); setError("");
+    try {
+      const payload = await createExperience({ ...form, totalCost: form.totalCost.replace(/\D/g, ""), images: images.map(({ type, base64 }) => ({ type, base64 })) });
+      onPublished({ ...payload.post, id: payload.post._id, isLiked: false, isSaved: false });
+    } catch (requestError) { setError(requestError.message); setStatus("error"); }
+  };
+
+  return <section className="create-experience"><header><span>EXPERIENȚĂ NOUĂ</span><h2>Spune povestea călătoriei</h2><p>Detaliile tale pot inspira următoarea aventură.</p></header><form onSubmit={submit}>
+    <Field label="Titlu *" value={form.title} onChange={(value) => update("title", value)} maxLength={120} placeholder="Ex: Un weekend de poveste la Roma" />
+    <div className="field-grid"><Field label="Destinație *" value={form.destination} onChange={(value) => update("destination", value)} maxLength={100} placeholder="Roma" /><Field label="Țară *" value={form.country} onChange={(value) => update("country", value)} maxLength={80} placeholder="Italia" /></div>
+    <Field label="Oraș sau zonă" value={form.city} onChange={(value) => update("city", value)} maxLength={120} placeholder="Lazio" />
+    <label className="mobile-field"><span>Categorie *</span><select value={form.category} onChange={(event) => update("category", event.target.value)}><option value="">Alege categoria</option>{experienceCategories.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+    <div className="field-grid"><Field label="Perioada" value={form.travelPeriod} onChange={(value) => update("travelPeriod", value)} maxLength={100} placeholder="10–14 august" /><Field label="Cost total (€)" type="number" value={form.totalCost} onChange={(value) => update("totalCost", value)} inputMode="numeric" placeholder="800" /></div>
+    <label className="mobile-field"><span>Ponturi utile *</span><textarea value={form.tips} onChange={(event) => update("tips", event.target.value)} maxLength={3000} placeholder="Transport, cazare, locuri de neratat…" /></label>
+    <label className="mobile-field"><span>Povestea călătoriei *</span><textarea className="story-input" value={form.description} onChange={(event) => update("description", event.target.value)} maxLength={10000} placeholder="Cum a fost experiența ta?" /></label>
+    <div className="photo-section"><div><strong>Fotografii *</strong><span>{images.length}/5</span></div><button type="button" onClick={choosePhoto} disabled={images.length >= 5}><ImagePlus size={20} />Alege din galerie</button>{images.length > 0 && <div className="photo-previews">{images.map((image) => <figure key={image.id}><img src={image.preview} alt="Previzualizare" /><button type="button" aria-label="Elimină fotografia" onClick={() => setImages((current) => current.filter((item) => item.id !== image.id))}><X size={16} /></button></figure>)}</div>}</div>
+    {error && <p className="form-error" role="alert">{error}</p>}<button className="publish-button" disabled={!isValid || status === "loading"}><Send size={20} />{status === "loading" ? "Se publică…" : "Publică experiența"}</button>
+  </form></section>;
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState("home");
   const [posts, setPosts] = useState([]);
@@ -332,6 +379,10 @@ export default function App() {
   }, [activeTab, authView, guestMode, sessionStatus]);
 
   const selectTab = async (tab) => {
+    if (tab.id === "create" && !currentUser) {
+      requireAuthentication();
+      return;
+    }
     setActiveTab(tab.id);
     if (Capacitor.isNativePlatform()) {
       await Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
@@ -369,6 +420,12 @@ export default function App() {
   };
 
   const avatarUrl = typeof currentUser?.avatar === "string" ? currentUser.avatar : currentUser?.avatar?.url;
+
+  const handlePublished = (post) => {
+    setPosts((current) => [post, ...current]);
+    setActiveTab("home");
+    setCurrentUser((user) => user ? { ...user, stats: { ...user.stats, postsCount: (user.stats?.postsCount || 0) + 1 } } : user);
+  };
 
   if (sessionStatus === "loading") {
     return <div className="launch-screen"><div className="brand-mark">CC</div><p>Comunitatea Călătorilor</p></div>;
@@ -411,7 +468,8 @@ export default function App() {
           {currentUser && profileView === "overview" && <section className="level-card"><span>NIVELUL TĂU</span><h3>{currentUser.level?.name || "Călător începător"}</h3><p>{currentUser.level?.currentXp || 0} XP acumulate</p></section>}
           {currentUser && profileView === "saved" && <section className="saved-section"><div className="section-heading"><div><span>COLECȚIA TA</span><h2>Postări salvate</h2></div></div>{savedStatus === "loading" && <div className="state-card">Încărcăm postările salvate…</div>}{savedStatus === "error" && <div className="state-card"><p>Postările salvate nu au putut fi încărcate.</p><button onClick={() => setSavedStatus("idle")}>Încearcă din nou</button></div>}{savedStatus === "ready" && savedPosts.length === 0 && <div className="state-card">Nu ai salvat încă nicio experiență.</div>}{savedPosts.map((post) => <PostCard key={post.id || post._id} post={post} isAuthenticated onRequireAuth={requireAuthentication} onUpdate={updatePost} onOpenComments={setCommentsPost} />)}</section>}
         </>}
-        {activeTab !== "home" && activeTab !== "profile" && <section className="coming-soon"><div className="coming-icon">{activeTab === "create" ? <Plus /> : activeTab === "messages" ? <MessageCircle /> : <Compass />}</div><h2>{tabs.find((tab) => tab.id === activeTab)?.label}</h2><p>Construim această secțiune ca experiență mobilă dedicată.</p></section>}
+        {activeTab === "create" && currentUser && <CreateExperience onPublished={handlePublished} />}
+        {activeTab !== "home" && activeTab !== "profile" && activeTab !== "create" && <section className="coming-soon"><div className="coming-icon">{activeTab === "messages" ? <MessageCircle /> : <Compass />}</div><h2>{tabs.find((tab) => tab.id === activeTab)?.label}</h2><p>Construim această secțiune ca experiență mobilă dedicată.</p></section>}
       </main>
 
       <nav className="tab-bar" aria-label="Navigare principală">

@@ -124,4 +124,12 @@ export function addComment(postId, content) {
 export function getSavedPosts() {
   return apiRequest("/api/posts/saved?limit=30");
 }
+
+export function createExperience(experience) {
+  return apiRequest("/api/posts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(experience),
+  });
+}
 import { Capacitor, CapacitorHttp } from "@capacitor/core";
