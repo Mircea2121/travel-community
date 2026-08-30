@@ -31,7 +31,11 @@ function getAllowedOrigins() {
   if (process.env.NODE_ENV !== "production") {
     origins.add("http://localhost:3000");
     origins.add("http://127.0.0.1:3000");
+    origins.add("http://localhost:5173");
+    origins.add("http://127.0.0.1:5173");
   }
+
+  origins.add("https://localhost");
 
   return origins;
 }
@@ -44,8 +48,13 @@ export function isTrustedMutationRequest(request) {
   }
 
   const fetchSite = headers.get("sec-fetch-site")?.toLowerCase();
+  const clientPlatform = headers
+    .get("x-client-platform")
+    ?.trim()
+    .toLowerCase();
+  const isAndroidClient = clientPlatform === "android";
 
-  if (fetchSite === "cross-site") {
+  if (fetchSite === "cross-site" && !isAndroidClient) {
     return false;
   }
 
@@ -53,9 +62,13 @@ export function isTrustedMutationRequest(request) {
   const origin = normalizeOrigin(originHeader);
 
   if (!origin) {
-    return process.env.NODE_ENV !== "production";
+    return isAndroidClient || process.env.NODE_ENV !== "production";
   }
 
-  return getAllowedOrigins().has(origin);
+  if (!getAllowedOrigins().has(origin)) {
+    return false;
+  }
+
+  return origin !== "https://localhost" || isAndroidClient;
 }
 

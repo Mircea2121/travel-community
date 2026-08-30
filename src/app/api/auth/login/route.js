@@ -107,10 +107,14 @@ export async function POST(request) {
       return rateLimitResponse(accountRateLimit);
     }
 
+    const isAndroidClient =
+      request.headers.get("x-client-platform")?.trim().toLowerCase() ===
+      "android";
     const turnstile = await verifyTurnstile({
       token: body?.turnstileToken,
       remoteIp: clientIp,
       action: "login",
+      allowedHostnames: isAndroidClient ? ["localhost"] : [],
     });
 
     if (!turnstile.success) {

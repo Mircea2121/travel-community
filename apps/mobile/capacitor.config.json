@@ -16,6 +16,9 @@
     "CapacitorHttp": {
       "enabled": true
     },
+    "CapacitorCookies": {
+      "enabled": true
+    },
     "SystemBars": {
       "insetsHandling": "css",
       "style": "DARK"

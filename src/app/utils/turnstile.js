@@ -26,7 +26,12 @@ function getExpectedHostnames() {
   return hostnames;
 }
 
-export async function verifyTurnstile({ token, remoteIp, action }) {
+export async function verifyTurnstile({
+  token,
+  remoteIp,
+  action,
+  allowedHostnames = [],
+}) {
   const secret = getSecret();
 
   if (!secret) {
@@ -121,6 +126,12 @@ export async function verifyTurnstile({ token, remoteIp, action }) {
   }
 
   const expectedHostnames = getExpectedHostnames();
+
+  for (const hostname of allowedHostnames) {
+    if (typeof hostname === "string" && hostname.trim()) {
+      expectedHostnames.add(hostname.trim().toLowerCase());
+    }
+  }
   const usesOfficialTestSecret =
     process.env.NODE_ENV !== "production" &&
     secret === CLOUDFLARE_ALWAYS_PASS_TEST_SECRET;
