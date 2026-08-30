@@ -11,8 +11,8 @@ Next.js rămân în rădăcina repository-ului.
 
 ## Build nativ
 
-Din `apps/mobile`, rulează `npm run sync`, apoi `npm run android` sau `npm run ios`.
-iOS necesită macOS și Xcode.
+Din `apps/mobile`, rulează `npm run sync`, apoi `npm run android`.
+Proiectul vizează exclusiv Android.
 
 `server.url` nu se configurează în build-urile de producție. Interfața este inclusă
 în aplicație, iar cererile de date merg către API-ul HTTPS configurat prin
@@ -22,7 +22,7 @@ iOS necesită macOS și Xcode.
 
 - `src/` conține interfața mobilă, independentă de interfața Next.js;
 - API-ul și baza de date rămân în aplicația Next.js din rădăcină;
-- `android/` și `ios/` sunt proiecte generate și versionate pentru magazine;
+- `android/` este proiectul nativ generat și versionat pentru Google Play;
 - `dist/` este generat local și nu se salvează în Git;
 - cererile native folosesc HTTPS prin Capacitor HTTP;
 - pluginurile sunt limitate la capabilitățile folosite efectiv: App, Haptics,

@@ -4,7 +4,7 @@
 
 - client React + Vite separat în `apps/mobile`;
 - bundle local Capacitor, fără `server.url` în producție;
-- proiecte Android și iOS;
+- proiect Android nativ;
 - feed public, navigare mobilă, stare offline, haptics și share nativ;
 - build-uri web și mobile independente.
 
@@ -25,15 +25,16 @@
 
 ## Etapa 4 — integrare nativă
 
-- deep links și universal/app links;
+- deep links și Android App Links;
 - push notifications cu preferințe explicite;
 - share sheet, conectivitate și feedback haptic;
 - icon, splash screen și accesibilitate.
 
 ## Etapa 5 — lansare
 
-- teste pe telefoane Android și iPhone reale;
+- teste pe telefoane Android și pe emulator;
 - cont demo pentru review;
-- privacy labels, Data Safety și content rating;
+- formular Data Safety și content rating;
 - capturi de ecran și materiale pentru magazine;
-- Android App Bundle semnat și arhivă iOS prin Xcode/TestFlight.
+- Android App Bundle semnat pentru Google Play;
+- testare internă și închisă prin Google Play Console.
