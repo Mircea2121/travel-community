@@ -41,6 +41,7 @@ import {
   toggleSavedPost,
   getComments,
   addComment,
+  getSavedPosts,
 } from "./api";
 import Turnstile from "./Turnstile";
 
@@ -262,6 +263,9 @@ export default function App() {
   const [guestMode, setGuestMode] = useState(false);
   const [authView, setAuthView] = useState("login");
   const [commentsPost, setCommentsPost] = useState(null);
+  const [profileView, setProfileView] = useState("overview");
+  const [savedPosts, setSavedPosts] = useState([]);
+  const [savedStatus, setSavedStatus] = useState("idle");
 
   const loadFeed = useCallback(async () => {
     setStatus("loading");
@@ -296,6 +300,12 @@ export default function App() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [authView]);
+
+  useEffect(() => {
+    if (activeTab !== "profile" || !currentUser || profileView !== "saved" || savedStatus !== "idle") return;
+    setSavedStatus("loading");
+    getSavedPosts().then((payload) => { setSavedPosts((payload.posts || []).map((post) => ({ ...post, isSaved: true }))); setSavedStatus("ready"); }).catch(() => setSavedStatus("error"));
+  }, [activeTab, currentUser, profileView, savedStatus]);
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) {
@@ -333,6 +343,8 @@ export default function App() {
     setSessionStatus("authenticated");
     setGuestMode(false);
     setActiveTab("home");
+    setSavedPosts([]);
+    setSavedStatus("idle");
     loadFeed();
   };
 
@@ -342,6 +354,8 @@ export default function App() {
     setSessionStatus("guest");
     setGuestMode(false);
     setActiveTab("home");
+    setSavedPosts([]);
+    setSavedStatus("idle");
   };
 
   const requireAuthentication = () => {
@@ -349,7 +363,12 @@ export default function App() {
     setAuthView("login");
   };
 
-  const updatePost = (postId, changes) => setPosts((current) => current.map((post) => (post.id || post._id) === postId ? { ...post, ...changes } : post));
+  const updatePost = (postId, changes) => {
+    setPosts((current) => current.map((post) => (post.id || post._id) === postId ? { ...post, ...changes } : post));
+    setSavedPosts((current) => changes.isSaved === false ? current.filter((post) => (post.id || post._id) !== postId) : current.map((post) => (post.id || post._id) === postId ? { ...post, ...changes } : post));
+  };
+
+  const avatarUrl = typeof currentUser?.avatar === "string" ? currentUser.avatar : currentUser?.avatar?.url;
 
   if (sessionStatus === "loading") {
     return <div className="launch-screen"><div className="brand-mark">CC</div><p>Comunitatea Călătorilor</p></div>;
@@ -378,7 +397,20 @@ export default function App() {
           {status === "ready" && posts.length === 0 && <div className="state-card">Prima experiență poate fi a ta.</div>}
           {posts.map((post) => <PostCard key={post.id || post._id} post={post} isAuthenticated={Boolean(currentUser)} onRequireAuth={requireAuthentication} onUpdate={updatePost} onOpenComments={setCommentsPost} />)}
         </>}
-        {activeTab === "profile" && <section className="profile-card"><div className="profile-avatar">{(currentUser?.name || "Vizitator").slice(0, 1).toUpperCase()}</div><h2>{currentUser?.name || "Mod vizitator"}</h2><p>{currentUser?.email || "Conectează-te pentru acces la profil și postări salvate."}</p>{currentUser ? <button onClick={handleLogout}><LogOut size={18} /> Deconectează-te</button> : <button onClick={() => setGuestMode(false)}><LogIn size={18} /> Autentifică-te</button>}</section>}
+        {activeTab === "profile" && <>
+          <section className="profile-card profile-header-card">
+            {avatarUrl ? <img className="profile-avatar photo" src={avatarUrl} alt={`Avatar ${currentUser?.name || "utilizator"}`} /> : <div className="profile-avatar">{(currentUser?.name || "Vizitator").slice(0, 1).toUpperCase()}</div>}
+            <h2>{currentUser?.name || "Mod vizitator"}</h2>
+            {currentUser?.username && <strong className="profile-username">@{currentUser.username}</strong>}
+            <p>{currentUser?.bio || currentUser?.email || "Conectează-te pentru acces la profil și postări salvate."}</p>
+            {currentUser?.location && <span className="profile-location"><MapPin size={15} />{currentUser.location}</span>}
+            {currentUser && <div className="profile-stats"><div><strong>{currentUser.stats?.postsCount || 0}</strong><span>Postări</span></div><div><strong>{currentUser.stats?.followersCount || 0}</strong><span>Urmăritori</span></div><div><strong>{currentUser.stats?.followingCount || 0}</strong><span>Urmărește</span></div></div>}
+            {currentUser ? <button className="logout-button" onClick={handleLogout}><LogOut size={18} /> Deconectează-te</button> : <button onClick={requireAuthentication}><LogIn size={18} /> Autentifică-te</button>}
+          </section>
+          {currentUser && <div className="profile-tabs"><button className={profileView === "overview" ? "active" : ""} onClick={() => setProfileView("overview")}><UserRound size={18} />Prezentare</button><button className={profileView === "saved" ? "active" : ""} onClick={() => setProfileView("saved")}><Bookmark size={18} />Salvate</button></div>}
+          {currentUser && profileView === "overview" && <section className="level-card"><span>NIVELUL TĂU</span><h3>{currentUser.level?.name || "Călător începător"}</h3><p>{currentUser.level?.currentXp || 0} XP acumulate</p></section>}
+          {currentUser && profileView === "saved" && <section className="saved-section"><div className="section-heading"><div><span>COLECȚIA TA</span><h2>Postări salvate</h2></div></div>{savedStatus === "loading" && <div className="state-card">Încărcăm postările salvate…</div>}{savedStatus === "error" && <div className="state-card"><p>Postările salvate nu au putut fi încărcate.</p><button onClick={() => setSavedStatus("idle")}>Încearcă din nou</button></div>}{savedStatus === "ready" && savedPosts.length === 0 && <div className="state-card">Nu ai salvat încă nicio experiență.</div>}{savedPosts.map((post) => <PostCard key={post.id || post._id} post={post} isAuthenticated onRequireAuth={requireAuthentication} onUpdate={updatePost} onOpenComments={setCommentsPost} />)}</section>}
+        </>}
         {activeTab !== "home" && activeTab !== "profile" && <section className="coming-soon"><div className="coming-icon">{activeTab === "create" ? <Plus /> : activeTab === "messages" ? <MessageCircle /> : <Compass />}</div><h2>{tabs.find((tab) => tab.id === activeTab)?.label}</h2><p>Construim această secțiune ca experiență mobilă dedicată.</p></section>}
       </main>
 

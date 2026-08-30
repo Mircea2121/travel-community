@@ -120,4 +120,8 @@ export function addComment(postId, content) {
     body: JSON.stringify({ content }),
   });
 }
+
+export function getSavedPosts() {
+  return apiRequest("/api/posts/saved?limit=30");
+}
 import { Capacitor, CapacitorHttp } from "@capacitor/core";

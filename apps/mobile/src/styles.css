@@ -104,6 +104,24 @@ button { border: 0; font: inherit; cursor: pointer; }
 .profile-card h2 { margin: 0; }
 .profile-card p { margin: 7px 0 20px; color: #718096; font-size: 14px; }
 .profile-card button { color: #fff; background: #2563eb; }
+.profile-header-card { background: radial-gradient(circle at 50% 0, #e7f2ff, #fff 46%); }
+.profile-avatar.photo { object-fit: cover; }
+.profile-username { display: block; margin-top: 4px; color: #2563eb; font-size: 13px; }
+.profile-location { display: flex; align-items: center; justify-content: center; margin: -9px 0 19px; color: #617188; font-size: 13px; gap: 5px; }
+.profile-stats { display: grid; grid-template-columns: repeat(3, 1fr); margin: 20px 0; padding: 16px 0; border-top: 1px solid #e7edf5; border-bottom: 1px solid #e7edf5; }
+.profile-stats div { display: grid; gap: 3px; }
+.profile-stats div + div { border-left: 1px solid #e7edf5; }
+.profile-stats strong { color: #17233a; font-size: 19px; }
+.profile-stats span { color: #77869a; font-size: 11px; }
+.profile-card .logout-button { color: #b42331; background: #fff1f2; box-shadow: none; }
+.profile-tabs { display: grid; grid-template-columns: 1fr 1fr; margin: 16px 0; padding: 5px; background: #e9f0f7; border-radius: 16px; gap: 5px; }
+.profile-tabs button { display: flex; min-height: 44px; align-items: center; justify-content: center; color: #6b7b90; background: transparent; border-radius: 12px; font-size: 13px; font-weight: 750; gap: 7px; }
+.profile-tabs button.active { color: #1d5ed3; background: #fff; box-shadow: 0 5px 15px #1b4c8a14; }
+.level-card { padding: 22px; color: #fff; background: radial-gradient(circle at 90% 10%, #ffffff30, transparent 35%), linear-gradient(135deg, #194fc7, #0797ad); border-radius: 22px; box-shadow: 0 15px 34px #1d65c42b; }
+.level-card span { color: #cfe3ff; font-size: 10px; font-weight: 800; letter-spacing: .16em; }
+.level-card h3 { margin: 7px 0 4px; font-family: Georgia, serif; font-size: 23px; }
+.level-card p { margin: 0; color: #dcecff; font-size: 13px; }
+.saved-section { padding-bottom: 12px; }
 .state-card button { padding: 10px 14px; color: #fff; background: #2563eb; border-radius: 12px; }
 .coming-soon { margin-top: 32px; }
 .coming-soon h2 { color: #17233a; }
