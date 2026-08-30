@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Comunitatea Călătorilor</string>
+    <string name="title_activity_main">Comunitatea Călătorilor</string>
+    <string name="package_name">ro.comunitateacalatorilor.app</string>
+    <string name="custom_url_scheme">ro.comunitateacalatorilor.app</string>
+</resources>

@@ -40,3 +40,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Mobile app local configuration and native build output
+apps/mobile/node_modules/
+apps/mobile/.env.local
+!apps/mobile/.env.example
+apps/mobile/dist/
+apps/mobile/android/.gradle/
+apps/mobile/android/local.properties
+apps/mobile/android/app/build/
+apps/mobile/ios/App/Pods/
+apps/mobile/ios/App/DerivedData/

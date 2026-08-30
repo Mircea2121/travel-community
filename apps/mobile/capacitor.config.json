@@ -1,0 +1,29 @@
+{
+  "appId": "ro.comunitateacalatorilor.app",
+  "appName": "Comunitatea Călătorilor",
+  "webDir": "dist",
+  "backgroundColor": "#f5f9ff",
+  "loggingBehavior": "debug",
+  "server": {
+    "androidScheme": "https",
+    "errorPath": "offline.html"
+  },
+  "android": {
+    "allowMixedContent": false,
+    "webContentsDebuggingEnabled": false
+  },
+  "ios": {
+    "contentInset": "never",
+    "preferredContentMode": "mobile",
+    "allowsLinkPreview": false
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    },
+    "SystemBars": {
+      "insetsHandling": "css",
+      "style": "DARK"
+    }
+  }
+}

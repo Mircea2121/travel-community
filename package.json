@@ -13,7 +13,10 @@
     "security:indexes": "node --env-file=.env.local scripts/createProductionSecurityIndexes.js",
     "security:migrate-existing-emails": "node --env-file=.env.local scripts/migrateExistingUsersEmailVerification.js",
     "audit:dependencies": "npm audit --omit=dev",
-    "test:smoke": "node scripts/smokeProductionRoutes.mjs"
+    "test:smoke": "node scripts/smokeProductionRoutes.mjs",
+    "mobile:dev": "npm --prefix apps/mobile run dev",
+    "mobile:build": "npm --prefix apps/mobile run build",
+    "mobile:sync": "npm --prefix apps/mobile run sync"
   },
   "dependencies": {
     "@socket.io/redis-adapter": "^8.3.0",
