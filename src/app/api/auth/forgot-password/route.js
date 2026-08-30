@@ -84,6 +84,8 @@ function schedulePasswordResetEmail(user) {
 
 export async function POST(request) {
   try {
+    const isAndroidClient =
+      request.headers.get("x-client-platform") === "android";
     let body;
 
     try {
@@ -123,6 +125,7 @@ export async function POST(request) {
       token: body?.turnstileToken,
       remoteIp: clientIp,
       action: "forgot-password",
+      allowedHostnames: isAndroidClient ? ["localhost"] : [],
     });
 
     if (!turnstile.success) {

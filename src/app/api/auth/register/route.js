@@ -56,6 +56,8 @@ function duplicateUserResponse(error) {
 
 export async function POST(request) {
   try {
+    const isAndroidClient =
+      request.headers.get("x-client-platform") === "android";
     if (!isTrustedMutationRequest(request)) {
       return jsonResponse(
         {
@@ -96,6 +98,7 @@ export async function POST(request) {
       token: body?.turnstileToken,
       remoteIp: clientIp,
       action: "register",
+      allowedHostnames: isAndroidClient ? ["localhost"] : [],
     });
 
     if (!turnstile.success) {

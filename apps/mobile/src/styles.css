@@ -30,6 +30,27 @@ button { border: 0; font: inherit; cursor: pointer; }
 .guest-button { margin-top: 10px; color: #334155; background: #eef3f8; }
 .register-copy { text-align: center; }
 .register-copy button { padding: 0; color: #2563eb; background: transparent; font-weight: 750; }
+.auth-form-screen { min-height: 100dvh; padding: calc(env(safe-area-inset-top) + 28px) 22px calc(env(safe-area-inset-bottom) + 36px); background: linear-gradient(155deg, #eef5ff, #fff 38%); }
+.mobile-auth-header { position: relative; margin-bottom: 28px; text-align: center; }
+.mobile-auth-header > button { position: absolute; top: 4px; left: 0; width: 44px; height: 44px; background: #fff; border-radius: 50%; box-shadow: 0 8px 22px #1b4c8a18; }
+.brand-mark.small { width: 62px; height: 62px; margin: 0 auto 18px; color: #1558dc; background: #fff; border-radius: 20px; box-shadow: 0 10px 28px #1b4c8a18; font-size: 23px; }
+.mobile-auth-header h1, .auth-result h1 { margin: 0; color: #14213d; font: 800 32px/1.1 Georgia, serif; }
+.mobile-auth-header p, .auth-result p { color: #75849b; line-height: 1.55; }
+.mobile-auth-form { display: grid; max-width: 560px; margin: 0 auto; gap: 17px; }
+.mobile-field { display: grid; color: #26344c; font-weight: 750; gap: 8px; }
+.mobile-field > input, .plain-password { width: 100%; min-height: 56px; color: #17243c; background: #f7faff; border: 1px solid #d8e2ef; border-radius: 17px; font: inherit; }
+.mobile-field > input { padding: 0 17px; }
+.plain-password { display: flex; align-items: center; padding-left: 17px; }
+.plain-password input { min-width: 0; flex: 1; color: inherit; background: transparent; border: 0; outline: 0; font: inherit; }
+.plain-password button { width: 52px; height: 52px; color: #708199; background: transparent; }
+.password-hint { margin: -9px 2px 0; color: #718097; font-size: 13px; }
+.password-hint.invalid { color: #bf2f3c; }
+.terms-row { display: flex; align-items: flex-start; color: #56657a; font-size: 14px; line-height: 1.45; gap: 11px; }
+.terms-row input { width: 20px; height: 20px; flex: 0 0 auto; accent-color: #1764e8; }
+.auth-result { display: grid; min-height: 100dvh; padding: 28px; place-content: center; justify-items: center; background: linear-gradient(150deg, #eef5ff, #fff); text-align: center; gap: 12px; }
+.result-icon { display: grid; width: 84px; height: 84px; color: #fff; background: linear-gradient(135deg, #2369e8, #16a6b9); border-radius: 28px; place-items: center; }
+.result-icon svg { width: 38px; height: 38px; }
+.auth-result .login-button { margin-top: 18px; padding-inline: 26px; }
 .app-shell { min-height: 100dvh; padding: max(env(safe-area-inset-top), 10px) env(safe-area-inset-right) calc(86px + env(safe-area-inset-bottom)) env(safe-area-inset-left); }
 .offline-banner { position: sticky; top: 0; z-index: 20; padding: 9px 16px; color: #fff; background: #b45309; font-size: 13px; text-align: center; }
 .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px 14px; background: rgba(244, 248, 252, .92); backdrop-filter: blur(18px); }

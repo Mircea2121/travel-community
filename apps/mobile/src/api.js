@@ -77,6 +77,22 @@ export function login({ email, password, turnstileToken }) {
   });
 }
 
+export function register({ name, username, email, password, turnstileToken }) {
+  return apiRequest("/api/auth/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, username, email, password, turnstileToken }),
+  });
+}
+
+export function requestPasswordReset({ email, turnstileToken }) {
+  return apiRequest("/api/auth/forgot-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, turnstileToken }),
+  });
+}
+
 export function logout() {
   return apiRequest("/api/auth/logout", {
     method: "POST",
