@@ -98,4 +98,26 @@ export function logout() {
     method: "POST",
   });
 }
+
+export function setPostLike(postId, liked) {
+  return apiRequest(`/api/posts/${postId}/like`, {
+    method: liked ? "DELETE" : "POST",
+  });
+}
+
+export function toggleSavedPost(postId) {
+  return apiRequest(`/api/posts/${postId}/save`, { method: "POST" });
+}
+
+export function getComments(postId) {
+  return apiRequest(`/api/posts/${postId}/comments?skip=0&limit=30`);
+}
+
+export function addComment(postId, content) {
+  return apiRequest(`/api/posts/${postId}/comments`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content }),
+  });
+}
 import { Capacitor, CapacitorHttp } from "@capacitor/core";

@@ -7,6 +7,7 @@ import { Share } from "@capacitor/share";
 import {
   Bell,
   ArrowLeft,
+  Bookmark,
   CheckCircle2,
   Compass,
   Eye,
@@ -25,6 +26,7 @@ import {
   Send,
   UserRound,
   UserPlus,
+  X,
 } from "lucide-react";
 
 import {
@@ -35,6 +37,10 @@ import {
   logout,
   register,
   requestPasswordReset,
+  setPostLike,
+  toggleSavedPost,
+  getComments,
+  addComment,
 } from "./api";
 import Turnstile from "./Turnstile";
 
@@ -173,10 +179,40 @@ function Field({ label, type = "text", value, onChange, ...props }) { return <la
 function PasswordField({ label, value, onChange, show, onToggle, autoComplete }) { return <label className="mobile-field"><span>{label}</span><div className="plain-password"><input type={show ? "text" : "password"} value={value} onChange={(event) => onChange(event.target.value)} autoComplete={autoComplete} placeholder="Introdu parola" /><button type="button" onClick={onToggle} aria-label={show ? "Ascunde parola" : "Arată parola"}>{show ? <EyeOff /> : <Eye />}</button></div></label>; }
 function AuthResult({ icon, title, message, action, onAction }) { return <main className="auth-result"><div className="result-icon">{icon}</div><h1>{title}</h1><p>{message}</p><button className="login-button" onClick={onAction}>{action}</button></main>; }
 
-function PostCard({ post }) {
+function PostCard({ post, isAuthenticated, onRequireAuth, onUpdate, onOpenComments }) {
   const image = post.images?.[0];
   const imageUrl = typeof image === "string" ? image : image?.url;
   const authorName = post.author?.name || post.name || post.username || "Călător";
+  const postId = post.id || post._id;
+  const [busyAction, setBusyAction] = useState("");
+  const [actionError, setActionError] = useState("");
+
+  const requireAccount = () => {
+    if (isAuthenticated) return true;
+    onRequireAuth();
+    return false;
+  };
+
+  const toggleLike = async () => {
+    if (!requireAccount() || busyAction) return;
+    setActionError("");
+    setBusyAction("like");
+    try {
+      const payload = await setPostLike(postId, post.isLiked);
+      onUpdate(postId, { isLiked: payload.liked, likesCount: payload.likesCount });
+      if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
+    } catch (error) { setActionError(error.message); } finally { setBusyAction(""); }
+  };
+
+  const toggleSave = async () => {
+    if (!requireAccount() || busyAction) return;
+    setActionError("");
+    setBusyAction("save");
+    try {
+      const payload = await toggleSavedPost(postId);
+      onUpdate(postId, { isSaved: payload.isSaved, savesCount: payload.savesCount });
+    } catch (error) { setActionError(error.message); } finally { setBusyAction(""); }
+  };
 
   const sharePost = async () => {
     const url = `${API_BASE_URL || window.location.origin}/posts/${post.id || post._id}`;
@@ -192,19 +228,28 @@ function PostCard({ post }) {
       <header className="post-author">
         <div className="avatar">{authorName.slice(0, 1).toUpperCase()}</div>
         <div><strong>{authorName}</strong><span><MapPin size={13} /> {post.destination || post.country || "În călătorie"}</span></div>
-        <button className="quiet-button" aria-label="Trimite postarea" onClick={sharePost}><Send size={20} /></button>
+        <div className="card-tools"><button className={`quiet-button ${post.isSaved ? "selected" : ""}`} aria-label={post.isSaved ? "Elimină din salvate" : "Salvează postarea"} onClick={toggleSave} disabled={Boolean(busyAction)}><Bookmark size={20} fill={post.isSaved ? "currentColor" : "none"} /></button><button className="quiet-button" aria-label="Trimite postarea" onClick={sharePost}><Send size={20} /></button></div>
       </header>
       {imageUrl ? <img className="post-image" src={imageUrl} alt={post.title || "Experiență de călătorie"} /> : <div className="post-image placeholder"><ImagePlus size={34} /></div>}
       <div className="post-content">
         <h2>{post.title || post.destination || "Experiență nouă"}</h2>
         <p>{post.description}</p>
         <div className="post-actions">
-          <span><Heart size={19} /> {post.likesCount || 0}</span>
-          <span><MessageCircle size={19} /> {post.commentsCount || 0}</span>
+          <button className={post.isLiked ? "selected" : ""} onClick={toggleLike} disabled={Boolean(busyAction)}><Heart size={19} fill={post.isLiked ? "currentColor" : "none"} /> {post.likesCount || 0}</button>
+          <button onClick={() => onOpenComments(post)}><MessageCircle size={19} /> {post.commentsCount || 0}</button>
         </div>
+        {actionError && <p className="card-error" role="alert">{actionError}</p>}
       </div>
     </article>
   );
+}
+
+function CommentsSheet({ post, isAuthenticated, onRequireAuth, onClose, onCommentAdded }) {
+  const postId = post.id || post._id;
+  const [comments, setComments] = useState([]); const [status, setStatus] = useState("loading"); const [content, setContent] = useState(""); const [error, setError] = useState(""); const [submitting, setSubmitting] = useState(false);
+  useEffect(() => { getComments(postId).then((payload) => { setComments(payload.comments || []); setStatus("ready"); }).catch((requestError) => { setError(requestError.message); setStatus("error"); }); }, [postId]);
+  const submit = async (event) => { event.preventDefault(); if (!isAuthenticated) { onClose(); onRequireAuth(); return; } const normalized = content.trim(); if (!normalized || submitting) return; setSubmitting(true); setError(""); try { const payload = await addComment(postId, normalized); setComments((current) => [payload.comment, ...current]); setContent(""); onCommentAdded(postId, payload.commentsCount); } catch (requestError) { setError(requestError.message); } finally { setSubmitting(false); } };
+  return <div className="sheet-backdrop" onClick={onClose}><section className="comments-sheet" onClick={(event) => event.stopPropagation()}><header><div><span>COMENTARII</span><h2>{post.title || post.destination}</h2></div><button onClick={onClose} aria-label="Închide"><X /></button></header><form className="comment-form" onSubmit={submit}><input value={content} onChange={(event) => setContent(event.target.value)} maxLength={1500} placeholder={isAuthenticated ? "Scrie un comentariu…" : "Autentifică-te pentru a comenta"} readOnly={!isAuthenticated} onFocus={() => { if (!isAuthenticated) { onClose(); onRequireAuth(); } }} /><button disabled={!content.trim() || submitting}><Send size={19} /></button></form>{error && <p className="form-error">{error}</p>}<div className="comments-list">{status === "loading" && <p>Încărcăm comentariile…</p>}{status === "ready" && comments.length === 0 && <p>Fii primul care lasă un comentariu.</p>}{comments.map((comment) => <article key={comment._id}><div className="avatar small-avatar">{(comment.name || comment.username || "C").slice(0, 1).toUpperCase()}</div><div><strong>{comment.name || comment.username || "Călător"}</strong><p>{comment.content}</p></div></article>)}</div></section></div>;
 }
 
 export default function App() {
@@ -216,6 +261,7 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [guestMode, setGuestMode] = useState(false);
   const [authView, setAuthView] = useState("login");
+  const [commentsPost, setCommentsPost] = useState(null);
 
   const loadFeed = useCallback(async () => {
     setStatus("loading");
@@ -298,6 +344,13 @@ export default function App() {
     setActiveTab("home");
   };
 
+  const requireAuthentication = () => {
+    setGuestMode(false);
+    setAuthView("login");
+  };
+
+  const updatePost = (postId, changes) => setPosts((current) => current.map((post) => (post.id || post._id) === postId ? { ...post, ...changes } : post));
+
   if (sessionStatus === "loading") {
     return <div className="launch-screen"><div className="brand-mark">CC</div><p>Comunitatea Călătorilor</p></div>;
   }
@@ -323,7 +376,7 @@ export default function App() {
           {status === "loading" && <div className="state-card">Încărcăm experiențele…</div>}
           {status === "error" && <div className="state-card"><p>Feedul nu este disponibil momentan.</p><button onClick={loadFeed}>Încearcă din nou</button></div>}
           {status === "ready" && posts.length === 0 && <div className="state-card">Prima experiență poate fi a ta.</div>}
-          {posts.map((post) => <PostCard key={post.id || post._id} post={post} />)}
+          {posts.map((post) => <PostCard key={post.id || post._id} post={post} isAuthenticated={Boolean(currentUser)} onRequireAuth={requireAuthentication} onUpdate={updatePost} onOpenComments={setCommentsPost} />)}
         </>}
         {activeTab === "profile" && <section className="profile-card"><div className="profile-avatar">{(currentUser?.name || "Vizitator").slice(0, 1).toUpperCase()}</div><h2>{currentUser?.name || "Mod vizitator"}</h2><p>{currentUser?.email || "Conectează-te pentru acces la profil și postări salvate."}</p>{currentUser ? <button onClick={handleLogout}><LogOut size={18} /> Deconectează-te</button> : <button onClick={() => setGuestMode(false)}><LogIn size={18} /> Autentifică-te</button>}</section>}
         {activeTab !== "home" && activeTab !== "profile" && <section className="coming-soon"><div className="coming-icon">{activeTab === "create" ? <Plus /> : activeTab === "messages" ? <MessageCircle /> : <Compass />}</div><h2>{tabs.find((tab) => tab.id === activeTab)?.label}</h2><p>Construim această secțiune ca experiență mobilă dedicată.</p></section>}
@@ -332,6 +385,7 @@ export default function App() {
       <nav className="tab-bar" aria-label="Navigare principală">
         {tabs.map((tab) => { const Icon = tab.icon; return <button key={tab.id} className={`${activeTab === tab.id ? "active" : ""} ${tab.primary ? "primary" : ""}`} onClick={() => selectTab(tab)}><span><Icon size={tab.primary ? 27 : 22} /></span><small>{tab.label}</small></button>; })}
       </nav>
+      {commentsPost && <CommentsSheet post={commentsPost} isAuthenticated={Boolean(currentUser)} onRequireAuth={requireAuthentication} onClose={() => setCommentsPost(null)} onCommentAdded={(postId, commentsCount) => updatePost(postId, { commentsCount })} />}
     </div>
   );
 }
