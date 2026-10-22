@@ -1,4 +1,6 @@
 "use client";
+import Link from "next/link";
+
 
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -30,6 +32,7 @@ const NUMBER_FORMATTER = new Intl.NumberFormat("ro-RO", {
 });
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("ro-RO", {
+  timeZone: "Europe/Bucharest",
   day: "numeric",
   month: "short",
   year: "numeric",
@@ -165,11 +168,9 @@ export default function ExperienceCard({
         readOnly ? "experience-card-read-only" : ""
       }`}
     >
-      <button
-        type="button"
-        className="experience-card-media"
-        onClick={openPost}
-        aria-label={`Deschide experiența ${post?.title || "de călătorie"}`}
+      <Link
+        href={postId ? `/posts/${postId}` : "/blog"} prefetch={false} className="experience-card-media"
+        title={`Deschide experiența ${post?.title || "de călătorie"}`}
       >
         {imageUrl ? (
           <Image
@@ -201,7 +202,7 @@ export default function ExperienceCard({
             <strong>{cost}</strong>
           </span>
         )}
-      </button>
+      </Link>
 
       <div className="experience-card-body">
         <div className="experience-card-author-row">
@@ -210,13 +211,9 @@ export default function ExperienceCard({
             className="experience-card-author"
             onClick={openProfile}
             disabled={!author.username}
-            aria-label={
-              author.username
-                ? `Deschide profilul ${author.name}`
-                : undefined
-            }
+            title={author.username ? `Deschide profilul ${author.name}` : undefined}
           >
-            <span className="experience-card-avatar">
+            <span className="experience-card-avatar" aria-hidden="true">
               {author.avatar ? (
                 <Image
                   src={author.avatar}
@@ -284,13 +281,11 @@ export default function ExperienceCard({
           )}
         </div>
 
-        <button
-          type="button"
-          className="experience-card-title"
-          onClick={openPost}
+        <Link
+          href={postId ? `/posts/${postId}` : "/blog"} prefetch={false} className="experience-card-title"
         >
           {post?.title || "Experiență de călătorie"}
-        </button>
+        </Link>
 
         <p className="experience-card-description">
           {post?.description ||
@@ -319,8 +314,8 @@ export default function ExperienceCard({
                 disabled={isLikePending || !postId}
                 aria-label={
                   post?.isLiked
-                    ? "Retrage aprecierea"
-                    : "Apreciază postarea"
+                    ? `Retrage aprecierea: ${likesCount}`
+                    : `Apreciază postarea: ${likesCount}`
                 }
                 aria-pressed={Boolean(post?.isLiked)}
               >
@@ -337,7 +332,7 @@ export default function ExperienceCard({
             <button
               type="button"
               onClick={openPost}
-              aria-label="Vezi comentariile"
+              aria-label={`Vezi comentariile: ${commentsCount}`}
             >
               <MessageCircle
                 size={17}
@@ -356,14 +351,12 @@ export default function ExperienceCard({
             </span>
           </div>
 
-          <button
-            type="button"
-            className="experience-card-open"
-            onClick={openPost}
+          <Link
+            href={postId ? `/posts/${postId}` : "/blog"} prefetch={false} className="experience-card-open"
           >
             Citește
             <ArrowUpRight size={17} strokeWidth={2.2} aria-hidden="true" />
-          </button>
+          </Link>
         </div>
       </div>
     </article>

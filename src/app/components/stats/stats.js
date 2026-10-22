@@ -35,8 +35,8 @@ export default function Stats() {
   const stats = [
     { value: data.stats.activeMembers, label: "Membri activi acum" },
     { value: data.stats.accountsCreated, label: "Conturi create" },
-    { value: data.stats.postsPublished, label: "Postari publicate" },
-    { value: data.stats.countriesCount, label: "Tari diferite" },
+    { value: data.stats.postsPublished, label: "Postări publicate" },
+    { value: data.stats.countriesCount, label: "Țări diferite" },
   ];
 
   useEffect(() => {

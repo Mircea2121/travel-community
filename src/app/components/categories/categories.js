@@ -1,4 +1,4 @@
-/* eslint-disable @next/next/no-img-element -- Imagine editorială externă cu dimensiune controlată integral prin cardul responsive. */
+import Image from "next/image";
 import { DISCOVERY_CATEGORY_GROUPS } from "@/app/utils/discovery";
 import RememberScrollLink from "@/app/components/discovery/rememberScrollLink";
 import "./categories.css";
@@ -16,20 +16,20 @@ export default function Categories() {
     <section className="categories-section" id="categories">
       <div className="categories-header">
         <span>Categorii populare</span>
-        <h2>Alege ce fel de vacanta cauti</h2>
-        <p>Exploreaza recomandari reale de la comunitate, organizate pe stilul tau de calatorie.</p>
+        <h2>Alege ce fel de vacanță cauți</h2>
+        <p>Explorează recomandări reale de la comunitate, organizate pe stilul tău de călătorie.</p>
       </div>
       <div className="categories-grid">
         {DISCOVERY_CATEGORY_GROUPS.map((item) => (
           <article className="category-card" key={item.slug}>
-            <div className="category-image"><img src={IMAGES[item.slug]} alt="" loading="lazy" /></div>
+            <div className="category-image"><Image src={IMAGES[item.slug]} alt="" fill sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, (max-width: 1300px) 33vw, 20vw" loading="lazy" /></div>
             <h3>{item.title}</h3>
             <p>{item.description}</p>
             <RememberScrollLink
               className="category-card-link"
               href={`/discover/categories/${item.slug}`}
             >
-              Vezi recomandari
+              Vezi recomandări
             </RememberScrollLink>
           </article>
         ))}

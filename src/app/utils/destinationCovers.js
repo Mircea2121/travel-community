@@ -33,7 +33,7 @@ const DESTINATION_COVERS = {
   islanda:
     "https://images.unsplash.com/photo-1504829857797-ddff29c27927?auto=format&fit=crop&w=1200&q=82",
   egipt:
-    "https://images.unsplash.com/photo-1539650116574-75c0c6d73f6e?auto=format&fit=crop&w=1200&q=82",
+    "/images/egypt-cover.webp",
   maroc:
     "https://images.unsplash.com/photo-1489749798305-4fea3ae63d43?auto=format&fit=crop&w=1200&q=82",
   indonezia:

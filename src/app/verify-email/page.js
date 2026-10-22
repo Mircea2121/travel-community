@@ -2,12 +2,12 @@
 
 import "../auth/auth.css";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, LoaderCircle, XCircle } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token")?.trim() || "";
   const requestedTokenRef = useRef(null);
@@ -88,4 +88,8 @@ export default function VerifyEmailPage() {
       </section>
     </main>
   );
+}
+
+export default function VerifyEmailPage() {
+  return <Suspense fallback={<div className="auth-page" role="status">Verificăm adresa de email...</div>}><VerifyEmailContent /></Suspense>;
 }

@@ -1,4 +1,16 @@
-# Pachet de consolidare pentru producție
+# Comunitatea Călătorilor
+
+Aplicația web și aplicația mobilă ale comunității de călători.
+
+Sursele live, optimizările și documentația au fost reunite în
+[snapshot-ul din 23 octombrie 2026](GITHUB-SNAPSHOT-2026-10-23.md).
+Acesta este punctul de plecare pentru continuarea dezvoltării și publicările
+viitoare. Fișierele reale de configurare și secretele rămân în afara Git.
+
+## Documentația inițială de consolidare
+
+Secțiunile următoare descriu pachetul inițial de consolidare, nu o procedură de
+republicare a versiunii live actuale. Nu repeta migrațiile doar pentru un deploy.
 
 Acest director conține numai fișiere noi sau fișiere care trebuie înlocuite în proiectul `travel-community`.
 

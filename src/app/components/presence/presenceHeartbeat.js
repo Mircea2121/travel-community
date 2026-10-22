@@ -1,12 +1,16 @@
 "use client";
 
+import { useSession } from "../auth/sessionProvider";
 import { useEffect } from "react";
 import { PRESENCE_HEARTBEAT_INTERVAL_MS } from "@/app/utils/presence";
 
 export const PRESENCE_UPDATED_EVENT = "community:presence-updated";
 
 export default function PresenceHeartbeat() {
+  const { user, setUser } = useSession();
+  const userId = user?.id;
   useEffect(() => {
+    if (!userId) return;
     let isActive = true;
     let requestInProgress = false;
 
@@ -28,6 +32,12 @@ export default function PresenceHeartbeat() {
           cache: "no-store",
         });
 
+        if (!isActive) return;
+        if (response.status === 401) {
+          isActive = false;
+          setUser(null);
+          return;
+        }
         if (response.ok) {
           window.dispatchEvent(new Event(PRESENCE_UPDATED_EVENT));
         }
@@ -58,7 +68,7 @@ export default function PresenceHeartbeat() {
       window.clearInterval(intervalId);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, []);
+  }, [userId, setUser]);
 
   return null;
 }

@@ -188,9 +188,7 @@ export default function PostActions({
         }
         aria-pressed={isLiked}
         aria-label={
-          isLiked
-            ? "Elimină aprecierea"
-            : "Apreciază postarea"
+          (isLikeLoading ? "Se actualizează..." : isLiked ? "Apreciat" : "Apreciază") + " " + normalizedLikesCount + (isLiked ? ". Elimină aprecierea" : ". Apreciază postarea")
         }
       >
         <Heart
@@ -229,8 +227,8 @@ export default function PostActions({
         }
         aria-pressed={isSaved}
         aria-label={
-          isSaved
-            ? "Elimină postarea din salvate"
+          isSaveLoading ? "Se actualizează..." : isSaved
+            ? "Salvată. Elimină postarea din salvate"
             : "Salvează postarea"
         }
       >
@@ -261,7 +259,7 @@ export default function PostActions({
             : "post-action-button post-action-share"
         }
         onClick={handleShare}
-        aria-label="Distribuie postarea"
+        aria-label={isLinkCopied ? "Link copiat" : "Distribuie postarea"}
       >
         {isLinkCopied ? (
           <Check

@@ -5,13 +5,16 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import "./postGallery.css";
+import Image from "next/image";
 import { createPortal } from "react-dom";
 
 import {
   ChevronLeft,
+  Maximize2,
   ChevronRight,
   X,
 } from "lucide-react";
@@ -58,6 +61,10 @@ export default function PostGallery({
     setIsMounted,
   ] = useState(false);
 
+  const galleryTriggerRef = useRef(null);
+  const fullscreenCloseRef = useRef(null);
+  const fullscreenDialogRef = useRef(null);
+
   const totalImages =
     validImages.length;
 
@@ -87,7 +94,17 @@ export default function PostGallery({
       return undefined;
     }
 
+    const previousFocus = document.activeElement;
+    fullscreenCloseRef.current?.focus();
     function handleKeyDown(event) {
+      if (event.key === "Tab") {
+        const buttons=fullscreenDialogRef.current?.querySelectorAll("button:not(:disabled)");
+        if(buttons?.length) {
+          const first=buttons[0], last=buttons[buttons.length-1];
+          if(event.shiftKey && document.activeElement===first){event.preventDefault();last.focus();}
+          else if(!event.shiftKey && document.activeElement===last){event.preventDefault();first.focus();}
+        }
+      }
       if (event.key === "Escape") {
         setIsFullscreenOpen(false);
       }
@@ -137,6 +154,7 @@ export default function PostGallery({
 
       document.body.style.overflow =
         previousOverflow;
+      if(previousFocus?.isConnected) previousFocus.focus();
     };
   }, [
     isFullscreenOpen,
@@ -196,6 +214,7 @@ export default function PostGallery({
 
   const fullscreenContent = (
     <div
+      ref={fullscreenDialogRef}
       className="post-gallery-fullscreen"
       role="dialog"
       aria-modal="true"
@@ -206,6 +225,7 @@ export default function PostGallery({
     >
       <button
         type="button"
+        ref={fullscreenCloseRef}
         className="post-gallery-fullscreen-close"
         onClick={closeFullscreen}
         aria-label="Închide galeria"
@@ -268,10 +288,14 @@ export default function PostGallery({
       <div className="post-gallery">
         <button
           type="button"
+          ref={galleryTriggerRef}
           className="post-gallery-image-button"
           onClick={openFullscreen}
-          aria-label="Deschide imaginea pe tot ecranul"
+          aria-label="Vezi fotografia pe tot ecranul"
         >
+          {currentImage.url.startsWith("https://res.cloudinary.com/") ? (
+            <Image key={currentImage.key} src={currentImage.url} alt={title+" - poza "+(currentIndex+1)} fill sizes="(max-width: 760px) calc(100vw - 28px), (max-width: 1176px) calc(100vw - 56px), 1120px" quality={75} preload={currentIndex === 0} className="post-details-image" />
+          ) : (
           <img
             key={currentImage.key}
             src={currentImage.url}
@@ -280,6 +304,9 @@ export default function PostGallery({
             }`}
             className="post-details-image"
           />
+
+          )}
+          <span className="post-gallery-expand-label" aria-hidden="true"><Maximize2 size={14} /> Vezi fotografia</span>
         </button>
 
         {totalImages > 1 && (

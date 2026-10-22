@@ -5,13 +5,14 @@ import {
   useEffect,
   useState,
 } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   ArrowRight,
   RefreshCw,
   TrendingUp,
 } from "lucide-react";
 
+import Image from "next/image";
 import ExperienceCard from "../experienceCard/experienceCard";
 import "./feed.css";
 
@@ -33,10 +34,9 @@ function getPostId(post) {
   return String(post?._id || post?.id || "");
 }
 
-export default function Feed() {
-  const router = useRouter();
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function Feed({ initialPosts = null }) {
+  const [posts, setPosts] = useState(initialPosts || []);
+  const [loading, setLoading] = useState(!initialPosts);
   const [error, setError] = useState("");
 
   const loadPopularPosts = useCallback(async (signal) => {
@@ -83,6 +83,7 @@ export default function Feed() {
   }, []);
 
   useEffect(() => {
+    if (initialPosts) return;
     const controller = new AbortController();
     const loadTimer = window.setTimeout(() => {
       loadPopularPosts(controller.signal);
@@ -92,15 +93,12 @@ export default function Feed() {
       window.clearTimeout(loadTimer);
       controller.abort();
     };
-  }, [loadPopularPosts]);
+  }, [loadPopularPosts, initialPosts]);
 
   function retryLoading() {
     loadPopularPosts();
   }
 
-  function goToBlog() {
-    router.push("/blog");
-  }
 
   return (
     <section className="feed-section" id="reviews">
@@ -197,6 +195,7 @@ export default function Feed() {
       )}
 
       <div className="feed-blog-cta">
+        <Image className="feed-cta-background" src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=75" alt="" fill sizes="(max-width: 1120px) 100vw, 1180px" loading="lazy" />
         <div>
           <span>Mai sunt multe de descoperit</span>
 
@@ -208,14 +207,14 @@ export default function Feed() {
           </p>
         </div>
 
-        <button type="button" onClick={goToBlog}>
+        <Link href="/blog" className="feed-blog-link">
           Vezi toate postările
           <ArrowRight
             size={19}
             strokeWidth={2.3}
             aria-hidden="true"
           />
-        </button>
+        </Link>
       </div>
     </section>
   );

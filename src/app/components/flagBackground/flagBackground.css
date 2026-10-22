@@ -1,6 +1,8 @@
 .flag-background {
+  --flag-field-height: 6000px;
   position: absolute;
   inset: 0;
+  contain: strict;
   z-index: 0;
 
   overflow: hidden;
@@ -61,282 +63,282 @@
 /* RÂNDUL DE SUS */
 
 .flag-background-item-1 {
-  top: 3%;
+  top: calc(var(--flag-field-height) * 0.03);
   left: 2%;
 }
 
 .flag-background-item-2 {
-  top: 7%;
+  top: calc(var(--flag-field-height) * 0.07);
   left: 10%;
 }
 
 .flag-background-item-3 {
-  top: 2%;
+  top: calc(var(--flag-field-height) * 0.02);
   left: 19%;
 }
 
 .flag-background-item-4 {
-  top: 10%;
+  top: calc(var(--flag-field-height) * 0.1);
   left: 28%;
 }
 
 .flag-background-item-5 {
-  top: 4%;
+  top: calc(var(--flag-field-height) * 0.04);
   left: 38%;
 }
 
 .flag-background-item-6 {
-  top: 8%;
+  top: calc(var(--flag-field-height) * 0.08);
   left: 48%;
 }
 
 .flag-background-item-7 {
-  top: 3%;
+  top: calc(var(--flag-field-height) * 0.03);
   right: 39%;
 }
 
 .flag-background-item-8 {
-  top: 11%;
+  top: calc(var(--flag-field-height) * 0.11);
   right: 29%;
 }
 
 .flag-background-item-9 {
-  top: 4%;
+  top: calc(var(--flag-field-height) * 0.04);
   right: 20%;
 }
 
 .flag-background-item-10 {
-  top: 9%;
+  top: calc(var(--flag-field-height) * 0.09);
   right: 11%;
 }
 
 .flag-background-item-11 {
-  top: 3%;
+  top: calc(var(--flag-field-height) * 0.03);
   right: 2%;
 }
 
 /* ZONA DE SUS-MIJLOC */
 
 .flag-background-item-12 {
-  top: 20%;
+  top: calc(var(--flag-field-height) * 0.2);
   left: 5%;
 }
 
 .flag-background-item-13 {
-  top: 25%;
+  top: calc(var(--flag-field-height) * 0.25);
   left: 15%;
 }
 
 .flag-background-item-14 {
-  top: 19%;
+  top: calc(var(--flag-field-height) * 0.19);
   left: 25%;
 }
 
 .flag-background-item-15 {
-  top: 28%;
+  top: calc(var(--flag-field-height) * 0.28);
   left: 35%;
 }
 
 .flag-background-item-16 {
-  top: 21%;
+  top: calc(var(--flag-field-height) * 0.21);
   left: 45%;
 }
 
 .flag-background-item-17 {
-  top: 27%;
+  top: calc(var(--flag-field-height) * 0.27);
   right: 43%;
 }
 
 .flag-background-item-18 {
-  top: 19%;
+  top: calc(var(--flag-field-height) * 0.19);
   right: 33%;
 }
 
 .flag-background-item-19 {
-  top: 26%;
+  top: calc(var(--flag-field-height) * 0.26);
   right: 23%;
 }
 
 .flag-background-item-20 {
-  top: 20%;
+  top: calc(var(--flag-field-height) * 0.2);
   right: 13%;
 }
 
 .flag-background-item-21 {
-  top: 28%;
+  top: calc(var(--flag-field-height) * 0.28);
   right: 4%;
 }
 
 /* ZONA CENTRALĂ */
 
 .flag-background-item-22 {
-  top: 39%;
+  top: calc(var(--flag-field-height) * 0.39);
   left: 2%;
 }
 
 .flag-background-item-23 {
-  top: 46%;
+  top: calc(var(--flag-field-height) * 0.46);
   left: 11%;
 }
 
 .flag-background-item-24 {
-  top: 38%;
+  top: calc(var(--flag-field-height) * 0.38);
   left: 21%;
 }
 
 .flag-background-item-25 {
-  top: 48%;
+  top: calc(var(--flag-field-height) * 0.48);
   left: 31%;
 }
 
 .flag-background-item-26 {
-  top: 40%;
+  top: calc(var(--flag-field-height) * 0.4);
   left: 41%;
 }
 
 .flag-background-item-27 {
-  top: 47%;
+  top: calc(var(--flag-field-height) * 0.47);
   left: 51%;
 }
 
 .flag-background-item-28 {
-  top: 38%;
+  top: calc(var(--flag-field-height) * 0.38);
   right: 38%;
 }
 
 .flag-background-item-29 {
-  top: 48%;
+  top: calc(var(--flag-field-height) * 0.48);
   right: 28%;
 }
 
 .flag-background-item-30 {
-  top: 39%;
+  top: calc(var(--flag-field-height) * 0.39);
   right: 18%;
 }
 
 .flag-background-item-31 {
-  top: 47%;
+  top: calc(var(--flag-field-height) * 0.47);
   right: 8%;
 }
 
 .flag-background-item-32 {
-  top: 38%;
+  top: calc(var(--flag-field-height) * 0.38);
   right: 1%;
 }
 
 /* ZONA DINTRE DESTINAȚII ȘI RECOMANDĂRI */
 
 .flag-background-item-33 {
-  top: 52%;
+  top: calc(var(--flag-field-height) * 0.52);
   left: 4%;
 }
 
 .flag-background-item-34 {
-  top: 58%;
+  top: calc(var(--flag-field-height) * 0.58);
   left: 13%;
 }
 
 .flag-background-item-35 {
-  top: 53%;
+  top: calc(var(--flag-field-height) * 0.53);
   left: 24%;
 }
 
 .flag-background-item-36 {
-  top: 59%;
+  top: calc(var(--flag-field-height) * 0.59);
   left: 35%;
 }
 
 .flag-background-item-37 {
-  top: 52%;
+  top: calc(var(--flag-field-height) * 0.52);
   left: 46%;
 }
 
 .flag-background-item-38 {
-  top: 59%;
+  top: calc(var(--flag-field-height) * 0.59);
   right: 44%;
 }
 
 .flag-background-item-39 {
-  top: 53%;
+  top: calc(var(--flag-field-height) * 0.53);
   right: 33%;
 }
 
 .flag-background-item-40 {
-  top: 59%;
+  top: calc(var(--flag-field-height) * 0.59);
   right: 22%;
 }
 
 .flag-background-item-41 {
-  top: 52%;
+  top: calc(var(--flag-field-height) * 0.52);
   right: 11%;
 }
 
 .flag-background-item-42 {
-  top: 58%;
+  top: calc(var(--flag-field-height) * 0.58);
   right: 3%;
 }
 
 /* JOS */
 
 .flag-background-item-43 {
-  top: 66%;
+  top: calc(var(--flag-field-height) * 0.66);
   left: 6%;
 }
 
 .flag-background-item-44 {
-  top: 73%;
+  top: calc(var(--flag-field-height) * 0.73);
   left: 19%;
 }
 
 .flag-background-item-45 {
-  top: 67%;
+  top: calc(var(--flag-field-height) * 0.67);
   left: 34%;
 }
 
 .flag-background-item-46 {
-  top: 74%;
+  top: calc(var(--flag-field-height) * 0.74);
   left: 50%;
 }
 
 .flag-background-item-47 {
-  top: 68%;
+  top: calc(var(--flag-field-height) * 0.68);
   right: 27%;
 }
 
 .flag-background-item-48 {
-  top: 74%;
+  top: calc(var(--flag-field-height) * 0.74);
   right: 7%;
 }
 
 /* RÂNDUL DE JOS */
 
 .flag-background-item-43 {
-  top: 82%;
+  top: calc(var(--flag-field-height) * 0.82);
   left: 3%;
 }
 
 .flag-background-item-44 {
-  top: 86%;
+  top: calc(var(--flag-field-height) * 0.86);
   left: 18%;
 }
 
 .flag-background-item-45 {
-  top: 80%;
+  top: calc(var(--flag-field-height) * 0.8);
   left: 34%;
 }
 
 .flag-background-item-46 {
-  top: 87%;
+  top: calc(var(--flag-field-height) * 0.87);
   left: 50%;
 }
 
 .flag-background-item-47 {
-  top: 81%;
+  top: calc(var(--flag-field-height) * 0.81);
   right: 28%;
 }
 
 .flag-background-item-48 {
-  top: 86%;
+  top: calc(var(--flag-field-height) * 0.86);
   right: 8%;
 }
 
@@ -435,3 +437,5 @@
     display: none;
   }
 }
+@media (max-width: 1100px) { .flag-background { --flag-field-height: 8000px; } }
+@media (max-width: 600px) { .flag-background { --flag-field-height: 11000px; } }

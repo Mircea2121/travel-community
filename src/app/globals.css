@@ -48,3 +48,14 @@ a {
   position: relative;
   z-index: 1;
 }
+
+/* Consistent, quieter surfaces on the public homepage. */
+.home-page { background: radial-gradient(circle at top left, rgba(125,211,252,.16), transparent 34%), linear-gradient(135deg,#f5fbff,#fff 60%,#fffdf8); }
+.home-page :is(.stat-card,.category-card,.destination-card) { background: #fff; border-color: #e2e8f0; border-radius: 22px; box-shadow: 0 6px 20px rgba(15,23,42,.045); }
+.home-page .feed-list .experience-card { border-color: #e2e8f0; border-radius: 22px; box-shadow: 0 6px 20px rgba(15,23,42,.045); }
+.home-page .feed-list .experience-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(15,23,42,.07); }
+.home-page .destination-rank { box-shadow: none; background: #fff; }
+.home-page .feed-section { background: linear-gradient(180deg,#f7fbff,#fff); }
+@media (max-width: 560px) { .home-page .stat-card { border-radius: 18px; } }
+
+.home-page .destination-rank { color: #0369a1; }

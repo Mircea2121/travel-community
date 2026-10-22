@@ -16,12 +16,12 @@ async function readJson(response) {
   return response.json();
 }
 
-export default function DiscoveryListing({ mode, value, title, description }) {
+export default function DiscoveryListing({ mode, value, title, description, initialData = null }) {
   const router = useRouter();
-  const [posts, setPosts] = useState([]);
-  const [cursor, setCursor] = useState(null);
-  const [hasMore, setHasMore] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [posts, setPosts] = useState(initialData?.posts || []);
+  const [cursor, setCursor] = useState(initialData?.pagination?.nextCursor || null);
+  const [hasMore, setHasMore] = useState(Boolean(initialData?.pagination?.hasMore));
+  const [isLoading, setIsLoading] = useState(!initialData);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState("");
 
@@ -49,12 +49,13 @@ export default function DiscoveryListing({ mode, value, title, description }) {
   }, [mode, value]);
 
   useEffect(() => {
+    if (initialData) return;
     const loadTimer = window.setTimeout(() => {
       loadPosts();
     }, 0);
 
     return () => window.clearTimeout(loadTimer);
-  }, [loadPosts]);
+  }, [loadPosts, initialData]);
 
   function handleBack() {
     const fallbackHref = mode === "category" ? "/#categories" : "/#destinations";
@@ -86,43 +87,43 @@ export default function DiscoveryListing({ mode, value, title, description }) {
   }
 
   return (
-    <main className="discovery-page">
+    <div className="discovery-page">
       <header className="discovery-page-header">
         <button type="button" className="discovery-back" onClick={handleBack}>
           <ArrowLeft size={20} aria-hidden="true" />
-          <span>Inapoi</span>
+          <span>Înapoi</span>
         </button>
 
         <div className="discovery-page-heading">
-          <span>Recomandari din comunitate</span>
+          <span>Recomandări din comunitate</span>
           <h1>{title}</h1>
           <p>{description}</p>
         </div>
       </header>
 
       {isLoading ? (
-        <div className="discovery-state">Se incarca experientele...</div>
+        <div className="discovery-state">Se încarcă experiențele...</div>
       ) : error ? (
         <div className="discovery-state discovery-state-error">
           <p>{error}</p>
-          <button type="button" onClick={() => loadPosts()}><RefreshCw size={18} /> Incearca din nou</button>
+          <button type="button" onClick={() => loadPosts()}><RefreshCw size={18} /> Încearcă din nou</button>
         </div>
       ) : posts.length === 0 ? (
-        <div className="discovery-state">Nu exista inca experiente in aceasta sectiune.</div>
+        <div className="discovery-state">Nu există încă experiențe în această secțiune.</div>
       ) : (
         <>
-          <section className="discovery-posts-grid" aria-label={`Experiente: ${title}`}>
+          <section className="discovery-posts-grid" aria-label={`Experiențe: ${title}`}>
             {posts.map((post) => <ExperienceCard key={post.id} post={post} variant="compact" readOnly />)}
           </section>
           {hasMore && (
             <div className="discovery-load-more">
               <button type="button" disabled={isLoadingMore} onClick={() => loadPosts({ nextCursor: cursor, append: true })}>
-                {isLoadingMore ? "Se incarca..." : "Incarca mai multe"}
+                {isLoadingMore ? "Se încarcă..." : "Încarcă mai multe"}
               </button>
             </div>
           )}
         </>
       )}
-    </main>
+    </div>
   );
 }

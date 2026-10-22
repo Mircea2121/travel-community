@@ -3,6 +3,9 @@
 /* eslint-disable @next/next/no-img-element -- Avatar dinamic cu sursă furnizată de utilizator și dimensiune CSS fixă. */
 
 import "./hero.css";
+import Image from "next/image";
+import Link from "next/link";
+import { useSession } from "../auth/sessionProvider";
 
 import {
   MapPinned,
@@ -17,6 +20,17 @@ import {
 
 import { useRouter } from "next/navigation";
 
+function getHeroAvatar(postUser) {
+  const value = postUser.avatar?.url || postUser.avatar || postUser.profileImage;
+  if (typeof value !== "string" || !value.trim()) return "/avatar-placeholder.svg";
+  if (value.startsWith("/") && !value.startsWith("//")) return value;
+  try {
+    const url = new URL(value);
+    if (url.protocol === "https:" && ["res.cloudinary.com", "images.unsplash.com", "flagcdn.com"].includes(url.hostname)) return value;
+  } catch {}
+  return "/avatar-placeholder.svg";
+}
+
 export default function Hero() {
   const router = useRouter();
 
@@ -25,10 +39,7 @@ export default function Hero() {
   const [activePostIndex, setActivePostIndex] =
     useState(0);
 
-  const [user, setUser] = useState(null);
-
-  const [isLoadingUser, setIsLoadingUser] =
-    useState(true);
+  const { user, isLoadingUser } = useSession();
 
   const scrollToSection = (id) => {
     document.getElementById(id)?.scrollIntoView({
@@ -36,57 +47,6 @@ export default function Hero() {
       block: "start",
     });
   };
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadUser() {
-      try {
-        const response = await fetch(
-          "/api/auth/me",
-          {
-            method: "GET",
-            credentials: "include",
-            cache: "no-store",
-          }
-        );
-
-        if (!response.ok) {
-          if (isMounted) {
-            setUser(null);
-          }
-
-          return;
-        }
-
-        const data = await response.json();
-
-        if (!isMounted) {
-          return;
-        }
-
-        if (data?.success && data?.user) {
-          setUser(data.user);
-        } else {
-          setUser(null);
-        }
-      } catch {
-        if (isMounted) {
-          setUser(null);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoadingUser(false);
-        }
-      }
-    }
-
-    loadUser();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   useEffect(() => {
     const controller =
@@ -160,17 +120,6 @@ export default function Hero() {
     };
   }, [featuredPosts.length]);
 
-  const openPost = (post) => {
-    const postId =
-      post.id ?? post._id;
-
-    if (!postId) {
-      return;
-    }
-
-    router.push(`/posts/${postId}`);
-  };
-
   function handleCommunityClick() {
     if (isLoadingUser) {
       return;
@@ -186,6 +135,16 @@ export default function Hero() {
       className="hero"
       id="hero"
     >
+      <Image
+        className="hero-background"
+        src="/images/hero-santorini.webp"
+        alt=""
+        fill
+        sizes="100vw"
+        preload
+        fetchPriority="high"
+        quality={60}
+      />
       <div className="hero-overlay" />
 
       <div className="hero-container">
@@ -294,34 +253,20 @@ export default function Hero() {
                   postUser.username ??
                   "Călător";
 
-                const userAvatar =
-                  postUser.avatar?.url ??
-                  postUser.avatar ??
-                  postUser.profileImage ??
-                  "https://randomuser.me/api/portraits/lego/1.jpg";
+                const userAvatar = getHeroAvatar(postUser);
 
                 return (
-                  <article
+                  <Link
+                    href={`/posts/${post.id ?? post._id}`}
+                    prefetch={false}
                     key={
                       post.id ??
                       post._id ??
                       `featured-post-${index}`
                     }
                     className="hero-review-card"
-                    onClick={() =>
-                      openPost(post)
-                    }
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(event) => {
-                      if (
-                        event.key ===
-                          "Enter" ||
-                        event.key === " "
-                      ) {
-                        openPost(post);
-                      }
-                    }}
+                    aria-hidden={index !== activePostIndex}
+                    inert={index !== activePostIndex}
                   >
                     <div className="hero-review-mark">
                       “
@@ -332,6 +277,12 @@ export default function Hero() {
                     <div className="hero-review-user">
                       <img
                         src={userAvatar}
+                        width={46}
+                        height={46}
+                        loading="lazy"
+                        onError={(event) => {
+                          if (!event.currentTarget.src.endsWith("/avatar-placeholder.svg")) event.currentTarget.src = "/avatar-placeholder.svg";
+                        }}
                         alt={`Avatar ${userName}`}
                       />
 
@@ -346,14 +297,7 @@ export default function Hero() {
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      className="hero-review-button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        openPost(post);
-                      }}
-                    >
+                    <span className="hero-review-button">
                       <span>
                         Vezi postarea
                       </span>
@@ -362,8 +306,8 @@ export default function Hero() {
                         size={16}
                         strokeWidth={2.3}
                       />
-                    </button>
-                  </article>
+                    </span>
+                  </Link>
                 );
               }
             )}
@@ -390,6 +334,7 @@ export default function Hero() {
                       index
                     )
                   }
+                  aria-pressed={index === activePostIndex}
                   aria-label={`Afișează postarea ${
                     index + 1
                   }`}

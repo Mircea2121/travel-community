@@ -78,9 +78,12 @@ if (isProduction) {
 const nextConfig = {
   poweredByHeader: false,
   compress: true,
+  // Avoid serial stylesheet requests before the first paint.
+  experimental: { inlineCss: true },
 
   images: {
     formats: ["image/avif", "image/webp"],
+    qualities: [60, 75],
     remotePatterns: [
       {
         protocol: "https",
@@ -95,6 +98,10 @@ const nextConfig = {
         hostname: "flagcdn.com",
       },
     ],
+  },
+
+  async redirects() {
+    return [{ source: "/:path((?!api/|socket[.]io/|_next/).*)", has: [{type:"host",value:"comunitatea-calatorilor.ro"}], destination:"https://www.comunitatea-calatorilor.ro/:path", permanent:true }];
   },
 
   async headers() {

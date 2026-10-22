@@ -14,8 +14,7 @@
     linear-gradient(
     rgba(10,22,42,.55),
     rgba(10,22,42,.45)
-    ),
-    url("https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=2200&q=80");
+    );
 
     background-size: cover;
     background-position: center;
@@ -87,7 +86,7 @@
 
     cursor:pointer;
 
-    background:linear-gradient(135deg,#0284c7,#0ea5e9);
+    background:linear-gradient(135deg,#0369a1,#075985);
 
     color:#fff;
 
@@ -145,3 +144,5 @@
         width:100%;
     }
 }
+.about-background { object-fit: cover; }
+.about-overlay { background: linear-gradient(rgba(10,22,42,.65), rgba(10,22,42,.6)); }

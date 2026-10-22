@@ -1,5 +1,11 @@
 # Checklist înainte de publicare
 
+Stare actuală: [publicarea din 22 octombrie 2026 și verificările live](DEPLOYMENT-2026-10-22.md).
+
+- Pentru intervenția PageSpeed din 22 octombrie 2026, vezi [rezultatele, limitele și pașii de retestare](PAGESPEED-OPTIMIZATION.md).
+- Dependențele au fost actualizate: vezi [versiunile, verificările și cerința adaptorului local la instalare](DEPENDENCY-SECURITY.md).
+- TLS MongoDB local a fost remediat printr-o regulă IP temporară; rămâne de corectat autentificarea locală: [diagnostic și retestare](MONGODB-CONNECTION.md).
+
 ## Obligatoriu
 
 - Configurează `APP_URL`, cheile Turnstile, MongoDB, Cloudinary, Redis, JWT și Resend direct pe server.

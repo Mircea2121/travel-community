@@ -14,6 +14,8 @@
     "security:migrate-existing-emails": "node --env-file=.env.local scripts/migrateExistingUsersEmailVerification.js",
     "audit:dependencies": "npm audit --omit=dev",
     "test:smoke": "node scripts/smokeProductionRoutes.mjs",
+    "test:public-session": "node scripts/testPublicSession.mjs",
+    "test:dependencies": "node --test scripts/testDependencyCompatibility.mjs",
     "mobile:dev": "npm --prefix apps/mobile run dev",
     "mobile:build": "npm --prefix apps/mobile run build",
     "mobile:sync": "npm --prefix apps/mobile run sync"
@@ -26,7 +28,7 @@
     "jose": "^6.2.4",
     "lucide-react": "^1.24.0",
     "mongodb": "^7.5.0",
-    "next": "16.3.0",
+    "next": "16.4.2",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-easy-crop": "^6.2.3",
@@ -38,7 +40,11 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "eslint": "^9",
-    "eslint-config-next": "16.2.9",
-    "tailwindcss": "^4"
+    "eslint-config-next": "16.4.2",
+    "tailwindcss": "^4",
+    "fast-glob": "file:tools/eslint-glob-adapter"
+  },
+  "overrides": {
+    "fast-glob": "$fast-glob"
   }
 }

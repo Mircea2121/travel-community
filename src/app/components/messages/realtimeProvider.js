@@ -15,11 +15,8 @@ import {
   REALTIME_LIMITS,
   isValidRealtimeId,
 } from "@/app/utils/realtimeEvents";
-import {
-  connectRealtime,
-  disconnectRealtime,
-  getRealtimeSocket,
-} from "@/app/utils/realtimeClient";
+
+import { useSession } from "../auth/sessionProvider";
 
 const RealtimeContext = createContext(null);
 
@@ -39,98 +36,114 @@ function normalizeError(error) {
 }
 
 export default function RealtimeProvider({ children }) {
-  const [status, setStatus] = useState("connecting");
+  const { user } = useSession();
+  const userId = user?.id;
+  const [status, setStatus] = useState("idle");
   const [connectionError, setConnectionError] = useState(null);
   const [activeSocket, setActiveSocket] = useState(null);
   const socketRef = useRef(null);
   const roomReferencesRef = useRef(new Map());
 
   useEffect(() => {
-    const socket = connectRealtime();
-
-    if (!socket) {
-      queueMicrotask(() => {
-        setStatus("unavailable");
-        setConnectionError({
-        code: "REALTIME_BROWSER_UNAVAILABLE",
-        message: "Conexiunea realtime nu este disponibilă.",
-        });
-      });
-      return undefined;
+    if (!userId) {
+      queueMicrotask(() => { setStatus("idle"); setConnectionError(null); });
+      return;
     }
+    let cancelled = false;
+    let stopConnection;
+    async function startConnection() {
+      const { connectRealtime, disconnectRealtime } = await import("@/app/utils/realtimeClient");
+      if (cancelled) return;
+      const socket = connectRealtime();
 
-    socketRef.current = socket;
-    queueMicrotask(() => setActiveSocket(socket));
-    const roomReferences = roomReferencesRef.current;
-
-    function handleConnect() {
-      setStatus("connected");
-      setConnectionError(null);
-
-      for (const conversationId of roomReferencesRef.current.keys()) {
-        socket.emit(REALTIME_EVENTS.CONVERSATION_JOIN, {
-          conversationId,
+      if (!socket) {
+        queueMicrotask(() => {
+          setStatus("unavailable");
+          setConnectionError({
+          code: "REALTIME_BROWSER_UNAVAILABLE",
+          message: "Conexiunea realtime nu este disponibilă.",
+          });
         });
+        return undefined;
       }
-    }
 
-    function handleDisconnect(reason) {
-      setStatus(reason === "io client disconnect" ? "idle" : "reconnecting");
-    }
+      socketRef.current = socket;
+      queueMicrotask(() => setActiveSocket(socket));
+      const roomReferences = roomReferencesRef.current;
 
-    function handleConnectError(error) {
-      setStatus("unavailable");
-      setConnectionError(normalizeError(error));
-    }
+      function handleConnect() {
+        setStatus("connected");
+        setConnectionError(null);
 
-    function handleConnectionReady() {
-      setStatus("connected");
-      setConnectionError(null);
-    }
+        for (const conversationId of roomReferencesRef.current.keys()) {
+          socket.emit(REALTIME_EVENTS.CONVERSATION_JOIN, {
+            conversationId,
+          });
+        }
+      }
 
-    function handleConnectionError(error) {
-      setConnectionError(normalizeError(error));
-    }
+      function handleDisconnect(reason) {
+        setStatus(reason === "io client disconnect" ? "idle" : "reconnecting");
+      }
 
-    socket.on("connect", handleConnect);
-    socket.on("disconnect", handleDisconnect);
-    socket.on("connect_error", handleConnectError);
-    socket.on(
-      REALTIME_EVENTS.CONNECTION_READY,
-      handleConnectionReady
-    );
-    socket.on(
-      REALTIME_EVENTS.CONNECTION_ERROR,
-      handleConnectionError
-    );
+      function handleConnectError(error) {
+        setStatus("unavailable");
+        setConnectionError(normalizeError(error));
+      }
 
-    if (socket.connected) {
-      handleConnect();
-    }
+      function handleConnectionReady() {
+        setStatus("connected");
+        setConnectionError(null);
+      }
 
-    return () => {
-      socket.off("connect", handleConnect);
-      socket.off("disconnect", handleDisconnect);
-      socket.off("connect_error", handleConnectError);
-      socket.off(
+      function handleConnectionError(error) {
+        setConnectionError(normalizeError(error));
+      }
+
+      socket.on("connect", handleConnect);
+      socket.on("disconnect", handleDisconnect);
+      socket.on("connect_error", handleConnectError);
+      socket.on(
         REALTIME_EVENTS.CONNECTION_READY,
         handleConnectionReady
       );
-      socket.off(
+      socket.on(
         REALTIME_EVENTS.CONNECTION_ERROR,
         handleConnectionError
       );
 
-      roomReferences.clear();
-      socketRef.current = null;
-      setActiveSocket(null);
-      disconnectRealtime();
-    };
-  }, []);
+      if (socket.connected) {
+        handleConnect();
+      }
+
+      stopConnection = () => {
+        socket.off("connect", handleConnect);
+        socket.off("disconnect", handleDisconnect);
+        socket.off("connect_error", handleConnectError);
+        socket.off(
+          REALTIME_EVENTS.CONNECTION_READY,
+          handleConnectionReady
+        );
+        socket.off(
+          REALTIME_EVENTS.CONNECTION_ERROR,
+          handleConnectionError
+        );
+
+        roomReferences.clear();
+        socketRef.current = null;
+        setActiveSocket(null);
+        disconnectRealtime();
+      };
+    }
+    startConnection().catch((error) => {
+      if (!cancelled) { setStatus("unavailable"); setConnectionError(normalizeError(error)); }
+    });
+    return () => { cancelled = true; stopConnection?.(); };
+  }, [userId]);
 
   const emitWithAck = useCallback((eventName, payload) => {
     return new Promise((resolve, reject) => {
-      const socket = socketRef.current || getRealtimeSocket();
+      const socket = socketRef.current;
 
       if (!socket?.connected) {
         reject(

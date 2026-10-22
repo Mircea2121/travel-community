@@ -6,14 +6,15 @@ import {
   useState,
 } from "react";
 
-export default function usePostDetails(postId) {
-  const [post, setPost] = useState(null);
+import { useSession } from "../../../components/auth/sessionProvider";
 
-  const [currentUser, setCurrentUser] =
-    useState(null);
+export default function usePostDetails(postId, initialPost = null) {
+  const [post, setPost] = useState(initialPost);
+
+  const { user: currentUser, isLoadingUser } = useSession();
 
   const [loading, setLoading] =
-    useState(true);
+    useState(!initialPost);
 
   const [error, setError] =
     useState("");
@@ -37,72 +38,19 @@ export default function usePostDetails(postId) {
       }
 
       try {
-        setLoading(true);
+        if (!initialPost) setLoading(true);
         setError("");
         setActionError("");
 
-        const [
-          postResponse,
-          authResponse,
-          savedResponse,
-        ] = await Promise.all([
-          fetch(`/api/posts/${postId}`, {
-            method: "GET",
-            credentials: "include",
-            cache: "no-store",
-          }),
-
-          fetch("/api/auth/me", {
-            method: "GET",
-            credentials: "include",
-            cache: "no-store",
-          }),
-
-          fetch(`/api/posts/${postId}/save`, {
-            method: "GET",
-            credentials: "include",
-            cache: "no-store",
-          }),
-        ]);
-
-        const postData =
-          await postResponse.json();
-
-        if (
-          !postResponse.ok ||
-          !postData?.success
-        ) {
-          throw new Error(
-            postData?.message ||
-              "Postarea nu a putut fi încărcată."
-          );
-        }
-
-        let authenticatedUser = null;
-
-        if (authResponse.ok) {
-          const authData =
-            await authResponse.json();
-
-          authenticatedUser =
-            authData?.user ||
-            authData?.data?.user ||
-            null;
-        }
-
+        const postResponse = await fetch(`/api/posts/${postId}`, {credentials:"include",cache:"no-store"});
+        const postData = await postResponse.json();
+        if (!postResponse.ok || !postData?.success) throw new Error(postData?.message || "Postarea nu a putut fi încărcată.");
         let savedState = false;
-
-        if (savedResponse.ok) {
-          const savedData =
-            await savedResponse.json();
-
-          savedState = Boolean(
-            savedData?.isSaved
-          );
+        if(currentUser) {
+          const savedResponse = await fetch(`/api/posts/${postId}/save`, {credentials:"include",cache:"no-store"});
+          if(savedResponse.ok) savedState=Boolean((await savedResponse.json())?.isSaved);
         }
-
         setPost(postData.post);
-        setCurrentUser(authenticatedUser);
         setIsSaved(savedState);
       } catch (loadError) {
         console.error(
@@ -120,7 +68,7 @@ export default function usePostDetails(postId) {
       } finally {
         setLoading(false);
       }
-    }, [postId]);
+    }, [postId, currentUser, initialPost]);
 
   const deletePost =
     useCallback(async () => {
@@ -255,7 +203,7 @@ export default function usePostDetails(postId) {
     let isMounted = true;
 
     async function initializePage() {
-      if (!isMounted) {
+      if (!isMounted || isLoadingUser) {
         return;
       }
 
@@ -267,7 +215,7 @@ export default function usePostDetails(postId) {
     return () => {
       isMounted = false;
     };
-  }, [loadPostDetails]);
+  }, [loadPostDetails, isLoadingUser]);
 
   return {
     post,

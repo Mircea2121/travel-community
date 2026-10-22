@@ -1,72 +1,15 @@
 "use client";
 
 import "./about.css";
-
-import {
-  useEffect,
-  useState,
-} from "react";
+import Image from "next/image";
+import { useSession } from "../auth/sessionProvider";
 
 import { useRouter } from "next/navigation";
 
 export default function About() {
   const router = useRouter();
 
-  const [user, setUser] = useState(null);
-
-  const [isLoadingUser, setIsLoadingUser] =
-    useState(true);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadUser() {
-      try {
-        const response = await fetch(
-          "/api/auth/me",
-          {
-            method: "GET",
-            credentials: "include",
-            cache: "no-store",
-          }
-        );
-
-        if (!response.ok) {
-          if (isMounted) {
-            setUser(null);
-          }
-
-          return;
-        }
-
-        const data = await response.json();
-
-        if (!isMounted) {
-          return;
-        }
-
-        if (data?.success && data?.user) {
-          setUser(data.user);
-        } else {
-          setUser(null);
-        }
-      } catch {
-        if (isMounted) {
-          setUser(null);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoadingUser(false);
-        }
-      }
-    }
-
-    loadUser();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const { user, isLoadingUser } = useSession();
 
   function handleCommunityClick() {
     if (isLoadingUser) {
@@ -83,6 +26,7 @@ export default function About() {
       id="about"
       className="about"
     >
+      <Image className="about-background" src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=2200&q=80" alt="" fill sizes="100vw" quality={75} loading="lazy" />
       <div className="about-overlay" />
 
       <div className="about-content">

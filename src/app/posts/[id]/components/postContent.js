@@ -1,69 +1,8 @@
-import {
-  getCategoryLabel,
-  getLocation,
-} from "../utils/postDetailsHelpers";
-
-export default function PostContent({
-  post,
-}) {
-  const location =
-    getLocation(post);
-
-  return (
-    <div className="post-details-content">
-      <div className="post-details-tags">
-        {location && (
-          <span className="post-details-location">
-            {location}
-          </span>
-        )}
-
-        {post?.category && (
-          <span className="post-details-location">
-            {getCategoryLabel(
-              post.category
-            )}
-          </span>
-        )}
-      </div>
-
-      <h1>{post?.title}</h1>
-
-      {post?.travelPeriod && (
-        <p className="post-details-description">
-          Perioada călătoriei:{" "}
-          <strong>
-            {post.travelPeriod}
-          </strong>
-        </p>
-      )}
-
-      <p className="post-details-description">
-        {post?.description}
-      </p>
-
-      <div className="post-details-highlights">
-        <div className="cost-box">
-          <div className="cost-total">
-            <span>
-              Cost total aproximativ
-            </span>
-
-            <strong>
-              {post?.totalCost ||
-                "Nespecificat"}
-            </strong>
-          </div>
-        </div>
-
-        {post?.tips && (
-          <div className="tips-box">
-            <h2>Ponturi utile</h2>
-
-            <p>{post.tips}</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+import { MapPin, CalendarDays, Wallet, Lightbulb } from "lucide-react";
+import { getLocation } from "../utils/postDetailsHelpers";
+export default function PostContent({post}) {
+ const location=getLocation(post);
+ const numericCost=Number(post?.totalCost);
+ const cost=Number.isFinite(numericCost)&&numericCost>0 ? new Intl.NumberFormat("ro-RO",{maximumFractionDigits:0}).format(numericCost)+" "+(post.currency && post.currency!=="EUR"?post.currency:"€") : (post?.totalCost || "Nespecificat");
+ return <div className="post-details-content"><div className="post-story-body"><span className="post-section-eyebrow">Din experiență proprie</span><h2>Povestea călătoriei</h2><p className="post-details-description">{post?.description}</p>{post?.tips && <section className="tips-box" aria-label="Ponturi utile"><div className="post-tips-heading"><Lightbulb size={19} aria-hidden="true" /><h2>Ponturi utile</h2></div><p>{post.tips}</p></section>}</div><aside className="post-trip-summary" aria-labelledby="trip-summary-heading"><span className="post-section-eyebrow">Detaliile călătoriei</span><h2 id="trip-summary-heading">Pe scurt</h2><dl>{location && <div><dt><MapPin size={15} aria-hidden="true" />Destinația</dt><dd>{location}</dd></div>}{post?.travelPeriod && <div><dt><CalendarDays size={15} aria-hidden="true" />Perioada</dt><dd>{post.travelPeriod}</dd></div>}<div className="post-summary-cost"><dt><Wallet size={15} aria-hidden="true" />Cost total aproximativ</dt><dd>{cost}</dd></div></dl><p className="post-budget-note">Bugetul reflectă experiența autorului și poate varia în funcție de perioadă și opțiuni.</p></aside></div>;
 }

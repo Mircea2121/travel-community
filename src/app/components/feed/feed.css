@@ -30,7 +30,7 @@
   padding: 8px 16px;
   border: 1px solid #cceafa;
   border-radius: 999px;
-  color: #027cad;
+  color: #0369a1;
   background: #eaf8ff;
   font-size: 12px;
   font-weight: 850;
@@ -239,7 +239,7 @@
   border: 0;
   border-radius: 12px;
   color: #ffffff;
-  background: #0284c7;
+  background: #0369a1;
   font-size: 13px;
   font-weight: 800;
   cursor: pointer;
@@ -273,9 +273,7 @@
       90deg,
       rgba(7, 20, 40, 0.76),
       rgba(7, 20, 40, 0.42)
-    ),
-    url("https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=75")
-      center / cover;
+    );
   box-shadow: 0 16px 42px rgba(15, 23, 42, 0.14);
 }
 
@@ -306,7 +304,7 @@
   line-height: 1.55;
 }
 
-.feed-blog-cta button {
+.feed-blog-cta :is(button, .feed-blog-link) {
   min-height: 46px;
   flex: 0 0 auto;
   display: inline-flex;
@@ -328,7 +326,7 @@
     background 160ms ease;
 }
 
-.feed-blog-cta button:hover {
+.feed-blog-cta :is(button, .feed-blog-link):hover {
   border-color: rgba(255, 255, 255, 0.65);
   background: rgba(255, 255, 255, 0.24);
 }
@@ -394,7 +392,7 @@
     padding: 23px 20px;
   }
 
-  .feed-blog-cta button {
+  .feed-blog-cta :is(button, .feed-blog-link) {
     width: 100%;
   }
 }
@@ -423,7 +421,7 @@
   }
 
   .feed-list .experience-card-compact,
-  .feed-blog-cta button {
+  .feed-blog-cta :is(button, .feed-blog-link) {
     transition: none;
   }
 
@@ -431,3 +429,9 @@
     transform: none;
   }
 }
+
+.feed-cta-background { object-fit: cover; z-index: -2; }
+.feed-blog-cta { isolation: isolate; }
+.feed-blog-cta::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(7,20,40,.76), rgba(7,20,40,.42)); }
+
+.feed-blog-link { text-decoration: none; font-family: Arial, Helvetica, sans-serif; }

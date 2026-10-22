@@ -99,6 +99,7 @@ export default function LoginPage() {
 
       window.setTimeout(() => {
         sessionStorage.removeItem("travel-community-loader-shown");
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- Reload providers after the server sets the HttpOnly session cookie.
         window.location.href = "/profile";
       }, 700);
     } catch (error) {

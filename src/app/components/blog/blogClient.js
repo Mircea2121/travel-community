@@ -35,10 +35,11 @@ const EMPTY_FEED_STATE = {
   error: "",
 };
 
-function createInitialFeeds() {
+function createInitialFeeds(initialData) {
   return {
     [FEED_SCOPES.ALL]: {
       ...EMPTY_FEED_STATE,
+      ...(initialData ? {posts:initialData.posts,nextCursor:initialData.pagination.nextCursor,hasMore:initialData.pagination.hasMore,initialized:true} : {}),
     },
     [FEED_SCOPES.FOLLOWING]: {
       ...EMPTY_FEED_STATE,
@@ -66,12 +67,12 @@ function getFeedTitle(scope) {
     : "Experiențe din întreaga comunitate";
 }
 
-export default function BlogClient() {
+export default function BlogClient({initialData = null}) {
   const router = useRouter();
   const toast = useToast();
   const initializedScopesRef = useRef(new Set());
   const [activeScope, setActiveScope] = useState(FEED_SCOPES.ALL);
-  const [feeds, setFeeds] = useState(createInitialFeeds);
+  const [feeds, setFeeds] = useState(() => createInitialFeeds(initialData));
   const [pendingLikeIds, setPendingLikeIds] = useState(
     () => new Set()
   );
@@ -86,7 +87,7 @@ export default function BlogClient() {
       ...currentFeeds,
       [scope]: {
         ...currentFeeds[scope],
-        loading: !isLoadingMore,
+        loading: !isLoadingMore && !currentFeeds[scope].posts.length,
         loadingMore: isLoadingMore,
         error: "",
         authRequired: false,
@@ -380,7 +381,7 @@ export default function BlogClient() {
   const activeFeed = feeds[activeScope];
 
   return (
-    <main className="blog-page">
+    <div className="blog-page">
       <section className="blog-hero">
         <div className="blog-hero-copy">
           <span className="blog-eyebrow">
@@ -571,6 +572,6 @@ export default function BlogClient() {
           </>
         )}
       </section>
-    </main>
+    </div>
   );
 }

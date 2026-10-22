@@ -1,7 +1,7 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element -- Copertă editorială externă cu dimensiune controlată de cardul responsive. */
 
+import Image from "next/image";
 import { useCommunityOverview } from "@/app/components/discovery/communityOverviewProvider";
 import RememberScrollLink from "@/app/components/discovery/rememberScrollLink";
 import { getDestinationCover } from "@/app/utils/destinationCovers";
@@ -14,19 +14,21 @@ export default function PopularDestinations() {
   return (
     <section className="popular-destinations" id="destinations">
       <div className="section-header">
-        <span>Exploreaza lumea</span>
-        <h2>Destinatii populare</h2>
-        <p>Primele sase tari sunt calculate automat dupa numarul real de experiente publicate de comunitate.</p>
+        <span>Explorează lumea</span>
+        <h2>Destinații populare</h2>
+        <p>Primele șase țări sunt calculate automat după numărul real de experiențe publicate de comunitate.</p>
       </div>
 
-      {isLoading ? <div className="destinations-message">Se calculeaza destinatiile...</div> :
+      {isLoading ? <div className="destinations-message">Se calculează destinațiile...</div> :
        error && !countries.length ? <div className="destinations-message">{error}</div> :
-       !countries.length ? <div className="destinations-message">Nu exista inca destinatii publicate.</div> : (
+       !countries.length ? <div className="destinations-message">Nu există încă destinații publicate.</div> : (
         <div className="destinations-grid">
           {countries.map((destination, index) => (
             <article className="destination-card" key={destination.key}>
               <div className="destination-image">
-                <img
+                <Image
+                  fill
+                  sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 33vw"
                   src={getDestinationCover(destination.key)}
                   alt={`Peisaj reprezentativ din ${destination.country}`}
                   loading="lazy"
@@ -36,13 +38,13 @@ export default function PopularDestinations() {
               <div className="destination-content">
                 <h3>{destination.country}</h3>
                 <div className="destination-stats">
-                  <div><strong>{destination.postsCount}</strong><span>Experiente</span></div>
-                  <div><strong>{destination.citiesCount}</strong><span>Orase</span></div>
+                  <div><strong>{destination.postsCount}</strong><span>Experiențe</span></div>
+                  <div><strong>{destination.citiesCount}</strong><span>Orașe</span></div>
                 </div>
                 <RememberScrollLink
                   href={`/discover/destinations/${destination.key}?name=${encodeURIComponent(destination.country)}`}
                 >
-                  Vezi destinatia
+                  Vezi destinația
                 </RememberScrollLink>
               </div>
             </article>

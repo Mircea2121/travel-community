@@ -1,6 +1,7 @@
 "use client";
 
 import "./navbar.css";
+import { useSession } from "../auth/sessionProvider";
 
 import {
   Search,
@@ -25,6 +26,7 @@ import {
 
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { getUserInitials } from "../../utils/getUserInitials";
 import { useRealtime } from "../messages/realtimeProvider";
 import { REALTIME_EVENTS } from "../../utils/realtimeEvents";
@@ -80,17 +82,12 @@ export default function Navbar() {
     setIsProfileMenuOpen,
   ] = useState(false);
 
-  const [user, setUser] = useState(null);
+  const { user, setUser, isLoadingUser } = useSession();
 
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
 
   const [failedAvatarUrl, setFailedAvatarUrl] =
     useState("");
-
-  const [
-    isLoadingUser,
-    setIsLoadingUser,
-  ] = useState(true);
 
   const searchInputRef = useRef(null);
   const searchFormRef = useRef(null);
@@ -187,40 +184,6 @@ export default function Navbar() {
       controller.abort();
     };
   }, [searchQuery]);
-
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const response = await fetch(
-          "/api/auth/me",
-          {
-            method: "GET",
-            credentials: "include",
-            cache: "no-store",
-          }
-        );
-
-        if (!response.ok) {
-          setUser(null);
-          return;
-        }
-
-        const data = await response.json();
-
-        if (data.success) {
-          setUser(data.user);
-        } else {
-          setUser(null);
-        }
-      } catch {
-        setUser(null);
-      } finally {
-        setIsLoadingUser(false);
-      }
-    };
-
-    loadUser();
-  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -581,6 +544,7 @@ export default function Navbar() {
       setUnreadMessageCount(0);
       closeNavigationMenus();
 
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- A full reload clears the session and realtime client after logout.
       window.location.href = "/";
     } catch (error) {
       console.error(
@@ -605,7 +569,7 @@ export default function Navbar() {
           type="button"
           className="nav-logo"
           onClick={handleLogoClick}
-          aria-label="Mergi la pagina principală"
+          aria-label="Comunitatea Călătorilor — pagina principală"
         >
           <div className="nav-logo-icon">
             <svg
@@ -640,7 +604,7 @@ export default function Navbar() {
           <div className="nav-logo-text">
             <strong>
               Comunitatea
-            </strong>
+            </strong>{" "}
 
             <span>
               Călătorilor
@@ -648,51 +612,12 @@ export default function Navbar() {
           </div>
         </button>
 
-        <nav className="nav-menu">
-          <button
-            type="button"
-            onClick={() =>
-              scrollToSection("hero")
-            }
-          >
-            Explorează
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              scrollToSection(
-                "destinations"
-              )
-            }
-          >
-            Destinații
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              scrollToSection("reviews")
-            }
-          >
-            Recomandări
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigateTo("/blog")}
-          >
-            Postări
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              scrollToSection("about")
-            }
-          >
-            Despre noi
-          </button>
+        <nav className="nav-menu" aria-label="Navigare principală">
+          <Link href="/#hero">Explorează</Link>
+          <Link href="/#destinations">Destinații</Link>
+          <Link href="/#reviews">Recomandări</Link>
+          <Link href="/blog">Postări</Link>
+          <Link href="/despre-noi">Despre noi</Link>
         </nav>
 
         <div className="nav-actions">
@@ -825,13 +750,14 @@ export default function Navbar() {
             )}
           </form>
 
-          {!isLoadingUser && (
+          {(
             <div
               className="nav-profile-wrapper"
               ref={profileMenuRef}
             >
               <button
                 type="button"
+                disabled={isLoadingUser}
                 className={`nav-login ${
                   isProfileMenuOpen
                     ? "nav-login-active"

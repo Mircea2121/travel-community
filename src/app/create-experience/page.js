@@ -2,10 +2,12 @@
 
 /* eslint-disable @next/next/no-img-element -- Preview local blob înainte de upload; este necesar elementul nativ. */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowUpRight, Camera, Compass, Globe2, ImagePlus, MapPin, PenLine } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import "./createExperience.css";
+import "./premiumCreateExperience.css";
 import FlagBackground from "../components/flagBackground/flagBackground";
 
 const INITIAL_FORM_DATA = {
@@ -59,17 +61,13 @@ export default function CreateExperiencePage() {
     text: "",
   });
 
+  const previewUrlsRef = useRef([]);
   useEffect(() => {
-    return () => {
-      imagePreviews.forEach(
-        (preview) => {
-          URL.revokeObjectURL(
-            preview
-          );
-        }
-      );
-    };
+    previewUrlsRef.current = imagePreviews;
   }, [imagePreviews]);
+  useEffect(() => () => {
+    previewUrlsRef.current.forEach((preview) => URL.revokeObjectURL(preview));
+  }, []);
 
   function handleChange(event) {
     const {
@@ -375,30 +373,17 @@ export default function CreateExperiencePage() {
   return (
     <section className="create-experience-page">
       <FlagBackground />
-
       <div className="create-experience-container">
         <div className="create-experience-header">
-          <span className="create-experience-badge">
-            Comunitatea călătorilor
-          </span>
-
-          <h1>
-            Adaugă o postare de călătorie
-          </h1>
-
-          <p>
-            Spune unde ai fost, cât te-a costat,
-            ce ponturi ai pentru alți călători și
-            ce ar trebui să știe înainte să plece.
-          </p>
+          <span className="create-experience-badge"><Compass size={15} aria-hidden="true" /> Jurnal de călătorie</span>
+          <h1>Povestește-ți călătoria.</h1>
+          <p>Locuri care te-au surprins, detalii care contează și recomandări pe care ai vrea să le fi primit înainte să pleci.</p>
         </div>
-
-        <form
-          className="experience-form"
-          onSubmit={
-            handleSubmit
-          }
-        >
+        <div className="experience-workspace">
+        <form className="experience-form" onSubmit={handleSubmit}>
+          <section className="experience-section" aria-labelledby="experience-details-heading">
+            <header className="experience-section-heading"><span className="experience-section-number" aria-hidden="true">01</span><div><h2 id="experience-details-heading">Locul și detaliile</h2><p>Începe cu destinația și câteva repere ale călătoriei.</p></div><MapPin size={22} aria-hidden="true" /></header>
+            <div className="experience-section-fields">
           <div className="form-group">
             <label htmlFor="title">
               Titlul postării
@@ -477,7 +462,7 @@ export default function CreateExperiencePage() {
           <div className="form-row">
             <div className="form-group">
               <label htmlFor="city">
-                Oraș / Zonă
+                Oraș / Zonă <span className="field-optional">opțional</span>
               </label>
 
               <input
@@ -559,7 +544,7 @@ export default function CreateExperiencePage() {
           <div className="form-row">
             <div className="form-group">
               <label htmlFor="travelPeriod">
-                Perioada călătoriei
+                Perioada călătoriei <span className="field-optional">opțional</span>
               </label>
 
               <input
@@ -582,7 +567,7 @@ export default function CreateExperiencePage() {
 
             <div className="form-group">
               <label htmlFor="totalCost">
-                Cost total aproximativ
+                Cost total aproximativ <span className="field-optional">opțional</span>
               </label>
 
               <div className="cost-input-wrapper">
@@ -612,6 +597,12 @@ export default function CreateExperiencePage() {
             </div>
           </div>
 
+
+            </div>
+          </section>
+          <section className="experience-section" aria-labelledby="experience-story-heading">
+            <header className="experience-section-heading"><span className="experience-section-number" aria-hidden="true">02</span><div><h2 id="experience-story-heading">Experiența ta, în cuvinte</h2><p>Scrie firesc. Cele mai utile detalii vin din experiența proprie.</p></div><PenLine size={22} aria-hidden="true" /></header>
+            <div className="experience-section-fields">
           <div className="form-group">
             <label htmlFor="tips">
               Ponturi utile
@@ -634,6 +625,7 @@ export default function CreateExperiencePage() {
               }
               required
             />
+            <small className="field-hint">Recomandări concrete, locuri preferate și lucruri de evitat.</small>
           </div>
 
           <div className="form-group">
@@ -660,8 +652,14 @@ export default function CreateExperiencePage() {
             />
           </div>
 
+
+            </div>
+          </section>
+          <section className="experience-section" aria-labelledby="experience-photos-heading">
+            <header className="experience-section-heading"><span className="experience-section-number" aria-hidden="true">03</span><div><h2 id="experience-photos-heading">Povestea, în fotografii</h2><p>Prima fotografie aleasă va fi coperta postării.</p></div><Camera size={22} aria-hidden="true" /></header>
+            <div className="experience-section-fields">
           <div className="form-group">
-            <label>
+            <label htmlFor="experience-images">
               Poze din călătorie
             </label>
 
@@ -673,6 +671,8 @@ export default function CreateExperiencePage() {
               }`}
             >
               <input
+                id="experience-images"
+                aria-describedby="image-upload-hint"
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 multiple
@@ -684,11 +684,12 @@ export default function CreateExperiencePage() {
                 }
               />
 
+              <span className="upload-visual" aria-hidden="true"><ImagePlus size={27} strokeWidth={1.5} /></span>
               <span>
-                Apasă pentru a adăuga poze
+                Selectează fotografiile
               </span>
 
-              <small>
+              <small id="image-upload-hint">
                 Minimum 1 poză, maximum 10 poze,
                 maximum 10 MB fiecare
               </small>
@@ -718,6 +719,7 @@ export default function CreateExperiencePage() {
                         }`}
                       />
 
+                      {index === 0 && <span className="preview-cover-label">Copertă</span>}
                       <button
                         type="button"
                         className="remove-preview-btn"
@@ -743,6 +745,9 @@ export default function CreateExperiencePage() {
             )}
           </div>
 
+
+            </div>
+          </section>
           {formMessage.text && (
             <div
               className={`experience-form-message ${
@@ -759,6 +764,7 @@ export default function CreateExperiencePage() {
             </div>
           )}
 
+          <div className="experience-publish-row"><p>O experiență reală poate inspira următoarea călătorie.<small>Câmpurile fără mențiunea „opțional” sunt necesare.</small></p>
           <button
             type="submit"
             className="submit-experience-btn"
@@ -769,8 +775,18 @@ export default function CreateExperiencePage() {
             {isSubmitting
               ? "Se publică postarea..."
               : "Publică postarea"}
-          </button>
+          </button></div>
+
         </form>
+        <aside className="experience-editor-guide" aria-label="Sfaturi pentru publicare">
+          <span className="editor-guide-eyebrow">Din călător în călător</span>
+          <h2>Detaliile mici fac poveștile utile.</h2>
+          <p>Gândește-te la ce ai fi vrut să știi înainte să pleci.</p>
+          <ol><li><strong>Fii concret.</strong><span>Un loc, un traseu sau o recomandare pe care ai încercat-o.</span></li><li><strong>Pune costurile în context.</strong><span>Precizează perioada și pentru câte persoane a fost bugetul.</span></li><li><strong>Arată locul prin ochii tăi.</strong><span>Alege fotografii proprii și păstrează datele personale private.</span></li></ol>
+          <a href="/ghid-publicare">Ghidul unei postări utile <ArrowUpRight size={16} aria-hidden="true" /></a>
+          <div className="editor-guide-footnote"><Globe2 size={17} aria-hidden="true" /><span>Fotografii, ponturi și experiențe reale pentru comunitate.</span></div>
+        </aside>
+        </div>
       </div>
     </section>
   );

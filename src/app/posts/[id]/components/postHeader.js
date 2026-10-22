@@ -40,7 +40,7 @@ export default function PostHeader({
     : "";
 
   const avatarContent = (
-    <div className="post-details-avatar">
+    <div className="post-details-avatar" aria-hidden="true">
       {avatarUrl ? (
         <img
           src={avatarUrl}
@@ -57,7 +57,7 @@ export default function PostHeader({
 
   const authorContent = (
     <div>
-      <h3>{authorName}</h3>
+      <strong className="post-author-name">{authorName}</strong>
 
       <p>
         @{username || "utilizator"}
@@ -85,7 +85,7 @@ export default function PostHeader({
           {profileHref ? (
             <Link
               href={profileHref}
-              aria-label={`Vezi profilul lui ${authorName}`}
+              aria-label={`${getUserInitial({ name: post?.name, username: post?.username })}. Vezi profilul lui ${authorName}`}
             >
               {avatarContent}
             </Link>

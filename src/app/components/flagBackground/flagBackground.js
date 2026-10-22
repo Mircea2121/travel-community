@@ -63,7 +63,10 @@ export default function FlagBackground() {
           title={flag.name}
         >
           <img
-            src={`https://flagcdn.com/w320/${flag.code}.png`}
+            src={`https://flagcdn.com/w80/${flag.code}.png`}
+            width={56}
+            height={86}
+            decoding="async"
             alt=""
             loading="lazy"
           />

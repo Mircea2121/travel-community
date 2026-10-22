@@ -10,6 +10,19 @@
 
     overflow: hidden;
 
+    background: #040c1d;
+}
+
+.hero-background {
+    object-fit: cover;
+    object-position: center;
+}
+
+.hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
     background-image:
         linear-gradient(
             90deg,
@@ -17,8 +30,7 @@
             rgba(4, 12, 29, 0.72) 42%,
             rgba(4, 12, 29, 0.32) 72%,
             rgba(4, 12, 29, 0.2) 100%
-        ),
-        url("https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=2200&q=85");
+        );
 
     background-repeat: no-repeat;
     background-position: center;
@@ -26,6 +38,7 @@
 }
 
 .hero::before {
+    z-index: 1;
     content: "";
 
     position: absolute;
@@ -47,6 +60,7 @@
 }
 
 .hero-overlay {
+    z-index: 1;
     position: absolute;
     inset: 0;
 
@@ -718,4 +732,50 @@
     .hero-review-track {
         transition: none;
     }
+}
+
+.hero-review-track { height: 380px; }
+.hero-review-slider { min-height: 440px; }
+.hero-review-card { display: flex; flex-direction: column; }
+.hero-review-card > p { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.hero-review-user { margin-top: auto; }
+.hero-review-user span { color: #fff; }
+.hero-primary { background: linear-gradient(135deg, #0369a1, #075985); }
+.review-dot { position: relative; width: 44px; height: 44px; background: transparent; }
+.review-dot::after { content: ""; position: absolute; width: 7px; height: 7px; top: 50%; left: 50%; transform: translate(-50%, -50%); border-radius: 999px; background: #fff; }
+.review-dot-active::after { width: 22px; background: #7dd3fc; }
+@media (max-width: 768px) { .hero-background { object-position: 62% center; } }
+
+.hero-review-card { text-decoration: none; }
+
+/* Compact introduction with the same reserved carousel space before/after data. */
+.hero { min-height: calc(100svh - 80px); padding: 88px 6% 64px; }
+.hero-badge, .hero-secondary { backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: none; background: rgba(255,255,255,.08); }
+.hero-primary { box-shadow: 0 8px 22px rgba(3,105,161,.2); }
+.hero-review-card { border-radius: 24px; background: rgba(9,24,43,.88); border-color: rgba(255,255,255,.14); backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: 0 12px 32px rgba(2,6,23,.16); }
+.hero-review-track { height: 320px; }
+.hero-review-slider { min-height: 380px; }
+@media (max-width: 1100px) {
+  .hero { min-height: auto; padding: 64px 5% 48px; }
+  .hero-container { gap: 32px; }
+}
+@media (max-width: 768px) {
+  .hero { min-height: auto; padding: 36px 20px 28px; }
+  .hero-container { gap: 24px; }
+  .hero-badge { margin-bottom: 16px; padding: 8px 12px; font-size: 12px; line-height: 1.4; }
+  .hero-left h1 { font-size: clamp(36px,10.4vw,46px); line-height: 1.04; letter-spacing: -1.2px; }
+  .hero-description { margin-top: 18px; font-size: 16px; line-height: 1.6; }
+  .hero-buttons { margin-top: 22px; gap: 8px; }
+  .hero-primary, .hero-secondary { min-height: 48px; padding: 12px 16px; border-radius: 14px; font-size: 14px; }
+  .hero-review-track { height: 156px; }
+  .hero-review-slider { min-height: 216px; }
+  .hero-review-card { display: grid; grid-template-columns: 1fr; grid-template-rows: auto auto; align-content: center; gap: 12px; padding: 18px; border-radius: 18px; }
+  .hero-review-mark { display: none; }
+  .hero-review-card > p { margin: 0; font-size: 16px; line-height: 1.45; -webkit-line-clamp: 2; }
+  .hero-review-user { margin-top: 0; padding-right: 44px; gap: 10px; }
+  .hero-review-user img { width: 38px; height: 38px; }
+  .hero-review-user strong { font-size: 13px; }
+  .hero-review-user span { font-size: 12px; }
+  .hero-review-button { position: absolute; right: 18px; bottom: 20px; width: 36px; height: 36px; margin: 0; padding: 0; justify-content: center; background: rgba(255,255,255,.06); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .hero-review-button span { display: none; }
 }

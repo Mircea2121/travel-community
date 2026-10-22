@@ -391,3 +391,6 @@
     transform: none;
   }
 }
+
+a.experience-card-media, a.experience-card-title, a.experience-card-open { text-decoration: none; }
+a.experience-card-media { display: block; }

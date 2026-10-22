@@ -25,6 +25,8 @@
   margin: 0 0 12px;
   color: #0284c7;
   font-size: clamp(36px, 4vw, 52px);
+  min-height: 1.2em;
+  line-height: 1.2;
   font-variant-numeric: tabular-nums;
 }
 

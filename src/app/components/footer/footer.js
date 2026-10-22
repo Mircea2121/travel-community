@@ -2,7 +2,7 @@
 
 import "./footer.css";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   ChevronRight,
   Cookie,
@@ -14,24 +14,6 @@ import {
 } from "lucide-react";
 
 export default function Footer() {
-  const router = useRouter();
-
-  function navigateToSection(id) {
-    if (window.location.pathname !== "/") {
-      router.push(`/#${id}`);
-      return;
-    }
-
-    document.getElementById(id)?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-  }
-
-  function navigateTo(path) {
-    router.push(path);
-  }
-
   return (
     <footer className="footer">
       <div className="footer-container">
@@ -51,79 +33,78 @@ export default function Footer() {
         <div className="footer-column">
           <h4>Navigare</h4>
 
-          <button type="button" onClick={() => navigateToSection("hero")}>
+          <Link href="/#hero">
             <ChevronRight size={16} aria-hidden="true" />
             Explorează
-          </button>
+          </Link>
 
-          <button
-            type="button"
-            onClick={() => navigateToSection("destinations")}
+          <Link
+            href="/#destinations"
           >
             <ChevronRight size={16} aria-hidden="true" />
             Destinații
-          </button>
+          </Link>
 
-          <button type="button" onClick={() => navigateToSection("reviews")}>
+          <Link href="/#reviews">
             <ChevronRight size={16} aria-hidden="true" />
             Recomandări
-          </button>
+          </Link>
 
-          <button type="button" onClick={() => navigateTo("/blog")}>
+          <Link href="/blog">
             <ChevronRight size={16} aria-hidden="true" />
             Postări
-          </button>
+          </Link>
 
-          <button type="button" onClick={() => navigateToSection("about")}>
+          <Link href="/despre-noi">
             <ChevronRight size={16} aria-hidden="true" />
             Despre noi
-          </button>
+          </Link>
         </div>
 
         <div className="footer-column">
           <h4>Ajutor</h4>
+          <Link href="/ghid-publicare"><FileText size={16} aria-hidden="true" />Ghid de publicare</Link>
 
-          <button type="button" onClick={() => navigateTo("/support")}>
+          <Link href="/support">
             <LifeBuoy size={16} aria-hidden="true" />
             Suport
-          </button>
+          </Link>
 
-          <button type="button" onClick={() => navigateTo("/report")}>
+          <Link href="/report">
             <ShieldAlert size={16} aria-hidden="true" />
             Raportează
-          </button>
+          </Link>
 
-          <button type="button" onClick={() => navigateTo("/contact")}>
+          <Link href="/contact">
             <Mail size={16} aria-hidden="true" />
             Contact
-          </button>
+          </Link>
         </div>
 
         <div className="footer-column">
           <h4>Legal</h4>
 
-          <button type="button" onClick={() => navigateTo("/regulament")}>
+          <Link href="/regulament">
             <FileText size={16} aria-hidden="true" />
             Regulament
-          </button>
+          </Link>
 
-          <button type="button" onClick={() => navigateTo("/termeni")}>
+          <Link href="/termeni">
             <FileText size={16} aria-hidden="true" />
             Termeni și condiții
-          </button>
+          </Link>
 
-          <button
-            type="button"
-            onClick={() => navigateTo("/confidentialitate")}
+          <Link
+            href="/confidentialitate"
           >
             <FileText size={16} aria-hidden="true" />
             Politica de confidențialitate
-          </button>
+          </Link>
 
-          <button type="button" onClick={() => navigateTo("/cookies")}>
+          <Link href="/cookies">
             <Cookie size={16} aria-hidden="true" />
             Politica de cookie-uri
-          </button>
+          </Link>
         </div>
       </div>
 
